@@ -1,5 +1,6 @@
 """Library to handle connection with Switchbot"""
 
+import binascii
 import logging
 
 import bluepy
@@ -33,17 +34,10 @@ class Switchmate:
             self._sendpacket(key, retry-1)
         return True
 
-    def update(self) -> None:
-        """Synchronize state with switch."""
-        try:
-            return self._device.readCharacteristic(HANDLE) == ON_KEY
-        except bluepy.btle.BTLEException:
-            self._connect()
-
-    def turn_on(self, **kwargs) -> None:
+    def turn_on(self) -> None:
         """Turn device on."""
         return self._sendpacket(ON_KEY)
 
-    def turn_off(self, **kwargs) -> None:
+    def turn_off(self) -> None:
         """Turn device off."""
         return self._sendpacket(OFF_KEY)
