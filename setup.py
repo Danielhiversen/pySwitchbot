@@ -1,11 +1,11 @@
 from setuptools import setup
 
 setup(
-    name = 'PySeitchbot',
+    name = 'PySwitchbot',
     packages = ['switchbot'],
     install_requires=['bluepy'],
     version = '0.1',
-    description = 'A library to communicate with Switcbot',
+    description = 'A library to communicate with Switchbot',
     author='Daniel Hoyer Iversen',
     url='https://github.com/Danielhiversen/pySwitchbot/',
     classifiers=[
