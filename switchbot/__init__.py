@@ -13,7 +13,7 @@ OFF_KEY = "570102"
 _LOGGER = logging.getLogger(__name__)
 
 
-class Switchmate:
+class Switchbot:
     """Representation of a Switchmate."""
 
     def __init__(self, mac) -> None:
