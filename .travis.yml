@@ -21,4 +21,4 @@ deploy:
   on:
     tags: true
     distributions: sdist bdist_wheel
-    repo: Danielhiversen/PySwitchbot
+    repo: Danielhiversen/pySwitchbot
