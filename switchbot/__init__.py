@@ -21,15 +21,19 @@ class Switchbot:
 
     def _sendpacket(self, key, retry=2) -> bool:
         try:
+            _LOGGER.debug("Connecting")
             device = bluepy.btle.Peripheral(self._mac,
                                             bluepy.btle.ADDR_TYPE_RANDOM)
             hand_service = device.getServiceByUUID(UUID)
             hand = hand_service.getCharacteristics(HANDLE)[0]
+            _LOGGER.debug("Sending command, %s", key)
             hand.write(binascii.a2b_hex(key))
+            _LOGGER.debug("Disconnecting")
             device.disconnect()
         except bluepy.btle.BTLEException:
-            _LOGGER.error("Cannot connect to switchbot.", exc_info=True)
+            _LOGGER.error("Cannot connect to switchbot. Retrying", exc_info=True)
             if retry < 1:
+                _LOGGER.error("Cannot connect to switchbot.", exc_info=True)
                 return False
             return self._sendpacket(key, retry-1)
         return True
