@@ -31,7 +31,7 @@ class Switchbot:
             _LOGGER.error("Cannot connect to switchbot.", exc_info=True)
             if retry < 1:
                 return False
-            self._sendpacket(key, retry-1)
+            return self._sendpacket(key, retry-1)
         return True
 
     def turn_on(self) -> None:
