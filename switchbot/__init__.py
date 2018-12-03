@@ -35,7 +35,7 @@ class Switchbot:
         except bluepy.btle.BTLEException:
             _LOGGER.error("Failed to connect to switchmate", exc_info=True)
             return False
-        return True       
+        return True
 
     def _sendpacket(self, key, retry=2) -> bool:
         try:
