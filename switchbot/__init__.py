@@ -39,7 +39,7 @@ class Switchbot:
 
     def _sendpacket(self, key, retry=2) -> bool:
         try:
-            _LOGGER.debug("Connecting")
+            _LOGGER.debug("Prepare to send")
             hand_service = self._device.getServiceByUUID(UUID)
             hand = hand_service.getCharacteristics(HANDLE)[0]
             _LOGGER.debug("Sending command, %s", key)
