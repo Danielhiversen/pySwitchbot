@@ -7,6 +7,8 @@ import bluepy
 
 UUID = "cba20d00-224d-11e6-9fb8-0002a5d5c51b"
 HANDLE = "cba20002-224d-11e6-9fb8-0002a5d5c51b"
+
+PRESS_KEY = "570100"
 ON_KEY = "570101"
 OFF_KEY = "570102"
 
@@ -45,3 +47,7 @@ class Switchbot:
     def turn_off(self) -> None:
         """Turn device off."""
         return self._sendpacket(OFF_KEY)
+
+    def press(self) -> None:
+        """Press command to device."""
+        return self._sendpacket(PRESS_KEY)
