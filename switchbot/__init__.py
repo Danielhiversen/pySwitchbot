@@ -18,23 +18,37 @@ class Switchbot:
 
     def __init__(self, mac) -> None:
         self._mac = mac
+        self._device = None
+        self._connect()
+
+    def _connect(self) -> bool:
+        if self._device is not None:
+            _LOGGER.debug("Disconnecting")
+            try:
+                self._device.disconnect()
+            except bluepy.btle.BTLEException:
+                pass
+        try:
+            _LOGGER.debug("Connecting")
+            self._device = bluepy.btle.Peripheral(self._mac,
+                                                  bluepy.btle.ADDR_TYPE_RANDOM)
+         except bluepy.btle.BTLEException:
+            _LOGGER.error("Failed to connect to switchmate", exc_info=True)
+            return False
+        return True       
 
     def _sendpacket(self, key, retry=2) -> bool:
         try:
             _LOGGER.debug("Connecting")
-            device = bluepy.btle.Peripheral(self._mac,
-                                            bluepy.btle.ADDR_TYPE_RANDOM)
-            hand_service = device.getServiceByUUID(UUID)
+            hand_service = self._device.getServiceByUUID(UUID)
             hand = hand_service.getCharacteristics(HANDLE)[0]
             _LOGGER.debug("Sending command, %s", key)
             hand.write(binascii.a2b_hex(key))
-            _LOGGER.debug("Disconnecting")
-            device.disconnect()
         except bluepy.btle.BTLEException:
-            _LOGGER.error("Cannot connect to switchbot. Retrying", exc_info=True)
-            if retry < 1:
+            if retry < 1 or not self._connect():
                 _LOGGER.error("Cannot connect to switchbot.", exc_info=True)
                 return False
+            _LOGGER.error("Cannot connect to switchbot. Retrying", exc_info=True)
             return self._sendpacket(key, retry-1)
         return True
 
