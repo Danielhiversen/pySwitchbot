@@ -4,7 +4,7 @@ setup(
     name = 'PySwitchbot',
     packages = ['switchbot'],
     install_requires=['bluepy'],
-    version = '0.4',
+    version = '0.5',
     description = 'A library to communicate with Switchbot',
     author='Daniel Hoyer Iversen',
     url='https://github.com/Danielhiversen/pySwitchbot/',
