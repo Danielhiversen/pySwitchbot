@@ -50,7 +50,7 @@ class Switchbot:
             if retry < 1 or not self._connect():
                 _LOGGER.error("Cannot connect to switchbot.", exc_info=True)
                 return False
-            _LOGGER.error("Cannot connect to switchbot. Retrying", exc_info=True)
+            _LOGGER.warning("Cannot connect to switchbot. Retrying", exc_info=True)
             return self._sendpacket(key, retry-1)
         return True
 
