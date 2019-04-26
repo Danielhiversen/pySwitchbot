@@ -16,7 +16,7 @@ _LOGGER = logging.getLogger(__name__)
 
 
 class Switchbot:
-    """Representation of a Switchmate."""
+    """Representation of a Switchbot."""
 
     def __init__(self, mac) -> None:
         self._mac = mac
@@ -35,7 +35,7 @@ class Switchbot:
             self._device = bluepy.btle.Peripheral(self._mac,
                                                   bluepy.btle.ADDR_TYPE_RANDOM)
         except bluepy.btle.BTLEException:
-            _LOGGER.error("Failed to connect to switchmate", exc_info=True)
+            _LOGGER.error("Failed to connect to Switchbot", exc_info=True)
             return False
         return True
 
