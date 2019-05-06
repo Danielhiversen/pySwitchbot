@@ -40,6 +40,12 @@ class Switchbot:
         return True
 
     def _sendpacket(self, key, retry=2) -> bool:
+        if self._device is None:
+            if retry < 1 or not self._connect():
+                _LOGGER.error("Cannot connect to switchbot.", exc_info=True)
+                return False
+            return self._sendpacket(key, retry-1)
+
         try:
             _LOGGER.debug("Prepare to send")
             hand_service = self._device.getServiceByUUID(UUID)
