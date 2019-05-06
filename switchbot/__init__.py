@@ -21,7 +21,6 @@ class Switchbot:
     def __init__(self, mac) -> None:
         self._mac = mac
         self._device = None
-        self._connect()
 
     def _connect(self) -> bool:
         if self._device is not None:
@@ -40,11 +39,9 @@ class Switchbot:
         return True
 
     def _sendpacket(self, key, retry=2) -> bool:
-        if self._device is None:
-            if retry < 1 or not self._connect():
-                _LOGGER.error("Cannot connect to switchbot.", exc_info=True)
-                return False
-            return self._sendpacket(key, retry-1)
+        if self._device is None and not self._connect():
+            _LOGGER.error("Cannot connect to switchbot.")
+            return False
 
         try:
             _LOGGER.debug("Prepare to send")
