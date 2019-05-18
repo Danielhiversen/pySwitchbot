@@ -40,7 +40,7 @@ class Switchbot:
 
     def _sendpacket(self, key, retry=2) -> bool:
         if self._device is None and not self._connect():
-            _LOGGER.error("Cannot connect to switchbot.")
+            _LOGGER.error("Can not connect to switchbot.")
             return False
 
         try:
@@ -51,9 +51,9 @@ class Switchbot:
             hand.write(binascii.a2b_hex(key))
         except bluepy.btle.BTLEException:
             if retry < 1 or not self._connect():
-                _LOGGER.error("Cannot connect to switchbot.", exc_info=True)
+                _LOGGER.error("Can not connect to switchbot.", exc_info=True)
                 return False
-            _LOGGER.warning("Cannot connect to switchbot. Retrying")
+            _LOGGER.warning("Can not connect to switchbot. Retrying")
             return self._sendpacket(key, retry-1)
         return True
 
