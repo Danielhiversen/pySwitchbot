@@ -6,6 +6,9 @@ import logging
 
 import bluepy
 
+DEFAULT_RETRY_COUNT = 3
+DEFAULT_RETRY_TIMEOUT = .05
+
 UUID = "cba20d00-224d-11e6-9fb8-0002a5d5c51b"
 HANDLE = "cba20002-224d-11e6-9fb8-0002a5d5c51b"
 
@@ -19,9 +22,10 @@ _LOGGER = logging.getLogger(__name__)
 class Switchbot:
     """Representation of a Switchbot."""
 
-    def __init__(self, mac) -> None:
+    def __init__(self, mac, retry_count=DEFAULT_RETRY_COUNT) -> None:
         self._mac = mac
         self._device = None
+        self._retry_count = retry_count
 
     def _connect(self):
         if self._device is None:
@@ -31,7 +35,7 @@ class Switchbot:
                                                       bluepy.btle.ADDR_TYPE_RANDOM)
                 _LOGGER.debug("Connected to Switchbot.")
             except bluepy.btle.BTLEException:
-                _LOGGER.warning("Failed connecting to Switchbot.", exc_info=True)
+                _LOGGER.debug("Failed connecting to Switchbot.", exc_info=True)
                 self._device = None
                 raise
 
@@ -55,10 +59,10 @@ class Switchbot:
             _LOGGER.error("Sent command but didn't get a response from Switchbot confirming command was sent. "
                           "Please check the Switchbot.")
         else:
-            _LOGGER.debug("Successfully sent command to Switchbot.")
+            _LOGGER.info("Successfully sent command to Switchbot (MAC: %s).", self._mac)
         return write_result
 
-    def _sendcommand(self, key, retry=3) -> bool:
+    def _sendcommand(self, key, retry) -> bool:
         send_success = False
         try:
             self._connect()
@@ -72,18 +76,18 @@ class Switchbot:
                 _LOGGER.error("Switchbot communication failed. Stopping trying.", exc_info=True)
             else:
                 _LOGGER.warning("Cannot connect to Switchbot. Retrying (remaining: %d)...", retry)
-                time.sleep(.25)
+                time.sleep(DEFAULT_RETRY_TIMEOUT)
                 return self._sendcommand(key, retry - 1)
         return send_success
 
     def turn_on(self) -> None:
         """Turn device on."""
-        return self._sendcommand(ON_KEY)
+        return self._sendcommand(ON_KEY, self._retry_count)
 
     def turn_off(self) -> None:
         """Turn device off."""
-        return self._sendcommand(OFF_KEY)
+        return self._sendcommand(OFF_KEY, self._retry_count)
 
     def press(self) -> None:
         """Press command to device."""
-        return self._sendcommand(PRESS_KEY)
+        return self._sendcommand(PRESS_KEY, self._retry_count)
