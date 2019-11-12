@@ -1,10 +1,10 @@
 """Library to handle connection with Switchbot"""
+import time
 
 import binascii
 import logging
 
 import bluepy
-import time
 
 UUID = "cba20d00-224d-11e6-9fb8-0002a5d5c51b"
 HANDLE = "cba20002-224d-11e6-9fb8-0002a5d5c51b"
