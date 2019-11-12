@@ -7,7 +7,7 @@ import logging
 import bluepy
 
 DEFAULT_RETRY_COUNT = 3
-DEFAULT_RETRY_TIMEOUT = .05
+DEFAULT_RETRY_TIMEOUT = .1
 
 UUID = "cba20d00-224d-11e6-9fb8-0002a5d5c51b"
 HANDLE = "cba20002-224d-11e6-9fb8-0002a5d5c51b"
