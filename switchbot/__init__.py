@@ -7,7 +7,7 @@ import logging
 import bluepy
 
 DEFAULT_RETRY_COUNT = 3
-DEFAULT_RETRY_TIMEOUT = .1
+DEFAULT_RETRY_TIMEOUT = .2
 
 UUID = "cba20d00-224d-11e6-9fb8-0002a5d5c51b"
 HANDLE = "cba20002-224d-11e6-9fb8-0002a5d5c51b"
@@ -27,7 +27,7 @@ class Switchbot:
         self._device = None
         self._retry_count = retry_count
 
-    def _connect(self):
+    def _connect(self) -> None:
         if self._device is None:
             try:
                 _LOGGER.debug("Connecting to Switchbot...")
@@ -39,15 +39,16 @@ class Switchbot:
                 self._device = None
                 raise
 
-    def _disconnect(self):
-        if self._device is not None:
-            _LOGGER.debug("Disconnecting")
-            try:
-                self._device.disconnect()
-            except bluepy.btle.BTLEException:
-                _LOGGER.warning("Error disconnecting from Switchbot.", exc_info=True)
-            finally:
-                self._device = None
+    def _disconnect(self) -> None:
+        if self._device is None:
+            return
+        _LOGGER.debug("Disconnecting")
+        try:
+            self._device.disconnect()
+        except bluepy.btle.BTLEException:
+            _LOGGER.warning("Error disconnecting from Switchbot.", exc_info=True)
+        finally:
+            self._device = None
 
     def _writekey(self, key) -> bool:
         _LOGGER.debug("Prepare to send")
@@ -71,23 +72,23 @@ class Switchbot:
             _LOGGER.warning("Error talking to Switchbot.", exc_info=True)
         finally:
             self._disconnect()
-        if not send_success:
-            if retry < 1:
-                _LOGGER.error("Switchbot communication failed. Stopping trying.", exc_info=True)
-            else:
-                _LOGGER.warning("Cannot connect to Switchbot. Retrying (remaining: %d)...", retry)
-                time.sleep(DEFAULT_RETRY_TIMEOUT)
-                return self._sendcommand(key, retry - 1)
-        return send_success
+        if send_success:
+            return send_success
+        if retry < 1:
+            _LOGGER.error("Switchbot communication failed. Stopping trying.", exc_info=True)
+            return False
+        _LOGGER.warning("Cannot connect to Switchbot. Retrying (remaining: %d)...", retry)
+        time.sleep(DEFAULT_RETRY_TIMEOUT)
+        return self._sendcommand(key, retry - 1)
 
-    def turn_on(self) -> None:
+    def turn_on(self) -> bool:
         """Turn device on."""
         return self._sendcommand(ON_KEY, self._retry_count)
 
-    def turn_off(self) -> None:
+    def turn_off(self) -> bool:
         """Turn device off."""
         return self._sendcommand(OFF_KEY, self._retry_count)
 
-    def press(self) -> None:
+    def press(self) -> bool:
         """Press command to device."""
         return self._sendcommand(PRESS_KEY, self._retry_count)
