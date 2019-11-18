@@ -25,6 +25,7 @@ PRESS_KEY_SUFFIX = "00"
 
 _LOGGER = logging.getLogger(__name__)
 
+
 class Switchbot:
     """Representation of a Switchbot."""
 
@@ -72,7 +73,8 @@ class Switchbot:
             _LOGGER.info("Successfully sent command to Switchbot (MAC: %s).", self._mac)
         return write_result
 
-    def _passwordcrc(self, password) -> str:
+    @staticmethod
+    def _passwordcrc(password) -> str:
         if password is None or password == "":
             return None
         return '%x' % (binascii.crc32(password.encode('ascii')) & 0xffffffff)
