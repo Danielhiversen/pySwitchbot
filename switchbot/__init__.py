@@ -16,28 +16,37 @@ PRESS_KEY = "570100"
 ON_KEY = "570101"
 OFF_KEY = "570102"
 
-_LOGGER = logging.getLogger(__name__)
+KEY_PREFIX = "5701"
+KEY_PASSWORD_PREFIX = "5711"
 
+ON_KEY_SUFFIX = "01"
+OFF_KEY_SUFFIX = "02"
+PRESS_KEY_SUFFIX = "00"
+
+_LOGGER = logging.getLogger(__name__)
 
 class Switchbot:
     """Representation of a Switchbot."""
 
-    def __init__(self, mac, retry_count=DEFAULT_RETRY_COUNT) -> None:
+    def __init__(self, mac, retry_count=DEFAULT_RETRY_COUNT, password=None) -> None:
         self._mac = mac
         self._device = None
         self._retry_count = retry_count
+        _LOGGER.debug("Switchbot password:%s", password)
+        self._password_encoded = self._passwordcrc(password)
 
     def _connect(self) -> None:
-        if self._device is None:
-            try:
-                _LOGGER.debug("Connecting to Switchbot...")
-                self._device = bluepy.btle.Peripheral(self._mac,
-                                                      bluepy.btle.ADDR_TYPE_RANDOM)
-                _LOGGER.debug("Connected to Switchbot.")
-            except bluepy.btle.BTLEException:
-                _LOGGER.debug("Failed connecting to Switchbot.", exc_info=True)
-                self._device = None
-                raise
+        if self._device is not None:
+            return
+        try:
+            _LOGGER.debug("Connecting to Switchbot...")
+            self._device = bluepy.btle.Peripheral(self._mac,
+                                                  bluepy.btle.ADDR_TYPE_RANDOM)
+            _LOGGER.debug("Connected to Switchbot.")
+        except bluepy.btle.BTLEException:
+            _LOGGER.debug("Failed connecting to Switchbot.", exc_info=True)
+            self._device = None
+            raise
 
     def _disconnect(self) -> None:
         if self._device is None:
@@ -63,11 +72,31 @@ class Switchbot:
             _LOGGER.info("Successfully sent command to Switchbot (MAC: %s).", self._mac)
         return write_result
 
+    def _passwordcrc(self, password) -> str:
+        if password is None or password == "":
+            return None
+        return '%x' % (binascii.crc32(password.encode('ascii')) & 0xffffffff)
+
+    def _commandkey(self, key) -> str:
+        key = ""
+        key_suffix = PRESS_KEY_SUFFIX
+        if key == ON_KEY:
+            key_suffix = ON_KEY_SUFFIX
+        elif key == OFF_KEY:
+            key_suffix = OFF_KEY_SUFFIX
+        if self._password_encoded is not None:
+            key = KEY_PASSWORD_PREFIX + self._password_encoded + key_suffix
+        else:
+            key = KEY_PREFIX + key_suffix
+        return key
+
     def _sendcommand(self, key, retry) -> bool:
         send_success = False
+        command = self._commandkey(key)
+        _LOGGER.warning("Sending command to switchbot %s", command)
         try:
             self._connect()
-            send_success = self._writekey(key)
+            send_success = self._writekey(command)
         except bluepy.btle.BTLEException:
             _LOGGER.warning("Error talking to Switchbot.", exc_info=True)
         finally:
