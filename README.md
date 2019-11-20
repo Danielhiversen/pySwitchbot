@@ -15,6 +15,7 @@ This project is an initial fork from https://github.com/Danielhiversen/pySwitchb
 Hopefully this project will address some of the shortcomings in the official Switchbot [open API](https://github.com/OpenWonderLabs/python-host).
 
 The goal is to make this component work with [HomeAssistant](https://www.home-assistant.io/integrations/switchbot/) to give more flexibility to users of Switchbots without needing a SwitchBot hub.
+
 ![HomeAssistant Battery Attribute](HomeAssistant-batt.png?raw=true "HA Batt")
 
 Please raise any feature requests as issues. 
