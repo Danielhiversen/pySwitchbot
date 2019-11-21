@@ -28,16 +28,17 @@ class Switchbot:
         self._retry_count = retry_count
 
     def _connect(self) -> None:
-        if self._device is None:
-            try:
-                _LOGGER.debug("Connecting to Switchbot...")
-                self._device = bluepy.btle.Peripheral(self._mac,
-                                                      bluepy.btle.ADDR_TYPE_RANDOM)
-                _LOGGER.debug("Connected to Switchbot.")
-            except bluepy.btle.BTLEException:
-                _LOGGER.debug("Failed connecting to Switchbot.", exc_info=True)
-                self._device = None
-                raise
+        if self._device is not None:
+            return
+        try:
+            _LOGGER.debug("Connecting to Switchbot...")
+            self._device = bluepy.btle.Peripheral(self._mac,
+                                                  bluepy.btle.ADDR_TYPE_RANDOM)
+            _LOGGER.debug("Connected to Switchbot.")
+        except bluepy.btle.BTLEException:
+            _LOGGER.debug("Failed connecting to Switchbot.", exc_info=True)
+            self._device = None
+            raise
 
     def _disconnect(self) -> None:
         if self._device is None:
