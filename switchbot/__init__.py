@@ -33,7 +33,10 @@ class Switchbot:
         self._mac = mac
         self._device = None
         self._retry_count = retry_count
-        self._password_encoded = self._passwordcrc(password)
+        if password is None or password == "":
+            self._password_encoded = None
+        else:
+            self._password_encoded = '%x' % (binascii.crc32(password.encode('ascii')) & 0xffffffff)
 
     def _connect(self) -> None:
         if self._device is not None:
@@ -58,11 +61,6 @@ class Switchbot:
             _LOGGER.warning("Error disconnecting from Switchbot.", exc_info=True)
         finally:
             self._device = None
-
-    def _passwordcrc(self, password) -> str:
-        if password is None or password == "":
-            return None
-        return '%x' % (binascii.crc32(password.encode('ascii')) & 0xffffffff)
 
     def _commandkey(self, key) -> str:
         key = ""
