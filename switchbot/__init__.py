@@ -63,7 +63,6 @@ class Switchbot:
             self._device = None
 
     def _commandkey(self, key) -> str:
-        key = ""
         key_suffix = PRESS_KEY_SUFFIX
         if key == ON_KEY:
             key_suffix = ON_KEY_SUFFIX
