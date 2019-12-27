@@ -74,7 +74,7 @@ class Switchbot:
         finally:
             self._disconnect()
         if send_success:
-            return send_success
+            return True
         if retry < 1:
             _LOGGER.error("Switchbot communication failed. Stopping trying.", exc_info=True)
             return False
