@@ -12,7 +12,6 @@ DEFAULT_RETRY_TIMEOUT = .2
 UUID = "cba20d00-224d-11e6-9fb8-0002a5d5c51b"
 HANDLE = "cba20002-224d-11e6-9fb8-0002a5d5c51b"
 
-KEY_PREFIX = "5701"
 KEY_PASSWORD_PREFIX = "5711"
 
 PRESS_KEY = "570100"
@@ -88,7 +87,7 @@ class Switchbot:
     def _sendcommand(self, key, retry) -> bool:
         send_success = False
         command = self._commandkey(key)
-        _LOGGER.info("Sending command to switchbot %s", command)
+        _LOGGER.debug("Sending command to switchbot %s", command)
         try:
             self._connect()
             send_success = self._writekey(command)
