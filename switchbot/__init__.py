@@ -63,16 +63,14 @@ class Switchbot:
             self._device = None
 
     def _commandkey(self, key) -> str:
+        if self._password_encoded is None:
+            return key
         key_suffix = PRESS_KEY_SUFFIX
         if key == ON_KEY:
             key_suffix = ON_KEY_SUFFIX
         elif key == OFF_KEY:
             key_suffix = OFF_KEY_SUFFIX
-        if self._password_encoded is not None:
-            key = KEY_PASSWORD_PREFIX + self._password_encoded + key_suffix
-        else:
-            key = KEY_PREFIX + key_suffix
-        return key
+        return KEY_PASSWORD_PREFIX + self._password_encoded + key_suffix
 
     def _writekey(self, key) -> bool:
         _LOGGER.debug("Prepare to send")
