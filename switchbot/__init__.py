@@ -12,9 +12,15 @@ DEFAULT_RETRY_TIMEOUT = .2
 UUID = "cba20d00-224d-11e6-9fb8-0002a5d5c51b"
 HANDLE = "cba20002-224d-11e6-9fb8-0002a5d5c51b"
 
+KEY_PASSWORD_PREFIX = "5711"
+
 PRESS_KEY = "570100"
 ON_KEY = "570101"
 OFF_KEY = "570102"
+
+ON_KEY_SUFFIX = "01"
+OFF_KEY_SUFFIX = "02"
+PRESS_KEY_SUFFIX = "00"
 
 _LOGGER = logging.getLogger(__name__)
 
@@ -22,10 +28,14 @@ _LOGGER = logging.getLogger(__name__)
 class Switchbot:
     """Representation of a Switchbot."""
 
-    def __init__(self, mac, retry_count=DEFAULT_RETRY_COUNT) -> None:
+    def __init__(self, mac, retry_count=DEFAULT_RETRY_COUNT, password=None) -> None:
         self._mac = mac
         self._device = None
         self._retry_count = retry_count
+        if password is None or password == "":
+            self._password_encoded = None
+        else:
+            self._password_encoded = '%x' % (binascii.crc32(password.encode('ascii')) & 0xffffffff)
 
     def _connect(self) -> None:
         if self._device is not None:
@@ -51,6 +61,16 @@ class Switchbot:
         finally:
             self._device = None
 
+    def _commandkey(self, key) -> str:
+        if self._password_encoded is None:
+            return key
+        key_suffix = PRESS_KEY_SUFFIX
+        if key == ON_KEY:
+            key_suffix = ON_KEY_SUFFIX
+        elif key == OFF_KEY:
+            key_suffix = OFF_KEY_SUFFIX
+        return KEY_PASSWORD_PREFIX + self._password_encoded + key_suffix
+
     def _writekey(self, key) -> bool:
         _LOGGER.debug("Prepare to send")
         hand_service = self._device.getServiceByUUID(UUID)
@@ -66,9 +86,11 @@ class Switchbot:
 
     def _sendcommand(self, key, retry) -> bool:
         send_success = False
+        command = self._commandkey(key)
+        _LOGGER.debug("Sending command to switchbot %s", command)
         try:
             self._connect()
-            send_success = self._writekey(key)
+            send_success = self._writekey(command)
         except bluepy.btle.BTLEException:
             _LOGGER.warning("Error talking to Switchbot.", exc_info=True)
         finally:
