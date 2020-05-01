@@ -3,7 +3,7 @@ from setuptools import setup
 setup(
     name = 'PySwitchbot',
     packages = ['switchbot'],
-    install_requires=['bluepy'],
+    install_requires=['bluepy', 'func_timeout'],
     version = '0.8.0',
     description = 'A library to communicate with Switchbot',
     author='Daniel Hoyer Iversen',
