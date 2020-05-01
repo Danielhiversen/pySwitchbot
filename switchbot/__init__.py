@@ -5,6 +5,7 @@ import binascii
 import logging
 
 import bluepy
+from func_timeout import func_timeout, FunctionTimedOut
 
 DEFAULT_RETRY_COUNT = 3
 DEFAULT_RETRY_TIMEOUT = .2
@@ -42,9 +43,11 @@ class Switchbot:
             return
         try:
             _LOGGER.debug("Connecting to Switchbot...")
-            self._device = bluepy.btle.Peripheral(self._mac,
-                                                  bluepy.btle.ADDR_TYPE_RANDOM)
+            self._device = func_timeout(15, bluepy.btle.Peripheral,
+                                        args=(self._mac, bluepy.btle.ADDR_TYPE_RANDOM))
             _LOGGER.debug("Connected to Switchbot.")
+        except FunctionTimedOut:
+            _LOGGER.error("Failed connecting to Switchbot within 5 seconds and was terminated.")
         except bluepy.btle.BTLEException:
             _LOGGER.debug("Failed connecting to Switchbot.", exc_info=True)
             self._device = None
@@ -91,7 +94,7 @@ class Switchbot:
         try:
             self._connect()
             send_success = self._writekey(command)
-        except bluepy.btle.BTLEException:
+        except (bluepy.btle.BTLEException, FunctionTimedOut):
             _LOGGER.warning("Error talking to Switchbot.", exc_info=True)
         finally:
             self._disconnect()
