@@ -8,7 +8,7 @@ cache:
   directories:
   - "$HOME/.cache/pip"
 install:
-- pip install flake8 pylint bluepy
+- pip install flake8 pylint bluepy func_timeout
 language: python
 script:
 - flake8 switchbot --max-line-length=120
