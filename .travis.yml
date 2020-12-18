@@ -13,12 +13,3 @@ language: python
 script:
 - flake8 switchbot --max-line-length=120
 - pylint switchbot --max-line-length=120
-deploy:
-  provider: pypi
-  user: dahoiv
-  password:
-    secure: rHgPRZBJn9uu4NY8l1mO16jvjl6q8BcWIsB5vWI2sdnIa8iMDRx7aL5pz+rB0do9O1cnOk3PD5Hj5UFZBwUi2uSu7DUDBmWqo8cO6ho1kM+FL5upSDlmWmiIBBL1XQyQpcC6NMw4shs/M14UmNYa8w1shS+a4T8wwd6AHED1JplonoLlT6ZdWwVORLGAizXCkf1PA5dDbNeDmKJItrSY4Q7rtPFr2moIodNZ12yuNuNBxe3YVndTokZMSXcieMW4i2sJFeGjzL6xQpSoK3PnbXhJ2+ETOT6FDW12aGFB3stZY2du9g78Kxj3VIdqcEAVzxWcDa+zT36IbbpcOuhwVq7vini4EGYkfHf3C/Cz9DHJdmcxwzHjCTAHzvyhYSXStqbllQ9GF+tn5xaB+3fABvmi2rGpY5FdGHfTwWyo1uX2vkzmF4W0CSGy/23B9fiBFETz1KNgUhucFk7Etc8EqqSFiMEjpBkRLgAWyE7vN6zR9eBpWToDUEXw7jjVcQWSctCYE7xNvn8gVzpqGDkKeKtlvxt9wcMZrhyzfGxOnmm6N/OqjUtBu2jEygAg7Luba0lX0gNjm9RklhePhc0bvy6IvGGWXF1Sn7lBZah9dKN2drGxDunmlPacCvMISp3PkB6v53MDszdE+922XJ+xwTupFZN0J4FEHstWcBUqiuw=
-  on:
-    tags: true
-    distributions: sdist bdist_wheel
-    repo: Danielhiversen/pySwitchbot
