@@ -18,6 +18,11 @@ PRESS_KEY = "570100"
 ON_KEY = "570101"
 OFF_KEY = "570102"
 
+OPEN_KEY      = '570f450105ff00'  #570F4501010100
+CLOSE_KEY     = '570f450105ff64'  #570F4501010164
+POSITION_KEY  = '570F450105ff' # +actual_position ex: 570F450105ff32 for 50%
+STOP_KEY      = '570F45010001'
+
 ON_KEY_SUFFIX = "01"
 OFF_KEY_SUFFIX = "02"
 PRESS_KEY_SUFFIX = "00"
@@ -25,7 +30,7 @@ PRESS_KEY_SUFFIX = "00"
 _LOGGER = logging.getLogger(__name__)
 
 
-class Switchbot:
+class SwitchbotDevice:
     """Representation of a Switchbot."""
 
     def __init__(self, mac, retry_count=DEFAULT_RETRY_COUNT, password=None) -> None:
@@ -104,6 +109,9 @@ class Switchbot:
         time.sleep(DEFAULT_RETRY_TIMEOUT)
         return self._sendcommand(key, retry - 1)
 
+
+class Switchbot(SwitchbotDevice):
+
     def turn_on(self) -> bool:
         """Turn device on."""
         return self._sendcommand(ON_KEY, self._retry_count)
@@ -115,3 +123,24 @@ class Switchbot:
     def press(self) -> bool:
         """Press command to device."""
         return self._sendcommand(PRESS_KEY, self._retry_count)
+
+
+class SwitchbotCurtain(SwitchbotDevice):
+
+    def open(self) -> bool:
+        """Send open command."""
+        return self._sendcommand(OPEN_KEY, self._retry_count)
+
+    def close(self) -> bool:
+        """Send close command."""
+        return self._sendcommand(CLOSE_KEY, self._retry_count)
+
+    def stop(self) -> bool:
+        """Send stop command to device."""
+        return self._sendcommand(STOP_KEY, self._retry_count)
+
+    def set_position(self, position: int) -> bool:
+        """Send position command to device."""
+        hex_position = "%0.2X" % (100 - position) # curtain position in reverse mode
+        return self._sendcommand(POSITION_KEY + hex_position, self._retry_count)
+
