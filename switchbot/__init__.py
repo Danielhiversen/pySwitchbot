@@ -34,7 +34,8 @@ class SwitchbotDevice:
     # pylint: disable=too-few-public-methods
     """Base Representation of a Switchbot Device."""
 
-    def __init__(self, mac, retry_count=DEFAULT_RETRY_COUNT, password=None) -> None:
+    def __init__(self, mac, retry_count=DEFAULT_RETRY_COUNT, password=None, interface=None) -> None:
+        self._interface = interface
         self._mac = mac
         self._device = None
         self._retry_count = retry_count
@@ -49,7 +50,8 @@ class SwitchbotDevice:
         try:
             _LOGGER.debug("Connecting to Switchbot...")
             self._device = bluepy.btle.Peripheral(self._mac,
-                                                  bluepy.btle.ADDR_TYPE_RANDOM)
+                                                  bluepy.btle.ADDR_TYPE_RANDOM,
+                                                  self._interface)
             _LOGGER.debug("Connected to Switchbot.")
         except bluepy.btle.BTLEException:
             _LOGGER.debug("Failed connecting to Switchbot.", exc_info=True)
