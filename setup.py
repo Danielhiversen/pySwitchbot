@@ -8,6 +8,7 @@ setup(
     description = 'A library to communicate with Switchbot',
     author='Daniel Hjelseth Hoyer',
     url='https://github.com/Danielhiversen/pySwitchbot/',
+    license='MIT',
     classifiers=[
         'Development Status :: 3 - Alpha',
         'Environment :: Other Environment',
