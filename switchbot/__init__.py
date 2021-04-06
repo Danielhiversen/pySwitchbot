@@ -113,6 +113,7 @@ class SwitchbotDevice:
         return self._sendcommand(key, retry - 1)
 
     def get_mac(self) -> str:
+        """Returns the mac address of the device."""
         return self._mac
 
 
@@ -197,14 +198,16 @@ class SwitchbotCurtain(SwitchbotDevice):
 
 
 class ScanSwitchBotNotificationDelegate(bluepy.btle.DefaultDelegate):
+    """ScanDelegate for updating"""
 
     def __init__(self, device: SwitchbotCurtain):
         bluepy.btle.DefaultDelegate.__init__(self)
-        self._driver = device
+        self._driver: SwitchbotCurtain = device
 
-    def handleDiscovery(self, dev, isNewDev, isNewData):
-        if self._driver.get_mac().lower() == dev.addr.lower():
-            for (adtype, desc, value) in dev.getScanData():
+    def handleDiscovery(self, scanEntry, isNewDev, isNewData):
+        if self._driver.get_mac().lower() == scanEntry.addr.lower():
+            # pylint: disable=unused-argument
+            for (adtype, desc, value) in scanEntry.getScanData():
                 if adtype == 22:
                     barray = bytearray(value, 'ascii')
                     self._driver._battery_percent = int(barray[-6:-4], 16)
