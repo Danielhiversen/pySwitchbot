@@ -173,9 +173,17 @@ class SwitchbotCurtain(SwitchbotDevice):
     def update(self, scan_timeout=5) -> None:
         """Updates the current position, battery percent and light level of the device.
         Returns after the given timeout period in seconds."""
-        bluepy.btle.Scanner()\
-            .withDelegate(ScanSwitchBotNotificationDelegate(self))\
-            .scan(scan_timeout)
+        devices = bluepy.btle.Scanner().scan(scan_timeout)
+
+        for device in devices:
+            if self.get_mac().lower() == device.addr.lower():
+                # pylint: disable=unused-variable
+                for (adtype, desc, value) in device.getScanData():
+                    if adtype == 22:
+                        barray = bytearray(value, 'ascii')
+                        self._battery_percent = int(barray[-6:-4], 16)
+                        self._pos = int(barray[-4:-2], 16)
+                        self._light_level = int(barray[-2:], 16)
 
     def get_position(self) -> int:
         """Returns the current cached position (0-100), the actual position could vary.
@@ -195,21 +203,3 @@ class SwitchbotCurtain(SwitchbotDevice):
     def is_reversed(self) -> bool:
         """Returns True if the curtain open from left to right."""
         return self._reverse
-
-
-class ScanSwitchBotNotificationDelegate(bluepy.btle.DefaultDelegate):
-    """ScanDelegate for updating"""
-
-    def __init__(self, device: SwitchbotCurtain):
-        bluepy.btle.DefaultDelegate.__init__(self)
-        self._driver = device
-
-    def handleDiscovery(self, scanEntry, isNewDev, isNewData):
-        if self._driver.get_mac().lower() == scanEntry.addr.lower():
-            # pylint: disable=unused-argument
-            for (adtype, desc, value) in scanEntry.getScanData():
-                if adtype == 22:
-                    barray = bytearray(value, 'ascii')
-                    self._driver._battery_percent = int(barray[-6:-4], 16)
-                    self._driver._pos = int(barray[-4:-2], 16)
-                    self._driver._light_level = int(barray[-2:], 16)
