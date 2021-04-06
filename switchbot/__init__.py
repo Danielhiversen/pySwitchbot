@@ -202,7 +202,7 @@ class ScanSwitchBotNotificationDelegate(bluepy.btle.DefaultDelegate):
 
     def __init__(self, device: SwitchbotCurtain):
         bluepy.btle.DefaultDelegate.__init__(self)
-        self._driver: SwitchbotCurtain = device
+        self._driver = device
 
     def handleDiscovery(self, scanEntry, isNewDev, isNewData):
         if self._driver.get_mac().lower() == scanEntry.addr.lower():
