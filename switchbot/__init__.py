@@ -8,6 +8,7 @@ import bluepy
 
 DEFAULT_RETRY_COUNT = 3
 DEFAULT_RETRY_TIMEOUT = 0.2
+DEFAULT_TIME_BETWEEN_UPDATE_COMMAND = 10
 
 UUID = "cba20d00-224d-11e6-9fb8-0002a5d5c51b"
 HANDLE = "cba20002-224d-11e6-9fb8-0002a5d5c51b"
@@ -34,11 +35,14 @@ class SwitchbotDevice:
     # pylint: disable=too-few-public-methods
     """Base Representation of a Switchbot Device."""
 
-    def __init__(self, mac, retry_count=DEFAULT_RETRY_COUNT, password=None, interface=None) -> None:
+    def __init__(self, mac, retry_count=DEFAULT_RETRY_COUNT, password=None, interface=None,
+                 time_between_update_command=DEFAULT_TIME_BETWEEN_UPDATE_COMMAND) -> None:
         self._interface = interface
         self._mac = mac
         self._device = None
         self._retry_count = retry_count
+        self._time_between_update_command = time_between_update_command
+        self._last_time_command_send = time.time()
         if password is None or password == "":
             self._password_encoded = None
         else:
@@ -85,6 +89,7 @@ class SwitchbotDevice:
         hand = hand_service.getCharacteristics(HANDLE)[0]
         _LOGGER.debug("Sending command, %s", key)
         write_result = hand.write(binascii.a2b_hex(key), withResponse=True)
+        self._last_time_command_send = time.time()
         if not write_result:
             _LOGGER.error("Sent command but didn't get a response from Switchbot confirming command was sent. "
                           "Please check the Switchbot.")
@@ -115,6 +120,10 @@ class SwitchbotDevice:
     def get_mac(self) -> str:
         """Returns the mac address of the device."""
         return self._mac
+
+    def get_min_time_update(self):
+        """Returns the first time an update can be executed."""
+        return self._last_time_command_send + self._time_between_update_command
 
 
 class Switchbot(SwitchbotDevice):
@@ -173,6 +182,9 @@ class SwitchbotCurtain(SwitchbotDevice):
     def update(self, scan_timeout=5) -> None:
         """Updates the current position, battery percent and light level of the device.
         Returns after the given timeout period in seconds."""
+        waiting_time = self.get_min_time_update() - time.time()
+        if waiting_time > 0:
+            time.sleep(waiting_time)
         devices = bluepy.btle.Scanner().scan(scan_timeout)
 
         for device in devices:
