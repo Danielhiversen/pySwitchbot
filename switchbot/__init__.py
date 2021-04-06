@@ -112,6 +112,9 @@ class SwitchbotDevice:
         time.sleep(DEFAULT_RETRY_TIMEOUT)
         return self._sendcommand(key, retry - 1)
 
+    def get_mac(self) -> str:
+        return self._mac
+
 
 class Switchbot(SwitchbotDevice):
     """Representation of a Switchbot."""
@@ -132,12 +135,27 @@ class Switchbot(SwitchbotDevice):
 class SwitchbotCurtain(SwitchbotDevice):
     """Representation of a Switchbot Curtain."""
 
+    def __init__(self, *args, **kwargs):
+        """Constructor for a Switchbot Curtain.
+        The position of the curtain is saved is self._pos with 0 = open and 100 = closed.
+        This is independent of the calibration of the curtain bot (Open left to right/
+        Open right to left/Open from the middle).
+        The parameter 'reverse_mode' reverse these values, so that 0 = close and 100 = open.
+        This is useful, if the curtain is calibrated to 'Open left to right' and a slider is used to display."""
+        self._reverse = kwargs.pop('reverse_mode', False)
+        self._pos = 0
+        self._light_level = 0
+        self._battery_percent = 0
+        super().__init__(*args, **kwargs)
+
     def open(self) -> bool:
         """Send open command."""
+        self._pos = (100 if self._reverse else 0)
         return self._sendcommand(OPEN_KEY, self._retry_count)
 
     def close(self) -> bool:
         """Send close command."""
+        self._pos = (0 if self._reverse else 100)
         return self._sendcommand(CLOSE_KEY, self._retry_count)
 
     def stop(self) -> bool:
@@ -146,5 +164,49 @@ class SwitchbotCurtain(SwitchbotDevice):
 
     def set_position(self, position: int) -> bool:
         """Send position command (0-100) to device."""
-        hex_position = "%0.2X" % (100 - position)  # curtain position in reverse mode
+        position = ((100 - position) if self._reverse else position)
+        self._pos = position
+        hex_position = "%0.2X" % position
         return self._sendcommand(POSITION_KEY + hex_position, self._retry_count)
+
+    def update(self, scan_timeout=5) -> None:
+        """Updates the current position, battery percent and light level of the device.
+        Returns after the given timeout period in seconds."""
+        bluepy.btle.Scanner()\
+            .withDelegate(ScanSwitchBotNotificationDelegate(self))\
+            .scan(scan_timeout)
+
+    def get_position(self) -> int:
+        """Returns the current cached position (0-100), the actual position could vary.
+        To get the actual position call update() first."""
+        return self._pos
+
+    def get_battery_percent(self) -> int:
+        """Returns the current cached battery percent (0-100), the actual battery percent could vary.
+        To get the actual battery percent call update() first."""
+        return self._battery_percent
+
+    def get_light_level(self) -> int:
+        """Returns the current cached light level, the actual light level could vary.
+        To get the actual light level call update() first."""
+        return self._light_level
+
+    def is_reversed(self) -> bool:
+        """Returns True if the curtain open from left to right."""
+        return self._reverse
+
+
+class ScanSwitchBotNotificationDelegate(bluepy.btle.DefaultDelegate):
+
+    def __init__(self, device: SwitchbotCurtain):
+        bluepy.btle.DefaultDelegate.__init__(self)
+        self._driver = device
+
+    def handleDiscovery(self, dev, isNewDev, isNewData):
+        if self._driver.get_mac().lower() == dev.addr.lower():
+            for (adtype, desc, value) in dev.getScanData():
+                if adtype == 22:
+                    barray = bytearray(value, 'ascii')
+                    self._driver._battery_percent = int(barray[-6:-4], 16)
+                    self._driver._pos = int(barray[-4:-2], 16)
+                    self._driver._light_level = int(barray[-2:], 16)
