@@ -35,13 +35,13 @@ class SwitchbotDevice:
     # pylint: disable=too-few-public-methods
     """Base Representation of a Switchbot Device."""
 
-    def __init__(self, mac, retry_count=DEFAULT_RETRY_COUNT, password=None, interface=None,
-                 time_between_update_command=DEFAULT_TIME_BETWEEN_UPDATE_COMMAND) -> None:
+    def __init__(self, mac, password=None, interface=None, **kwargs) -> None:
         self._interface = interface
         self._mac = mac
         self._device = None
-        self._retry_count = retry_count
-        self._time_between_update_command = time_between_update_command
+        self._retry_count = kwargs.pop("retry_count", DEFAULT_RETRY_COUNT)
+        self._time_between_update_command = kwargs.pop("time_between_update_command",
+                                                       DEFAULT_TIME_BETWEEN_UPDATE_COMMAND)
         self._last_time_command_send = time.time()
         if password is None or password == "":
             self._password_encoded = None
