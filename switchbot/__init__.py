@@ -194,7 +194,8 @@ class SwitchbotCurtain(SwitchbotDevice):
                     if adtype == 22:
                         barray = bytearray(value, 'ascii')
                         self._battery_percent = int(barray[-6:-4], 16)
-                        self._pos = int(barray[-4:-2], 16)
+                        position = max(min(int(barray[-4:-2], 16), 100), 0)
+                        self._pos = ((100 - position) if self._reverse else position)
                         self._light_level = int(barray[-2:], 16)
 
     def get_position(self) -> int:
