@@ -145,7 +145,7 @@ class Switchbot(SwitchbotDevice):
 class SwitchbotCurtain(SwitchbotDevice):
     """Representation of a Switchbot Curtain."""
 
-    def __init__(self, *args, **kwargs):
+    def __init__(self, *args, **kwargs) -> None:
         """Constructor for a Switchbot Curtain.
         The position of the curtain is saved is self._pos with 0 = open and 100 = closed.
         This is independent of the calibration of the curtain bot (Open left to right/
