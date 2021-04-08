@@ -189,8 +189,7 @@ class SwitchbotCurtain(SwitchbotDevice):
 
         for device in devices:
             if self.get_mac().lower() == device.addr.lower():
-                # pylint: disable=unused-variable
-                for (adtype, desc, value) in device.getScanData():
+                for (adtype, _, value) in device.getScanData():
                     if adtype == 22:
                         barray = bytearray(value, 'ascii')
                         self._battery_percent = int(barray[-6:-4], 16)
