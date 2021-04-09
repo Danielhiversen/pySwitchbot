@@ -147,12 +147,13 @@ class SwitchbotCurtain(SwitchbotDevice):
 
     def __init__(self, *args, **kwargs) -> None:
         """Constructor for a Switchbot Curtain.
-        The position of the curtain is saved is self._pos with 0 = open and 100 = closed.
+        The position of the curtain is saved in self._pos with 0 = open and 100 = closed.
         This is independent of the calibration of the curtain bot (Open left to right/
         Open right to left/Open from the middle).
-        The parameter 'reverse_mode' reverse these values, so that 0 = close and 100 = open.
-        This is useful, if the curtain is calibrated to 'Open left to right' and a slider is used to display."""
-        self._reverse = kwargs.pop('reverse_mode', False)
+        The parameter 'reverse_mode' reverse these values, if 'reverse_mode' = True, position = 0 equals close
+        and position = 100 equals open. The parameter is default set to True so that
+        the definition of position is the same as in Home Assistant."""
+        self._reverse = kwargs.pop('reverse_mode', True)
         self._pos = 0
         self._light_level = 0
         self._battery_percent = 0
