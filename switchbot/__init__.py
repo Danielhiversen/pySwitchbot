@@ -32,12 +32,14 @@ _LOGGER = logging.getLogger(__name__)
 
 class SwitchbotDevice:
     # pylint: disable=too-few-public-methods
+    # pylint: disable=too-many-instance-attributes
     """Base Representation of a Switchbot Device."""
 
     def __init__(self, mac, password=None, interface=None, **kwargs) -> None:
         self._interface = interface
         self._mac = mac
         self._device = None
+        self._battery_percent = 0
         self._retry_count = kwargs.pop("retry_count", DEFAULT_RETRY_COUNT)
         self._time_between_update_command = kwargs.pop(
             "time_between_update_command", DEFAULT_TIME_BETWEEN_UPDATE_COMMAND
@@ -125,7 +127,7 @@ class SwitchbotDevice:
         time.sleep(DEFAULT_RETRY_TIMEOUT)
         return self._sendcommand(key, retry - 1)
 
-    def get_servicedata(self, retry=DEFAULT_RETRY_COUNT, scan_timeout=5) -> None:
+    def get_servicedata(self, retry=DEFAULT_RETRY_COUNT, scan_timeout=5) -> bytearray:
         """Get BTLE 16b Service Data,
         returns after the given timeout period in seconds."""
         waiting_time = self._time_between_update_command - time.time()
@@ -136,6 +138,11 @@ class SwitchbotDevice:
 
         except bluepy.btle.BTLEManagementError:
             _LOGGER.warning("Error updateing Switchbot.", exc_info=True)
+
+        if retry < 1:
+            _LOGGER.error("Switchbot update failed. Stopping trying.", exc_info=True)
+            return False
+        _LOGGER.warning("Cannot update Switchbot. Retrying (remaining: %d)...", retry)
 
         if not devices:
             time.sleep(DEFAULT_RETRY_TIMEOUT)
@@ -148,7 +155,9 @@ class SwitchbotDevice:
                         service_data = value[4:].encode()
                         service_data = binascii.unhexlify(service_data)
 
-        return service_data
+                        return service_data
+
+        return None
 
     def get_mac(self) -> str:
         """Returns the mac address of the device."""
@@ -163,17 +172,26 @@ class Switchbot(SwitchbotDevice):
     """Representation of a Switchbot."""
 
     def __init__(self, *args, **kwargs) -> None:
-        self._battery_percent = 0
-        self._is_on = 0
-        self._mode = 0
+        self._is_on = None
+        self._mode = None
         super().__init__(*args, **kwargs)
 
     def update(self, scan_timeout=5) -> None:
         """Updates the mode, battery percent and state of the device."""
         barray = self.get_servicedata(scan_timeout=scan_timeout)
 
-        self._mode = barray[1] & 0b10000000  # 128 switch or 0 toggle
-        self._is_on = barray[1] & 0b01000000  # 64 on or 0 for off
+        _mode = barray[1] & 0b10000000  # 128 switch or 0 toggle
+        if _mode != 0:
+            self._mode = "switch"
+        else:
+            self._mode = "toggle"
+
+        _is_on = barray[1] & 0b01000000  # 64 on or 0 for off
+        if _is_on != 0:
+            self._is_on = True
+        else:
+            self._is_on = False
+
         self._battery_percent = barray[2] & 0b01111111
 
     def turn_on(self) -> bool:
@@ -191,22 +209,13 @@ class Switchbot(SwitchbotDevice):
     def switch_mode(self) -> str:
         """Return Toggle or Switch from cache.
         Run update first."""
-        if self._mode != 0:
-            return "switch"
-        return "toggle"
+        return self._mode
 
     def is_on(self) -> bool:
         """Return switch state from cache.
         Run update first."""
-        if self._is_on != 0:
-            return True
-        return False
+        return self._is_on
 
-    def get_battery_percent(self) -> int:
-        """Returns the current cached battery percent (0-100),
-        the actual battery percent could vary.
-        To get the actual battery percent call update() first."""
-        return self._battery_percent
 
 class SwitchbotCurtain(SwitchbotDevice):
     """Representation of a Switchbot Curtain."""
@@ -223,7 +232,6 @@ class SwitchbotCurtain(SwitchbotDevice):
         self._reverse = kwargs.pop("reverse_mode", True)
         self._pos = 0
         self._light_level = 0
-        self._battery_percent = 0
         self._is_calibrated = 0
         super().__init__(*args, **kwargs)
 
@@ -262,12 +270,6 @@ class SwitchbotCurtain(SwitchbotDevice):
         """Returns the current cached position (0-100), the actual position could vary.
         To get the actual position call update() first."""
         return self._pos
-
-    def get_battery_percent(self) -> int:
-        """Returns the current cached battery percent (0-100),
-        the actual battery percent could vary.
-        To get the actual battery percent call update() first."""
-        return self._battery_percent
 
     def get_light_level(self) -> int:
         """Returns the current cached light level, the actual light level could vary.
