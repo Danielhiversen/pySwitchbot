@@ -167,6 +167,10 @@ class SwitchbotDevice:
         """Returns the first time an update can be executed."""
         return self._last_time_command_send + self._time_between_update_command
 
+    def get_battery_percent(self) -> int:
+        """Returns device battery level in percent."""
+        return self._battery_percent
+
 
 class Switchbot(SwitchbotDevice):
     """Representation of a Switchbot."""
