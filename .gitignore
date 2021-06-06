@@ -102,3 +102,6 @@ venv.bak/
 
 # mypy
 .mypy_cache/
+switchbot/.vs/slnx.sqlite
+switchbot/.vs/switchbot/v16/.suo
+switchbot/.vs/VSWorkspaceState.json
