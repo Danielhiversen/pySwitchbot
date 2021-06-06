@@ -200,7 +200,7 @@ class Switchbot(SwitchbotDevice):
             self._mode = "toggle"
 
         _is_on = barray[1] & 0b01000000  # 64 on or 0 for off
-        if _is_on != 0:
+        if _is_on == 0 and self._mode == "switch":
             self._is_on = True
         else:
             self._is_on = False
