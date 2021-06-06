@@ -130,6 +130,8 @@ class SwitchbotDevice:
     def get_servicedata(self, retry=DEFAULT_RETRY_COUNT, scan_timeout=5) -> bytearray:
         """Get BTLE 16b Service Data,
         returns after the given timeout period in seconds."""
+        devices = None
+
         waiting_time = self._time_between_update_command - time.time()
         if waiting_time > 0:
             time.sleep(waiting_time)
@@ -137,14 +139,18 @@ class SwitchbotDevice:
             devices = bluepy.btle.Scanner().scan(scan_timeout)
 
         except bluepy.btle.BTLEManagementError:
-            _LOGGER.warning("Error updateing Switchbot.", exc_info=True)
+            _LOGGER.warning("Error updating Switchbot.", exc_info=True)
 
-        if retry < 1:
-            _LOGGER.error("Switchbot update failed. Stopping trying.", exc_info=True)
-            return False
-        _LOGGER.warning("Cannot update Switchbot. Retrying (remaining: %d)...", retry)
+        if devices is None:
+            if retry < 1:
+                _LOGGER.error(
+                    "Switchbot update failed. Stopping trying.", exc_info=True
+                )
+                return None
 
-        if not devices:
+            _LOGGER.warning(
+                "Cannot update Switchbot. Retrying (remaining: %d)...", retry
+            )
             time.sleep(DEFAULT_RETRY_TIMEOUT)
             return self.get_servicedata(retry - 1, scan_timeout)
 
@@ -183,6 +189,9 @@ class Switchbot(SwitchbotDevice):
     def update(self, scan_timeout=5) -> None:
         """Updates the mode, battery percent and state of the device."""
         barray = self.get_servicedata(scan_timeout=scan_timeout)
+
+        if barray is None:
+            return
 
         _mode = barray[1] & 0b10000000  # 128 switch or 0 toggle
         if _mode != 0:
@@ -263,6 +272,9 @@ class SwitchbotCurtain(SwitchbotDevice):
     def update(self, scan_timeout=5) -> None:
         """Updates the current position, battery percent and light level of the device."""
         barray = self.get_servicedata(scan_timeout=scan_timeout)
+
+        if barray is None:
+            return
 
         self._is_calibrated = barray[1] & 0b01000000
         self._battery_percent = barray[2] & 0b01111111
