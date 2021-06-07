@@ -30,8 +30,54 @@ PRESS_KEY_SUFFIX = "00"
 _LOGGER = logging.getLogger(__name__)
 
 
+class SwitchbotDevices:
+    """Get all switchbots and their data."""
+
+    def __init__(self, **kwargs) -> None:
+        self._time_between_update_command = kwargs.pop(
+            "time_between_update_command", DEFAULT_TIME_BETWEEN_UPDATE_COMMAND
+        )
+
+    def get_all_switchbots(self, retry=DEFAULT_RETRY_COUNT, scan_timeout=5) -> dict:
+        """Find switchbot devices and their advertisement data,
+        returns after the given timeout period in seconds."""
+        devices = None
+        services_data = {}
+
+        waiting_time = self._time_between_update_command - time.time()
+        if waiting_time > 0:
+            time.sleep(waiting_time)
+        try:
+            devices = bluepy.btle.Scanner().scan(scan_timeout)
+
+        except bluepy.btle.BTLEManagementError:
+            _LOGGER.warning("Error updating Switchbot.", exc_info=True)
+
+        if devices is None:
+            if retry < 1:
+                _LOGGER.error(
+                    "Switchbot update failed. Stopping trying.", exc_info=True
+                )
+                return None
+
+            _LOGGER.warning(
+                "Cannot update Switchbot. Retrying (remaining: %d)...", retry
+            )
+            time.sleep(DEFAULT_RETRY_TIMEOUT)
+            return self.get_all_switchbots(retry - 1, scan_timeout)
+
+        for dev in devices:
+            for (adtype, desc, value) in dev.getScanData():
+                if value == UUID:
+                    services_data[dev.addr] = {}
+                    services_data[dev.addr]["rssi"] = dev.rssi
+                    for (adtype, desc, value) in dev.getScanData():
+                        services_data[dev.addr][desc] = value
+
+        return services_data
+
+
 class SwitchbotDevice:
-    # pylint: disable=too-few-public-methods
     # pylint: disable=too-many-instance-attributes
     """Base Representation of a Switchbot Device."""
 
