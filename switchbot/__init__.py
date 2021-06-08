@@ -120,7 +120,7 @@ class SwitchbotDevices:
                 _sensor_data = self._services_data[item]["16b Service Data"]
                 _sensor_data = binascii.unhexlify(_sensor_data.encode())
 
-                curtain_sensors[item]["calibrated"] = _sensor_data[1] & 0b01000000
+                curtain_sensors[item]["calibrated"] = bool(_sensor_data[1] & 0b01000000)
                 curtain_sensors[item]["battery_percent"] = _sensor_data[2] & 0b01111111
                 _position = max(min(_sensor_data[3] & 0b01111111, 100), 0)
                 curtain_sensors[item]["pos"] = (
