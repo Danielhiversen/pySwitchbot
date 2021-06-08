@@ -37,12 +37,13 @@ class SwitchbotDevices:
         self._time_between_update_command = kwargs.pop(
             "time_between_update_command", DEFAULT_TIME_BETWEEN_UPDATE_COMMAND
         )
+        self._services_data = {}
+        self._reverse = kwargs.pop("reverse_mode", True)
 
-    def get_all_switchbots(self, retry=DEFAULT_RETRY_COUNT, scan_timeout=5) -> dict:
+    def discover(self, retry=DEFAULT_RETRY_COUNT, scan_timeout=5) -> dict:
         """Find switchbot devices and their advertisement data,
         returns after the given timeout period in seconds."""
         devices = None
-        services_data = {}
 
         waiting_time = self._time_between_update_command - time.time()
         if waiting_time > 0:
@@ -64,17 +65,65 @@ class SwitchbotDevices:
                 "Cannot update Switchbot. Retrying (remaining: %d)...", retry
             )
             time.sleep(DEFAULT_RETRY_TIMEOUT)
-            return self.get_all_switchbots(retry - 1, scan_timeout)
+            return self.discover(retry - 1, scan_timeout)
 
         for dev in devices:
-            for (adtype, desc, value) in dev.getScanData():
-                if value == UUID:
-                    services_data[dev.addr] = {}
-                    services_data[dev.addr]["rssi"] = dev.rssi
+            for (_adt, _des, _val) in dev.getScanData():
+                if _val == UUID:
+                    self._services_data[dev.addr] = {}
+                    self._services_data[dev.addr]["rssi"] = dev.rssi
                     for (adtype, desc, value) in dev.getScanData():
-                        services_data[dev.addr][desc] = value
+                        if adtype == 22:
+                            self._services_data[dev.addr][desc] = value[4:]
+                            self._services_data[dev.addr]["model"] = binascii.unhexlify(
+                                value[4:6]
+                            ).decode()
+                        else:
+                            self._services_data[dev.addr][desc] = value
 
-        return services_data
+        return self._services_data
+
+    def all_bots(self) -> dict:
+        """Return all bots with their data."""
+        self.discover()
+        bot_sensors = {}
+
+        for item in self._services_data:
+            if self._services_data[item]["model"] == "H":
+                bot_sensors[item] = self._services_data[item]
+                _sensor_data = self._services_data[item]["16b Service Data"]
+                _sensor_data = binascii.unhexlify(_sensor_data.encode())
+                _mode = _sensor_data[1] & 0b10000000  # 128 switch or 0 toggle
+                if _mode != 0:
+                    bot_sensors[item]["mode"] = "switch"
+                else:
+                    bot_sensors[item]["mode"] = "toggle"
+
+                _is_on = _sensor_data[1] & 0b01000000  # 64 on or 0 for off
+                if _is_on == 0 and bot_sensors[item]["mode"] == "switch":
+                    bot_sensors[item]["state"] = True
+                else:
+                    bot_sensors[item]["state"] = False
+
+                bot_sensors[item]["battery_percent"] = _sensor_data[2] & 0b01111111
+
+    def all_curtains(self) -> dict:
+        """Return all bots with their data."""
+        self.discover()
+        curtain_sensors = {}
+
+        for item in self._services_data:
+            if self._services_data[item]["model"] == "c":
+                curtain_sensors[item] = self._services_data[item]
+                _sensor_data = self._services_data[item]["16b Service Data"]
+                _sensor_data = binascii.unhexlify(_sensor_data.encode())
+
+                curtain_sensors[item]['calibrated'] = _sensor_data[1] & 0b01000000
+                curtain_sensors[item]['battery_percent'] = _sensor_data[2] & 0b01111111
+                _position = max(min(_sensor_data[3] & 0b01111111, 100), 0)
+                curtain_sensors[item]['pos'] = (100 - _position) if self._reverse else _position
+                curtain_sensors[item]['light_level'] = (_sensor_data[4] >> 4) & 0b00001111  # light sensor level (1-10)
+
 
 
 class SwitchbotDevice:
