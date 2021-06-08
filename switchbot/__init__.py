@@ -107,6 +107,8 @@ class SwitchbotDevices:
 
                 bot_sensors[item]["battery_percent"] = _sensor_data[2] & 0b01111111
 
+        return bot_sensors
+
     def all_curtains(self) -> dict:
         """Return all bots with their data."""
         self.discover()
@@ -118,12 +120,17 @@ class SwitchbotDevices:
                 _sensor_data = self._services_data[item]["16b Service Data"]
                 _sensor_data = binascii.unhexlify(_sensor_data.encode())
 
-                curtain_sensors[item]['calibrated'] = _sensor_data[1] & 0b01000000
-                curtain_sensors[item]['battery_percent'] = _sensor_data[2] & 0b01111111
+                curtain_sensors[item]["calibrated"] = _sensor_data[1] & 0b01000000
+                curtain_sensors[item]["battery_percent"] = _sensor_data[2] & 0b01111111
                 _position = max(min(_sensor_data[3] & 0b01111111, 100), 0)
-                curtain_sensors[item]['pos'] = (100 - _position) if self._reverse else _position
-                curtain_sensors[item]['light_level'] = (_sensor_data[4] >> 4) & 0b00001111  # light sensor level (1-10)
+                curtain_sensors[item]["pos"] = (
+                    (100 - _position) if self._reverse else _position
+                )
+                curtain_sensors[item]["light_level"] = (
+                    _sensor_data[4] >> 4
+                ) & 0b00001111  # light sensor level (1-10)
 
+        return curtain_sensors
 
 
 class SwitchbotDevice:
