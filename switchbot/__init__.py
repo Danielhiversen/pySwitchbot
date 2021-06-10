@@ -71,30 +71,26 @@ class SwitchbotDevices:
             if dev.getValueText(7) == UUID:
                 dev_id = dev.addr.replace(":", "")
                 self._services_data[dev_id] = {}
-                self._services_data[dev_id]['mac_address'] = dev.addr
-                self._services_data[dev_id]['rssi'] = dev.rssi
+                self._services_data[dev_id]["mac_address"] = dev.addr
+                self._services_data[dev_id]["rssi"] = dev.rssi
                 for (adtype, desc, value) in dev.getScanData():
                     if adtype == 22:
                         _model = binascii.unhexlify(value[4:6]).decode()
                         if _model == "H":
                             self._services_data[dev_id][
-                                'serviceData'
+                                "serviceData"
                             ] = self._process_wohand(value[4:])
-                            self._services_data[dev_id]['serviceData'][
-                                'model'
-                            ] = _model
-                            self._services_data[dev_id]['serviceData'][
-                                'modelName'
+                            self._services_data[dev_id]["serviceData"]["model"] = _model
+                            self._services_data[dev_id]["serviceData"][
+                                "modelName"
                             ] = "WoHand"
                         if _model == "c":
                             self._services_data[dev_id][
-                                'serviceData'
+                                "serviceData"
                             ] = self._process_wocurtain(value[4:])
-                            self._services_data[dev_id]['serviceData'][
-                                'model'
-                            ] = _model
-                            self._services_data[dev_id]['serviceData'][
-                                'modelName'
+                            self._services_data[dev_id]["serviceData"]["model"] = _model
+                            self._services_data[dev_id]["serviceData"][
+                                "modelName"
                             ] = "WoCurtain"
                     else:
                         self._services_data[dev_id][desc] = value
@@ -106,15 +102,12 @@ class SwitchbotDevices:
         bot_sensors = {}
 
         _sensor_data = binascii.unhexlify(data.encode())
-        bot_sensors["modeSwitch"] = bool(
+        bot_sensors["switchMode"] = bool(
             _sensor_data[1] & 0b10000000
         )  # 128 switch or 0 press
 
         # 64 on or 0 for off
-        if bot_sensors["modeSwitch"]:
-            bot_sensors["state"] = False
-        else:
-            bot_sensors["state"] = bool(_sensor_data[1] & 0b01000000)
+        bot_sensors["state"] = bool(_sensor_data[1] & 0b01000000)
 
         bot_sensors["battery"] = _sensor_data[2] & 0b01111111
 
@@ -141,8 +134,8 @@ class SwitchbotDevices:
         _curtain_devices = {}
 
         for item in self._services_data:
-            if item['serviceData']['model'] == 'c':
-                _curtain_devices[item] = item
+            if self._services_data[item]["serviceData"]["model"] == "c":
+                _curtain_devices[item] = self._services_data[item]
 
         return _curtain_devices
 
@@ -151,10 +144,11 @@ class SwitchbotDevices:
         _bot_devices = {}
 
         for item in self._services_data:
-            if item['serviceData']['model'] == 'H':
-                _bot_devices[item] = item
+            if self._services_data[item]["serviceData"]["model"] == "H":
+                _bot_devices[item] = self._services_data[item]
 
         return _bot_devices
+
 
 class SwitchbotDevice:
     # pylint: disable=too-many-instance-attributes
