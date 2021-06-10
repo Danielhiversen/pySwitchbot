@@ -68,70 +68,81 @@ class SwitchbotDevices:
             return self.discover(retry - 1, scan_timeout)
 
         for dev in devices:
-            for (_adt, _des, _val) in dev.getScanData():
-                if _val == UUID:
-                    self._services_data[dev.addr] = {}
-                    self._services_data[dev.addr]["rssi"] = dev.rssi
-                    for (adtype, desc, value) in dev.getScanData():
-                        if adtype == 22:
-                            self._services_data[dev.addr][desc] = value[4:]
-                            self._services_data[dev.addr]["model"] = binascii.unhexlify(
-                                value[4:6]
-                            ).decode()
-                        else:
-                            self._services_data[dev.addr][desc] = value
+            if dev.getValueText(7) == UUID:
+                dev_id = dev.addr.replace(":", "")
+                self._services_data[dev_id] = {}
+                self._services_data[dev_id]["mac_address"] = dev.addr
+                self._services_data[dev_id]["rssi"] = dev.rssi
+                for (adtype, desc, value) in dev.getScanData():
+                    if adtype == 22:
+                        _model = binascii.unhexlify(value[4:6]).decode()
+                        if _model == "H":
+                            self._services_data[dev_id][
+                                "serviceData"
+                            ] = self._process_wohand(value[4:])
+                            self._services_data[dev_id]['serviceData'][
+                                'model'
+                            ] = _model
+                            self._services_data[dev_id]['serviceData'][
+                                'modelName'
+                            ] = "WoHand"
+                        if _model == "c":
+                            self._services_data[dev_id][
+                                'serviceData'
+                            ] = self._process_wocurtain(value[4:])
+                            self._services_data[dev_id]['serviceData'][
+                                'model'
+                            ] = _model
+                            self._services_data[dev_id]['serviceData'][
+                                'modelName'
+                            ] = "WoCurtain"
+                    else:
+                        self._services_data[dev_id][desc] = value
 
         return self._services_data
 
-    def all_bots(self) -> dict:
-        """Return all bots with their data."""
-        self.discover()
+    def _process_wohand(self, data) -> dict:
+        """Process woHand/Bot services data."""
         bot_sensors = {}
 
-        for item in self._services_data:
-            if self._services_data[item]["model"] == "H":
-                bot_sensors[item] = self._services_data[item]
-                _sensor_data = self._services_data[item]["16b Service Data"]
-                _sensor_data = binascii.unhexlify(_sensor_data.encode())
-                _mode = _sensor_data[1] & 0b10000000  # 128 switch or 0 toggle
-                if _mode != 0:
-                    bot_sensors[item]["mode"] = "switch"
-                else:
-                    bot_sensors[item]["mode"] = "toggle"
+        _sensor_data = binascii.unhexlify(data.encode())
+        bot_sensors["modeSwitch"] = bool(
+            _sensor_data[1] & 0b10000000
+        )  # 128 switch or 0 press
 
-                _is_on = _sensor_data[1] & 0b01000000  # 64 on or 0 for off
-                if _is_on == 0 and bot_sensors[item]["mode"] == "switch":
-                    bot_sensors[item]["state"] = True
-                else:
-                    bot_sensors[item]["state"] = False
+        _is_on = bool(_sensor_data[1] & 0b01000000)  # 64 on or 0 for off
+        if bool(_sensor_data[1] & 0b10000000):
+            bot_sensors["state"] = False
+        else:
+            bot_sensors["state"] = bool(_sensor_data[1] & 0b01000000)
 
-                bot_sensors[item]["battery_percent"] = _sensor_data[2] & 0b01111111
+        bot_sensors["battery"] = _sensor_data[2] & 0b01111111
 
         return bot_sensors
 
-    def all_curtains(self) -> dict:
-        """Return all bots with their data."""
-        self.discover()
+    def _process_wocurtain(self, data) -> dict:
+        """Process woCurtain/Curtain services data."""
         curtain_sensors = {}
 
-        for item in self._services_data:
-            if self._services_data[item]["model"] == "c":
-                curtain_sensors[item] = self._services_data[item]
-                _sensor_data = self._services_data[item]["16b Service Data"]
-                _sensor_data = binascii.unhexlify(_sensor_data.encode())
+        _sensor_data = binascii.unhexlify(data.encode())
 
-                curtain_sensors[item]["calibrated"] = bool(_sensor_data[1] & 0b01000000)
-                curtain_sensors[item]["battery_percent"] = _sensor_data[2] & 0b01111111
-                _position = max(min(_sensor_data[3] & 0b01111111, 100), 0)
-                curtain_sensors[item]["pos"] = (
-                    (100 - _position) if self._reverse else _position
-                )
-                curtain_sensors[item]["light_level"] = (
-                    _sensor_data[4] >> 4
-                ) & 0b00001111  # light sensor level (1-10)
+        curtain_sensors["calibration"] = bool(_sensor_data[1] & 0b01000000)
+        curtain_sensors["battery"] = _sensor_data[2] & 0b01111111
+        _position = max(min(_sensor_data[3] & 0b01111111, 100), 0)
+        curtain_sensors["position"] = (100 - _position) if self._reverse else _position
+        curtain_sensors["lightLevel"] = (
+            _sensor_data[4] >> 4
+        ) & 0b00001111  # light sensor level (1-10)
 
         return curtain_sensors
 
+    def get_curtains(self) -> dict:
+        """Return all WoCurtain/Curtains devices with services data."""
+        _curtains = [item for item in self._services_data if item['model'] == 'c']
+
+    def get_bots(self) -> dict:
+        """Return all WoHand/Bot devices with services data."""
+        _bots = [item for item in self._services_data if item['model'] == 'H']
 
 class SwitchbotDevice:
     # pylint: disable=too-many-instance-attributes
