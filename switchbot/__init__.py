@@ -71,14 +71,14 @@ class SwitchbotDevices:
             if dev.getValueText(7) == UUID:
                 dev_id = dev.addr.replace(":", "")
                 self._services_data[dev_id] = {}
-                self._services_data[dev_id]["mac_address"] = dev.addr
-                self._services_data[dev_id]["rssi"] = dev.rssi
+                self._services_data[dev_id]['mac_address'] = dev.addr
+                self._services_data[dev_id]['rssi'] = dev.rssi
                 for (adtype, desc, value) in dev.getScanData():
                     if adtype == 22:
                         _model = binascii.unhexlify(value[4:6]).decode()
                         if _model == "H":
                             self._services_data[dev_id][
-                                "serviceData"
+                                'serviceData'
                             ] = self._process_wohand(value[4:])
                             self._services_data[dev_id]['serviceData'][
                                 'model'
@@ -111,7 +111,7 @@ class SwitchbotDevices:
         )  # 128 switch or 0 press
 
         # 64 on or 0 for off
-        if not bool(_sensor_data[1] & 0b10000000):
+        if bot_sensors["modeSwitch"]:
             bot_sensors["state"] = False
         else:
             bot_sensors["state"] = bool(_sensor_data[1] & 0b01000000)
@@ -138,11 +138,23 @@ class SwitchbotDevices:
 
     def get_curtains(self) -> dict:
         """Return all WoCurtain/Curtains devices with services data."""
-        _curtains = [item for item in self._services_data if item['model'] == 'c']
+        _curtain_devices = {}
+
+        for item in self._services_data:
+            if item['serviceData']['model'] == 'c':
+                _curtain_devices[item] = item
+
+        return _curtain_devices
 
     def get_bots(self) -> dict:
         """Return all WoHand/Bot devices with services data."""
-        _bots = [item for item in self._services_data if item['model'] == 'H']
+        _bot_devices = {}
+
+        for item in self._services_data:
+            if item['serviceData']['model'] == 'H':
+                _bot_devices[item] = item
+
+        return _bot_devices
 
 class SwitchbotDevice:
     # pylint: disable=too-many-instance-attributes
