@@ -39,6 +39,7 @@ class SwitchbotDevices:
         )
         self._services_data = {}
         self._reverse = kwargs.pop("reverse_mode", True)
+        self._invert_switch = kwargs.pop("invert_switch", False)
 
     def discover(self, retry=DEFAULT_RETRY_COUNT, scan_timeout=5) -> dict:
         """Find switchbot devices and their advertisement data,
@@ -99,35 +100,39 @@ class SwitchbotDevices:
 
     def _process_wohand(self, data) -> dict:
         """Process woHand/Bot services data."""
-        bot_sensors = {}
+        _bot_data = {}
 
         _sensor_data = binascii.unhexlify(data.encode())
-        bot_sensors["switchMode"] = bool(
+        _bot_data["switchMode"] = bool(
             _sensor_data[1] & 0b10000000
-        )  # 128 switch or 0 press
+        )  # 128 switch or 0 press.
 
-        # 64 on or 0 for off
-        bot_sensors["state"] = bool(_sensor_data[1] & 0b01000000)
+        # 64 off or 0 for on, if not inversed in app.
+        if self._invert_switch:
+            _bot_data["isOn"] = not bool(_sensor_data[1] & 0b01000000)
 
-        bot_sensors["battery"] = _sensor_data[2] & 0b01111111
+        else:
+            _bot_data["isOn"] = bool(_sensor_data[1] & 0b01000000)
 
-        return bot_sensors
+        _bot_data["battery"] = _sensor_data[2] & 0b01111111
+
+        return _bot_data
 
     def _process_wocurtain(self, data) -> dict:
         """Process woCurtain/Curtain services data."""
-        curtain_sensors = {}
+        _curtain_data = {}
 
         _sensor_data = binascii.unhexlify(data.encode())
 
-        curtain_sensors["calibration"] = bool(_sensor_data[1] & 0b01000000)
-        curtain_sensors["battery"] = _sensor_data[2] & 0b01111111
+        _curtain_data["calibration"] = bool(_sensor_data[1] & 0b01000000)
+        _curtain_data["battery"] = _sensor_data[2] & 0b01111111
         _position = max(min(_sensor_data[3] & 0b01111111, 100), 0)
-        curtain_sensors["position"] = (100 - _position) if self._reverse else _position
-        curtain_sensors["lightLevel"] = (
+        _curtain_data["position"] = (100 - _position) if self._reverse else _position
+        _curtain_data["lightLevel"] = (
             _sensor_data[4] >> 4
         ) & 0b00001111  # light sensor level (1-10)
 
-        return curtain_sensors
+        return _curtain_data
 
     def get_curtains(self) -> dict:
         """Return all WoCurtain/Curtains devices with services data."""
