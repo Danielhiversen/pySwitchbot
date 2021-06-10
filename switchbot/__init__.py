@@ -110,8 +110,8 @@ class SwitchbotDevices:
             _sensor_data[1] & 0b10000000
         )  # 128 switch or 0 press
 
-        _is_on = bool(_sensor_data[1] & 0b01000000)  # 64 on or 0 for off
-        if bool(_sensor_data[1] & 0b10000000):
+        # 64 on or 0 for off
+        if not bool(_sensor_data[1] & 0b10000000):
             bot_sensors["state"] = False
         else:
             bot_sensors["state"] = bool(_sensor_data[1] & 0b01000000)
