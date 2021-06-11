@@ -94,6 +94,14 @@ class SwitchbotDevices:
                             self._services_data[dev_id]["serviceData"][
                                 "modelName"
                             ] = "WoCurtain"
+                        if _model == "T":
+                            self._services_data[dev_id][
+                                "serviceData"
+                            ] = self._process_wocurtain(value[4:])
+                            self._services_data[dev_id]["serviceData"]["model"] = _model
+                            self._services_data[dev_id]["serviceData"][
+                                "modelName"
+                            ] = "WoSensorTH"
                     else:
                         self._services_data[dev_id][desc] = value
 
@@ -134,6 +142,27 @@ class SwitchbotDevices:
         ) & 0b00001111  # light sensor level (1-10)
 
         return _curtain_data
+
+    # pylint: disable=R0201
+    def _process_wosensorth(self, data) -> dict:
+        """Process woSensorTH/Temp sensor services data."""
+        _wosensorth_data = {}
+
+        _sensor_data = binascii.unhexlify(data.encode())
+
+        _temp_sign = _sensor_data[4] & 0b10000000
+        _temp_c = _temp_sign * ((_sensor_data[4] & 0b01111111) + (_sensor_data[3] / 10))
+        _temp_f = (_temp_c * 9 / 5) + 32
+        _temp_f = (_temp_f * 10) / 10
+
+        _wosensorth_data["temp"]["c"] = _temp_c
+        _wosensorth_data["temp"]["f"] = _temp_f
+
+        _wosensorth_data["fahrenheit"] = bool(_sensor_data[5] & 0b10000000)
+        _wosensorth_data["humidity"] = _sensor_data[5] & 0b01111111
+        _wosensorth_data["battery"] = _sensor_data[2] & 0b01111111
+
+        return _wosensorth_data
 
     def get_curtains(self) -> dict:
         """Return all WoCurtain/Curtains devices with services data."""
