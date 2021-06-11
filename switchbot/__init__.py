@@ -39,8 +39,6 @@ class SwitchbotDevices:
         )
         self._services_data = {}
         self._reverse = kwargs.pop("reverse_mode", True)
-        self._invert_switch = kwargs.pop("invert_switch", False)
-        self._mac = kwargs.pop("mac", False)
 
     def discover(self, retry=DEFAULT_RETRY_COUNT, scan_timeout=5) -> dict:
         """Find switchbot devices and their advertisement data,
@@ -107,6 +105,7 @@ class SwitchbotDevices:
 
         return self._services_data
 
+    # pylint: disable=R0201
     def _process_wohand(self, data) -> dict:
         """Process woHand/Bot services data."""
         _bot_data = {}
@@ -117,11 +116,11 @@ class SwitchbotDevices:
         )  # 128 switch or 0 press.
 
         # 64 off or 0 for on, if not inversed in app.
-        if self._invert_switch:
-            _bot_data["isOn"] = bool(_sensor_data[1] & 0b01000000)
+        if _bot_data["switchMode"]:
+            _bot_data["isOn"] = not bool(_sensor_data[1] & 0b01000000)
 
         else:
-            _bot_data["isOn"] = not bool(_sensor_data[1] & 0b01000000)
+            _bot_data["isOn"] = False
 
         _bot_data["battery"] = _sensor_data[2] & 0b01111111
 
@@ -184,12 +183,12 @@ class SwitchbotDevices:
 
         return _bot_devices
 
-    def get_device(self) -> dict:
+    def get_device(self, mac) -> dict:
         """Return data for specific device."""
         _switchbot_device = {}
 
         for item in self._services_data:
-            if self._services_data[item]["mac_address"] == self._mac:
+            if self._services_data[item]["mac_address"] == mac:
                 _switchbot_device[item] = self._services_data[item]
 
         return _switchbot_device
