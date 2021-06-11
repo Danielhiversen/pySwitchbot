@@ -40,6 +40,7 @@ class SwitchbotDevices:
         self._services_data = {}
         self._reverse = kwargs.pop("reverse_mode", True)
         self._invert_switch = kwargs.pop("invert_switch", False)
+        self._mac = kwargs.pop("mac", False)
 
     def discover(self, retry=DEFAULT_RETRY_COUNT, scan_timeout=5) -> dict:
         """Find switchbot devices and their advertisement data,
@@ -109,10 +110,10 @@ class SwitchbotDevices:
 
         # 64 off or 0 for on, if not inversed in app.
         if self._invert_switch:
-            _bot_data["isOn"] = not bool(_sensor_data[1] & 0b01000000)
+            _bot_data["isOn"] = bool(_sensor_data[1] & 0b01000000)
 
         else:
-            _bot_data["isOn"] = bool(_sensor_data[1] & 0b01000000)
+            _bot_data["isOn"] = not bool(_sensor_data[1] & 0b01000000)
 
         _bot_data["battery"] = _sensor_data[2] & 0b01111111
 
@@ -153,6 +154,16 @@ class SwitchbotDevices:
                 _bot_devices[item] = self._services_data[item]
 
         return _bot_devices
+
+    def get_device(self) -> dict:
+        """Return data for specific device."""
+        _switchbot_device = {}
+
+        for item in self._services_data:
+            if self._services_data[item]["mac_address"] == self._mac:
+                _switchbot_device[item] = self._services_data[item]
+
+        return _switchbot_device
 
 
 class SwitchbotDevice:
@@ -369,7 +380,7 @@ class SwitchbotCurtain(SwitchbotDevice):
         self._reverse = kwargs.pop("reverse_mode", True)
         self._pos = 0
         self._light_level = 0
-        self._is_calibrated = 0
+        self._is_calibrated = None
         super().__init__(*args, **kwargs)
 
     def open(self) -> bool:
@@ -400,7 +411,7 @@ class SwitchbotCurtain(SwitchbotDevice):
         if barray is None:
             return
 
-        self._is_calibrated = barray[1] & 0b01000000
+        self._is_calibrated = bool(barray[1] & 0b01000000)
         self._battery_percent = barray[2] & 0b01111111
         position = max(min(barray[3] & 0b01111111, 100), 0)
         self._pos = (100 - position) if self._reverse else position
@@ -419,3 +430,7 @@ class SwitchbotCurtain(SwitchbotDevice):
     def is_reversed(self) -> bool:
         """Returns True if the curtain open from left to right."""
         return self._reverse
+
+    def is_calibrated(self) -> bool:
+        """Returns True curtain is calibrated."""
+        return self._is_calibrated
