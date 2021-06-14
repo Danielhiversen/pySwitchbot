@@ -45,9 +45,6 @@ class SwitchbotDevices:
         returns after the given timeout period in seconds."""
         devices = None
 
-        waiting_time = self._time_between_update_command - time.time()
-        if waiting_time > 0:
-            time.sleep(waiting_time)
         try:
             devices = bluepy.btle.Scanner().scan(scan_timeout)
 
