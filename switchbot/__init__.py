@@ -277,7 +277,7 @@ class SwitchbotDevice:
 
         for item in self._all_services_data:
             if self._all_services_data[item]["mac_address"] == mac:
-                self._switchbot_device_data[item] = self._all_services_data[item]
+                self._switchbot_device_data = self._all_services_data[item]
 
         return self._switchbot_device_data
 
