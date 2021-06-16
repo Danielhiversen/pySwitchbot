@@ -1,6 +1,7 @@
 """Library to handle connection with Switchbot."""
 import binascii
 import logging
+import threading
 import time
 
 import bluepy
@@ -27,6 +28,7 @@ OFF_KEY_SUFFIX = "02"
 PRESS_KEY_SUFFIX = "00"
 
 _LOGGER = logging.getLogger(__name__)
+CONNECT_LOCK = threading.Lock()
 
 
 def _process_wohand(data) -> dict:
@@ -161,8 +163,9 @@ class SwitchbotDevice:
         command = self._commandkey(key)
         _LOGGER.debug("Sending command to switchbot %s", command)
         try:
-            self._connect()
-            send_success = self._writekey(command)
+            with CONNECT_LOCK:
+                self._connect()
+                send_success = self._writekey(command)
         except bluepy.btle.BTLEException:
             _LOGGER.warning("Error talking to Switchbot", exc_info=True)
         finally:
@@ -394,13 +397,3 @@ class SwitchbotCurtain(SwitchbotDevice):
         if not self._switchbot_device_data:
             self.update()
         return self._switchbot_device_data["data"]["calibration"]
-
-
-class SwitchbotDevices(Switchbot, SwitchbotCurtain):
-    """Superclass for all switchbot device types."""
-
-    def __init__(self, *args, **kwargs) -> None:
-        """HA coordinator switchbot class constructor."""
-        super().__init__(*args, **kwargs)
-        Switchbot().__init__(self)
-        SwitchbotCurtain().__init__(self)
