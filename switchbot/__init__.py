@@ -287,8 +287,9 @@ class Switchbot(SwitchbotDevice):
 
     def __init__(self, *args, **kwargs) -> None:
         """Switchbot Bot/WoHand constructor."""
-        self._inverse = kwargs.pop("inverse_mode", False)
         super().__init__(*args, **kwargs)
+        self._inverse = kwargs.pop("inverse_mode", False)
+        self._switchbot_device_data = {}
 
     def update(self, scan_timeout=5) -> None:
         """Update mode, battery percent and state of device."""
@@ -342,8 +343,9 @@ class SwitchbotCurtain(SwitchbotDevice):
         # and position = 100 equals open. The parameter is default set to True so that
         # the definition of position is the same as in Home Assistant.
 
-        self._reverse = kwargs.pop("reverse_mode", True)
         super().__init__(*args, **kwargs)
+        self._reverse = kwargs.pop("reverse_mode", True)
+        self._switchbot_device_data = {}
 
     def open(self) -> bool:
         """Send open command."""
