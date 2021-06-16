@@ -289,13 +289,12 @@ class Switchbot(SwitchbotDevice):
         """Switchbot Bot/WoHand constructor."""
         super().__init__(*args, **kwargs)
         self._inverse = kwargs.pop("inverse_mode", False)
-        self._switchbot_device_data = {}
 
     def update(self, scan_timeout=5) -> None:
         """Update mode, battery percent and state of device."""
-        self._switchbot_device_data = self.discover(scan_timeout=scan_timeout)
+        _success = self.discover(scan_timeout=scan_timeout)
 
-        if self._switchbot_device_data:
+        if _success:
             self.get_device_data(self._mac)
 
     def turn_on(self) -> bool:
@@ -345,7 +344,6 @@ class SwitchbotCurtain(SwitchbotDevice):
 
         super().__init__(*args, **kwargs)
         self._reverse = kwargs.pop("reverse_mode", True)
-        self._switchbot_device_data = {}
 
     def open(self) -> bool:
         """Send open command."""
@@ -367,9 +365,9 @@ class SwitchbotCurtain(SwitchbotDevice):
 
     def update(self, scan_timeout=5) -> None:
         """Update position, battery percent and light level of device."""
-        self._switchbot_device_data = self.discover(scan_timeout=scan_timeout)
+        _success = self.discover(scan_timeout=scan_timeout)
 
-        if self._switchbot_device_data:
+        if _success:
             self.get_device_data(self._mac)
 
     def get_position(self) -> int:
@@ -401,7 +399,8 @@ class SwitchbotCurtain(SwitchbotDevice):
 class SwitchbotDevices(Switchbot, SwitchbotCurtain):
     """Superclass for all switchbot device types."""
 
-    def __init__(self, mac, *args, **kwargs) -> None:
+    def __init__(self, *args, **kwargs) -> None:
         """HA coordinator switchbot class constructor."""
         super().__init__(*args, **kwargs)
-        self._mac = mac
+        Switchbot().__init__(self)
+        SwitchbotCurtain().__init__(self)
