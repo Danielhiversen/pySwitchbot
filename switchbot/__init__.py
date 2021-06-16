@@ -181,7 +181,7 @@ class SwitchbotDevice:
         time.sleep(DEFAULT_RETRY_TIMEOUT)
         return self._sendcommand(key, retry - 1)
 
-    def discover(self, retry=DEFAULT_RETRY_COUNT, scan_timeout=5) -> dict:
+    def discover(self, retry=DEFAULT_RETRY_COUNT, scan_timeout=5) -> dict | None:
         """Find switchbot devices and their advertisement data."""
 
         devices = None
