@@ -1,4 +1,6 @@
 """Library to handle connection with Switchbot."""
+from __future__ import annotations
+
 import binascii
 import logging
 import threading
@@ -90,15 +92,116 @@ def _process_wosensorth(data) -> dict:
     return _wosensorth_data
 
 
+class GetSwitchbotDevices:
+    """Scan for all Switchbot devices and return by type."""
+
+    def __init__(self) -> None:
+        """Get switchbot devices class constructor."""
+        self._all_services_data = {}
+        self._switchbot_device_data = {}
+
+    def discover(self, retry=DEFAULT_RETRY_COUNT, scan_timeout=5) -> dict | None:
+        """Find switchbot devices and their advertisement data."""
+
+        devices = None
+
+        try:
+            devices = bluepy.btle.Scanner().scan(scan_timeout)
+
+        except bluepy.btle.BTLEManagementError:
+            _LOGGER.error("Error scanning for switchbot devices", exc_info=True)
+
+        if devices is None:
+            if retry < 1:
+                _LOGGER.error(
+                    "Scanning for Switchbot devices failed. Stop trying", exc_info=True
+                )
+                return None
+
+            _LOGGER.warning(
+                "Error scanning for Switchbot devices. Retrying (remaining: %d)",
+                retry,
+            )
+            time.sleep(DEFAULT_RETRY_TIMEOUT)
+            return self.discover(retry - 1, scan_timeout)
+
+        for dev in devices:
+            if dev.getValueText(7) == UUID:
+                dev_id = dev.addr.replace(":", "")
+                self._all_services_data[dev_id] = {}
+                self._all_services_data[dev_id]["mac_address"] = dev.addr
+                for (adtype, desc, value) in dev.getScanData():
+                    if adtype == 22:
+                        _model = binascii.unhexlify(value[4:6]).decode()
+                        if _model == "H":
+                            self._all_services_data[dev_id]["data"] = _process_wohand(
+                                value[4:]
+                            )
+                            self._all_services_data[dev_id]["data"]["rssi"] = dev.rssi
+                            self._all_services_data[dev_id]["model"] = _model
+                            self._all_services_data[dev_id]["modelName"] = "WoHand"
+                        elif _model == "c":
+                            self._all_services_data[dev_id][
+                                "data"
+                            ] = _process_wocurtain(value[4:])
+                            self._all_services_data[dev_id]["data"]["rssi"] = dev.rssi
+                            self._all_services_data[dev_id]["model"] = _model
+                            self._all_services_data[dev_id]["modelName"] = "WoCurtain"
+                        elif _model == "T":
+                            self._all_services_data[dev_id][
+                                "data"
+                            ] = _process_wosensorth(value[4:])
+                            self._all_services_data[dev_id]["data"]["rssi"] = dev.rssi
+                            self._all_services_data[dev_id]["model"] = _model
+                            self._all_services_data[dev_id]["modelName"] = "WoSensorTH"
+
+                        else:
+                            continue
+                    else:
+                        self._all_services_data[dev_id][desc] = value
+
+        return self._all_services_data
+
+    def get_curtains(self) -> dict:
+        """Return all WoCurtain/Curtains devices with services data."""
+        _curtain_devices = {}
+
+        for item in self._all_services_data:
+            if self._all_services_data[item]["data"]["model"] == "c":
+                _curtain_devices[item] = self._all_services_data[item]
+
+        return _curtain_devices
+
+    def get_bots(self) -> dict:
+        """Return all WoHand/Bot devices with services data."""
+        _bot_devices = {}
+
+        for item in self._all_services_data:
+            if self._all_services_data[item]["data"]["model"] == "H":
+                _bot_devices[item] = self._all_services_data[item]
+
+        return _bot_devices
+
+    def get_device_data(self, mac) -> dict:
+        """Return data for specific device."""
+        if not self._all_services_data:
+            self.discover()
+
+        for item in self._all_services_data:
+            if self._all_services_data[item]["mac_address"] == mac:
+                self._switchbot_device_data = self._all_services_data[item]
+
+        return self._switchbot_device_data
+
+
 class SwitchbotDevice:
     """Base Representation of a Switchbot Device."""
 
-    def __init__(self, mac=None, password=None, interface=None, **kwargs) -> None:
+    def __init__(self, mac, password=None, interface=None, **kwargs) -> None:
         """Switchbot base class constructor."""
         self._interface = interface
         self._mac = mac
         self._device = None
-        self._all_services_data = {}
         self._switchbot_device_data = {}
         self._retry_count = kwargs.pop("retry_count", DEFAULT_RETRY_COUNT)
         if password is None or password == "":
@@ -181,7 +284,20 @@ class SwitchbotDevice:
         time.sleep(DEFAULT_RETRY_TIMEOUT)
         return self._sendcommand(key, retry - 1)
 
-    def discover(self, retry=DEFAULT_RETRY_COUNT, scan_timeout=5) -> dict | None:
+    def get_mac(self) -> str:
+        """Return mac address of device."""
+        if self._mac:
+            return self._mac
+
+        return None
+
+    def get_battery_percent(self) -> int:
+        """Return device battery level in percent."""
+        if not self._switchbot_device_data:
+            self.get_device_data(self._mac)
+        return self._switchbot_device_data["data"]["battery"]
+
+    def get_device_data(self, retry=DEFAULT_RETRY_COUNT, scan_timeout=5) -> dict | None:
         """Find switchbot devices and their advertisement data."""
 
         devices = None
@@ -204,83 +320,40 @@ class SwitchbotDevice:
                 retry,
             )
             time.sleep(DEFAULT_RETRY_TIMEOUT)
-            return self.discover(retry - 1, scan_timeout)
+            return self.get_device_data(retry - 1, scan_timeout)
 
         for dev in devices:
-            if dev.getValueText(7) == UUID:
-                dev_id = dev.addr.replace(":", "")
-                self._all_services_data[dev_id] = {}
-                self._all_services_data[dev_id]["mac_address"] = dev.addr
+            if self._mac.lower() == dev.addr.lower():
+                self._switchbot_device_data["mac_address"] = dev.addr
                 for (adtype, desc, value) in dev.getScanData():
                     if adtype == 22:
                         _model = binascii.unhexlify(value[4:6]).decode()
                         if _model == "H":
-                            self._all_services_data[dev_id]["data"] = _process_wohand(
+                            self._switchbot_device_data["data"] = _process_wohand(
                                 value[4:]
                             )
-                            self._all_services_data[dev_id]["data"]["rssi"] = dev.rssi
-                            self._all_services_data[dev_id]["model"] = _model
-                            self._all_services_data[dev_id]["modelName"] = "WoHand"
-                        if _model == "c":
-                            self._all_services_data[dev_id][
-                                "data"
-                            ] = _process_wocurtain(value[4:])
-                            self._all_services_data[dev_id]["data"]["rssi"] = dev.rssi
-                            self._all_services_data[dev_id]["model"] = _model
-                            self._all_services_data[dev_id]["modelName"] = "WoCurtain"
-                        if _model == "T":
-                            self._all_services_data[dev_id][
-                                "data"
-                            ] = _process_wosensorth(value[4:])
-                            self._all_services_data[dev_id]["data"]["rssi"] = dev.rssi
-                            self._all_services_data[dev_id]["model"] = _model
-                            self._all_services_data[dev_id]["modelName"] = "WoSensorTH"
+                            self._switchbot_device_data["data"]["rssi"] = dev.rssi
+                            self._switchbot_device_data["model"] = _model
+                            self._switchbot_device_data["modelName"] = "WoHand"
+                        elif _model == "c":
+                            self._switchbot_device_data["data"] = _process_wocurtain(
+                                value[4:]
+                            )
+                            self._switchbot_device_data["data"]["rssi"] = dev.rssi
+                            self._switchbot_device_data["model"] = _model
+                            self._switchbot_device_data["modelName"] = "WoCurtain"
+                        elif _model == "T":
+                            self._switchbot_device_data["data"] = _process_wosensorth(
+                                value[4:]
+                            )
+                            self._switchbot_device_data["data"]["rssi"] = dev.rssi
+                            self._switchbot_device_data["model"] = _model
+                            self._switchbot_device_data["modelName"] = "WoSensorTH"
+
+                        else:
+                            continue
                     else:
-                        self._all_services_data[dev_id][desc] = value
-
-        return self._all_services_data
-
-    def get_mac(self) -> str:
-        """Return mac address of device."""
-        if self._mac:
-            return self._mac
-
-        return None
-
-    def get_battery_percent(self) -> int:
-        """Return device battery level in percent."""
-        if not self._switchbot_device_data:
-            self.get_device_data(self._mac)
-        return self._switchbot_device_data["data"]["battery"]
-
-    def get_curtains(self) -> dict:
-        """Return all WoCurtain/Curtains devices with services data."""
-        _curtain_devices = {}
-
-        for item in self._all_services_data:
-            if self._all_services_data[item]["data"]["model"] == "c":
-                _curtain_devices[item] = self._all_services_data[item]
-
-        return _curtain_devices
-
-    def get_bots(self) -> dict:
-        """Return all WoHand/Bot devices with services data."""
-        _bot_devices = {}
-
-        for item in self._all_services_data:
-            if self._all_services_data[item]["data"]["model"] == "H":
-                _bot_devices[item] = self._all_services_data[item]
-
-        return _bot_devices
-
-    def get_device_data(self, mac) -> dict:
-        """Return data for specific device."""
-        if not self._all_services_data:
-            self.discover()
-
-        for item in self._all_services_data:
-            if self._all_services_data[item]["mac_address"] == mac:
-                self._switchbot_device_data = self._all_services_data[item]
+                        self._switchbot_device_data[desc] = value
 
         return self._switchbot_device_data
 
@@ -295,10 +368,7 @@ class Switchbot(SwitchbotDevice):
 
     def update(self, scan_timeout=5) -> None:
         """Update mode, battery percent and state of device."""
-        _success = self.discover(scan_timeout=scan_timeout)
-
-        if _success:
-            self.get_device_data(self._mac)
+        self.get_device_data(scan_timeout=scan_timeout)
 
     def turn_on(self) -> bool:
         """Turn device on."""
@@ -323,7 +393,7 @@ class Switchbot(SwitchbotDevice):
         """Return switch state from cache."""
         # To get actual position call update() first.
         if not self._switchbot_device_data:
-            self.update()
+            return None
 
         if self._inverse:
             return not self._switchbot_device_data["data"]["isOn"]
@@ -368,10 +438,7 @@ class SwitchbotCurtain(SwitchbotDevice):
 
     def update(self, scan_timeout=5) -> None:
         """Update position, battery percent and light level of device."""
-        _success = self.discover(scan_timeout=scan_timeout)
-
-        if _success:
-            self.get_device_data(self._mac)
+        self.get_device_data(scan_timeout=scan_timeout)
 
     def get_position(self) -> int:
         """Return cached position (0-100) of Curtain."""
