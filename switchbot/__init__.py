@@ -188,7 +188,7 @@ class SwitchbotDevice:
 
         except bluepy.btle.BTLEManagementError as err:
             _LOGGER.error("Error scanning for switchbot devices", exc_info=True)
-            raise bluepy.btle.BTLEManagementError(err) from err
+            raise bluepy.btle.BTLEManagementError from err
 
         if devices is None:
             if retry < 1:
@@ -297,7 +297,7 @@ class Switchbot(SwitchbotDevice):
             self.discover(scan_timeout=scan_timeout)
         except bluepy.btle.BTLEManagementError as err:
             _LOGGER.error("Error fetching initial data", exc_info=True)
-            raise bluepy.btle.BTLEManagementError(err) from err
+            raise bluepy.btle.BTLEManagementError from err
 
         self.get_device_data(self._mac)
 
@@ -373,7 +373,7 @@ class SwitchbotCurtain(SwitchbotDevice):
             self.discover(scan_timeout=scan_timeout)
         except bluepy.btle.BTLEManagementError as err:
             _LOGGER.error("Error fetching initial data", exc_info=True)
-            raise bluepy.btle.BTLEManagementError(err) from err
+            raise bluepy.btle.BTLEManagementError from err
 
         self.get_device_data(self._mac)
 
