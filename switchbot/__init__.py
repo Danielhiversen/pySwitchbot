@@ -186,8 +186,9 @@ class SwitchbotDevice:
         try:
             devices = bluepy.btle.Scanner().scan(scan_timeout)
 
-        except bluepy.btle.BTLEManagementError:
-            _LOGGER.warning("Error scanning for Switchbot devices", exc_info=True)
+        except bluepy.btle.BTLEManagementError as err:
+            _LOGGER.error("Error scanning for switchbot devices", exc_info=True)
+            raise bluepy.btle.BTLEManagementError(err) from err
 
         if devices is None:
             if retry < 1:
@@ -292,7 +293,12 @@ class Switchbot(SwitchbotDevice):
 
     def update(self, scan_timeout=5) -> None:
         """Update mode, battery percent and state of device."""
-        self.discover(scan_timeout=scan_timeout)
+        try:
+            self.discover(scan_timeout=scan_timeout)
+        except bluepy.btle.BTLEManagementError as err:
+            _LOGGER.error("Error fetching initial data", exc_info=True)
+            raise bluepy.btle.BTLEManagementError(err) from err
+
         self.get_device_data(self._mac)
 
     def turn_on(self) -> bool:
@@ -363,7 +369,12 @@ class SwitchbotCurtain(SwitchbotDevice):
 
     def update(self, scan_timeout=5) -> None:
         """Update position, battery percent and light level of device."""
-        self.discover(scan_timeout=scan_timeout)
+        try:
+            self.discover(scan_timeout=scan_timeout)
+        except bluepy.btle.BTLEManagementError as err:
+            _LOGGER.error("Error fetching initial data", exc_info=True)
+            raise bluepy.btle.BTLEManagementError(err) from err
+
         self.get_device_data(self._mac)
 
     def get_position(self) -> int:
