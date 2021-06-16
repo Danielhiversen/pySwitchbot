@@ -247,7 +247,7 @@ class SwitchbotDevice:
     def get_battery_percent(self) -> int:
         """Return device battery level in percent."""
         if not self._switchbot_device_data:
-            self.get_device(self._mac)
+            self.get_device_data(self._mac)
         return self._switchbot_device_data["data"]["battery"]
 
     def get_curtains(self) -> dict:
@@ -270,8 +270,11 @@ class SwitchbotDevice:
 
         return _bot_devices
 
-    def get_device(self, mac) -> dict:
+    def get_device_data(self, mac) -> dict:
         """Return data for specific device."""
+        if not self._switchbot_device_data:
+            self.discover()
+
         for item in self._all_services_data:
             if self._all_services_data[item]["mac_address"] == mac:
                 self._switchbot_device_data[item] = self._all_services_data[item]
@@ -290,7 +293,7 @@ class Switchbot(SwitchbotDevice):
     def update(self, scan_timeout=5) -> None:
         """Update mode, battery percent and state of device."""
         self.discover(scan_timeout=scan_timeout)
-        self.get_device(self._mac)
+        self.get_device_data(self._mac)
 
     def turn_on(self) -> bool:
         """Turn device on."""
@@ -361,21 +364,21 @@ class SwitchbotCurtain(SwitchbotDevice):
     def update(self, scan_timeout=5) -> None:
         """Update position, battery percent and light level of device."""
         self.discover(scan_timeout=scan_timeout)
-        self.get_device(self._mac)
+        self.get_device_data(self._mac)
 
     def get_position(self) -> int:
         """Return cached position (0-100) of Curtain."""
         # To get actual position call update() first.
         if not self._switchbot_device_data:
             self.update()
-        return self._switchbot_device_data["position"]
+        return self._switchbot_device_data["data"]["position"]
 
     def get_light_level(self) -> int:
         """Return cached light level."""
         # To get actual light level call update() first.
         if not self._switchbot_device_data:
             self.update()
-        return self._switchbot_device_data["lightLevel"]
+        return self._switchbot_device_data["data"]["lightLevel"]
 
     def is_reversed(self) -> bool:
         """Return True if the curtain open from left to right."""
@@ -386,7 +389,7 @@ class SwitchbotCurtain(SwitchbotDevice):
         # To get actual light level call update() first.
         if not self._switchbot_device_data:
             self.update()
-        return self._switchbot_device_data["calibration"]
+        return self._switchbot_device_data["data"]["calibration"]
 
 
 class SwitchbotDevices(Switchbot, SwitchbotCurtain):
