@@ -10,6 +10,7 @@ import bluepy
 
 DEFAULT_RETRY_COUNT = 3
 DEFAULT_RETRY_TIMEOUT = 1
+DEFAULT_SCAN_TIMEOUT = 5
 
 UUID = "cba20d00-224d-11e6-9fb8-0002a5d5c51b"
 HANDLE = "cba20002-224d-11e6-9fb8-0002a5d5c51b"
@@ -100,7 +101,9 @@ class GetSwitchbotDevices:
         self._all_services_data = {}
         self._switchbot_device_data = {}
 
-    def discover(self, retry=DEFAULT_RETRY_COUNT, scan_timeout=5) -> dict | None:
+    def discover(
+        self, retry=DEFAULT_RETRY_COUNT, scan_timeout=DEFAULT_SCAN_TIMEOUT
+    ) -> dict | None:
         """Find switchbot devices and their advertisement data."""
 
         devices = None
@@ -203,6 +206,7 @@ class SwitchbotDevice:
         self._mac = mac
         self._device = None
         self._switchbot_device_data = {}
+        self._scan_timeout = kwargs.pop("scan_timeout", DEFAULT_SCAN_TIMEOUT)
         self._retry_count = kwargs.pop("retry_count", DEFAULT_RETRY_COUNT)
         if password is None or password == "":
             self._password_encoded = None
@@ -294,16 +298,16 @@ class SwitchbotDevice:
     def get_battery_percent(self) -> int:
         """Return device battery level in percent."""
         if not self._switchbot_device_data:
-            self.get_device_data(self._mac)
+            self.get_device_data(retry=self._retry_count)
         return self._switchbot_device_data["data"]["battery"]
 
-    def get_device_data(self, retry=DEFAULT_RETRY_COUNT, scan_timeout=5) -> dict | None:
+    def get_device_data(self, retry=DEFAULT_RETRY_COUNT) -> dict | None:
         """Find switchbot devices and their advertisement data."""
 
         devices = None
 
         try:
-            devices = bluepy.btle.Scanner().scan(scan_timeout)
+            devices = bluepy.btle.Scanner().scan(self._scan_timeout)
 
         except bluepy.btle.BTLEManagementError:
             _LOGGER.error("Error scanning for switchbot devices", exc_info=True)
@@ -320,7 +324,7 @@ class SwitchbotDevice:
                 retry,
             )
             time.sleep(DEFAULT_RETRY_TIMEOUT)
-            return self.get_device_data(retry - 1, scan_timeout)
+            return self.get_device_data(retry=retry - 1)
 
         for dev in devices:
             if self._mac.lower() == dev.addr.lower():
@@ -366,9 +370,9 @@ class Switchbot(SwitchbotDevice):
         super().__init__(*args, **kwargs)
         self._inverse = kwargs.pop("inverse_mode", False)
 
-    def update(self, scan_timeout=5) -> None:
+    def update(self) -> None:
         """Update mode, battery percent and state of device."""
-        self.get_device_data(scan_timeout=scan_timeout)
+        self.get_device_data(retry=self._retry_count)
 
     def turn_on(self) -> bool:
         """Turn device on."""
@@ -436,9 +440,9 @@ class SwitchbotCurtain(SwitchbotDevice):
         hex_position = "%0.2X" % position
         return self._sendcommand(POSITION_KEY + hex_position, self._retry_count)
 
-    def update(self, scan_timeout=5) -> None:
+    def update(self) -> None:
         """Update position, battery percent and light level of device."""
-        self.get_device_data(scan_timeout=scan_timeout)
+        self.get_device_data(retry=self._retry_count)
 
     def get_position(self) -> int:
         """Return cached position (0-100) of Curtain."""
