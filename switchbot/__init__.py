@@ -173,7 +173,7 @@ class GetSwitchbotDevices:
         _curtain_devices = {}
 
         for item in self._all_services_data:
-            if self._all_services_data[item]["data"]["model"] == "c":
+            if self._all_services_data[item]["model"] == "c":
                 _curtain_devices[item] = self._all_services_data[item]
 
         return _curtain_devices
@@ -188,7 +188,7 @@ class GetSwitchbotDevices:
             _bot_devices = {}
 
             for item in self._all_services_data:
-                if self._all_services_data[item]["data"]["model"] == "H":
+                if self._all_services_data[item]["model"] == "H":
                     _bot_devices[item] = self._all_services_data[item]
 
             return _bot_devices
