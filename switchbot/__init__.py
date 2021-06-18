@@ -183,34 +183,26 @@ class GetSwitchbotDevices:
         if not self._all_services_data:
             self.discover()
 
-        if self._all_services_data:
+        _bot_devices = {}
 
-            _bot_devices = {}
+        for item in self._all_services_data:
+            if self._all_services_data[item]["model"] == "H":
+                _bot_devices[item] = self._all_services_data[item]
 
-            for item in self._all_services_data:
-                if self._all_services_data[item]["model"] == "H":
-                    _bot_devices[item] = self._all_services_data[item]
-
-            return _bot_devices
-
-        return None
+        return _bot_devices
 
     def get_device_data(self, mac) -> dict | None:
         """Return data for specific device."""
         if not self._all_services_data:
             self.discover()
 
-        if self._all_services_data:
+        _switchbot_data = {}
 
-            _switchbot_data = {}
+        for item in self._all_services_data:
+            if self._all_services_data[item]["mac_address"] == mac:
+                _switchbot_data = self._all_services_data[item]
 
-            for item in self._all_services_data:
-                if self._all_services_data[item]["mac_address"] == mac:
-                    _switchbot_data = self._all_services_data[item]
-
-            return _switchbot_data
-
-        return None
+        return _switchbot_data
 
 
 class SwitchbotDevice:
