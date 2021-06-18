@@ -96,10 +96,10 @@ def _process_wosensorth(data) -> dict:
 class GetSwitchbotDevices:
     """Scan for all Switchbot devices and return by type."""
 
-    def __init__(self) -> None:
+    def __init__(self, interface=None) -> None:
         """Get switchbot devices class constructor."""
+        self._interface = interface
         self._all_services_data = {}
-        self._switchbot_device_data = {}
 
     def discover(
         self, retry=DEFAULT_RETRY_COUNT, scan_timeout=DEFAULT_SCAN_TIMEOUT
@@ -109,7 +109,7 @@ class GetSwitchbotDevices:
         devices = None
 
         try:
-            devices = bluepy.btle.Scanner().scan(scan_timeout)
+            devices = bluepy.btle.Scanner(self._interface).scan(scan_timeout)
 
         except bluepy.btle.BTLEManagementError:
             _LOGGER.error("Error scanning for switchbot devices", exc_info=True)
@@ -165,8 +165,11 @@ class GetSwitchbotDevices:
 
         return self._all_services_data
 
-    def get_curtains(self) -> dict:
+    def get_curtains(self) -> dict | None:
         """Return all WoCurtain/Curtains devices with services data."""
+        if not self._all_services_data:
+            self.discover()
+
         _curtain_devices = {}
 
         for item in self._all_services_data:
@@ -175,26 +178,39 @@ class GetSwitchbotDevices:
 
         return _curtain_devices
 
-    def get_bots(self) -> dict:
+    def get_bots(self) -> dict | None:
         """Return all WoHand/Bot devices with services data."""
-        _bot_devices = {}
+        if not self._all_services_data:
+            self.discover()
 
-        for item in self._all_services_data:
-            if self._all_services_data[item]["data"]["model"] == "H":
-                _bot_devices[item] = self._all_services_data[item]
+        if self._all_services_data:
 
-        return _bot_devices
+            _bot_devices = {}
 
-    def get_device_data(self, mac) -> dict:
+            for item in self._all_services_data:
+                if self._all_services_data[item]["data"]["model"] == "H":
+                    _bot_devices[item] = self._all_services_data[item]
+
+            return _bot_devices
+
+        return None
+
+    def get_device_data(self, mac) -> dict | None:
         """Return data for specific device."""
         if not self._all_services_data:
             self.discover()
 
-        for item in self._all_services_data:
-            if self._all_services_data[item]["mac_address"] == mac:
-                self._switchbot_device_data = self._all_services_data[item]
+        if self._all_services_data:
 
-        return self._switchbot_device_data
+            _switchbot_data = {}
+
+            for item in self._all_services_data:
+                if self._all_services_data[item]["mac_address"] == mac:
+                    _switchbot_data = self._all_services_data[item]
+
+            return _switchbot_data
+
+        return None
 
 
 class SwitchbotDevice:
@@ -290,24 +306,25 @@ class SwitchbotDevice:
 
     def get_mac(self) -> str:
         """Return mac address of device."""
-        if self._mac:
-            return self._mac
-
-        return None
+        return self._mac
 
     def get_battery_percent(self) -> int:
         """Return device battery level in percent."""
         if not self._switchbot_device_data:
-            self.get_device_data(retry=self._retry_count)
+            return None
         return self._switchbot_device_data["data"]["battery"]
 
-    def get_device_data(self, retry=DEFAULT_RETRY_COUNT) -> dict | None:
+    def get_device_data(self, retry=DEFAULT_RETRY_COUNT, interface=None) -> dict | None:
         """Find switchbot devices and their advertisement data."""
+        if interface:
+            _interface = interface
+        else:
+            _interface = self._interface
 
         devices = None
 
         try:
-            devices = bluepy.btle.Scanner().scan(self._scan_timeout)
+            devices = bluepy.btle.Scanner(_interface).scan(self._scan_timeout)
 
         except bluepy.btle.BTLEManagementError:
             _LOGGER.error("Error scanning for switchbot devices", exc_info=True)
@@ -324,7 +341,7 @@ class SwitchbotDevice:
                 retry,
             )
             time.sleep(DEFAULT_RETRY_TIMEOUT)
-            return self.get_device_data(retry=retry - 1)
+            return self.get_device_data(retry=retry - 1, interface=_interface)
 
         for dev in devices:
             if self._mac.lower() == dev.addr.lower():
@@ -370,9 +387,9 @@ class Switchbot(SwitchbotDevice):
         super().__init__(*args, **kwargs)
         self._inverse = kwargs.pop("inverse_mode", False)
 
-    def update(self) -> None:
+    def update(self, interface=None) -> None:
         """Update mode, battery percent and state of device."""
-        self.get_device_data(retry=self._retry_count)
+        self.get_device_data(retry=self._retry_count, interface=interface)
 
     def turn_on(self) -> bool:
         """Turn device on."""
@@ -390,7 +407,7 @@ class Switchbot(SwitchbotDevice):
         """Return true or false from cache."""
         # To get actual position call update() first.
         if not self._switchbot_device_data:
-            self.update()
+            return None
         return self._switchbot_device_data["data"]["switchMode"]
 
     def is_on(self) -> bool:
@@ -440,22 +457,22 @@ class SwitchbotCurtain(SwitchbotDevice):
         hex_position = "%0.2X" % position
         return self._sendcommand(POSITION_KEY + hex_position, self._retry_count)
 
-    def update(self) -> None:
+    def update(self, interface=None) -> None:
         """Update position, battery percent and light level of device."""
-        self.get_device_data(retry=self._retry_count)
+        self.get_device_data(retry=self._retry_count, interface=interface)
 
     def get_position(self) -> int:
         """Return cached position (0-100) of Curtain."""
         # To get actual position call update() first.
         if not self._switchbot_device_data:
-            self.update()
+            return None
         return self._switchbot_device_data["data"]["position"]
 
     def get_light_level(self) -> int:
         """Return cached light level."""
         # To get actual light level call update() first.
         if not self._switchbot_device_data:
-            self.update()
+            return None
         return self._switchbot_device_data["data"]["lightLevel"]
 
     def is_reversed(self) -> bool:
@@ -466,5 +483,5 @@ class SwitchbotCurtain(SwitchbotDevice):
         """Return True curtain is calibrated."""
         # To get actual light level call update() first.
         if not self._switchbot_device_data:
-            self.update()
+            return None
         return self._switchbot_device_data["data"]["calibration"]
