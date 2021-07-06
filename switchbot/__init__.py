@@ -77,11 +77,12 @@ def _process_wosensorth(data) -> dict:
 
     _sensor_data = binascii.unhexlify(data.encode())
 
-    _temp_sign = _sensor_data[4] & 0b10000000
+    _temp_sign = 1 if _sensor_data[4] & 0b10000000 else -1
     _temp_c = _temp_sign * ((_sensor_data[4] & 0b01111111) + (_sensor_data[3] / 10))
     _temp_f = (_temp_c * 9 / 5) + 32
     _temp_f = (_temp_f * 10) / 10
 
+    _wosensorth_data["temp"] = {}
     _wosensorth_data["temp"]["c"] = _temp_c
     _wosensorth_data["temp"]["f"] = _temp_f
 
