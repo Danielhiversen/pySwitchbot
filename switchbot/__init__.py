@@ -3,7 +3,7 @@ from __future__ import annotations
 
 import binascii
 import logging
-from multiprocessing import Manager, Process
+from multiprocessing import Manager, Process, Lock
 import time
 
 import bluepy
@@ -30,6 +30,7 @@ ON_KEY_SUFFIX = "01"
 OFF_KEY_SUFFIX = "02"
 PRESS_KEY_SUFFIX = "00"
 
+LOCK = Lock()
 _LOGGER = logging.getLogger(__name__)
 
 
@@ -106,16 +107,18 @@ class BLEScanner:
         """Start scan in seperate process."""
         with Manager() as manager:
             _devices = manager.dict()
-            process = Process(target=self._scan, args=(_devices,))
+            process = Process(target=self._scan, args=(_devices, LOCK))
             process.start()
             process.join()
 
             return _devices.get(0, None)
 
-    def _scan(self, devices) -> dict | None:
+    def _scan(self, devices, lock) -> dict | None:
         """Scan for advertisement data."""
         try:
+            lock.acquire()
             devices[0] = bluepy.btle.Scanner(self._interface).scan(self._scan_timeout)
+            lock.release()
 
         except bluepy.btle.BTLEDisconnectError:
             pass
@@ -229,7 +232,10 @@ class GetSwitchbotDevices:
         _switchbot_data = {}
 
         for item in self._all_services_data:
-            if self._all_services_data[item]["mac_address"] == mac.replace("-", ":").lower():
+            if (
+                self._all_services_data[item]["mac_address"]
+                == mac.replace("-", ":").lower()
+            ):
                 _switchbot_data = self._all_services_data[item]
 
         return _switchbot_data
