@@ -314,12 +314,14 @@ class SwitchbotDevice:
         command = self._commandkey(key)
         _LOGGER.debug("Sending command to switchbot %s", command)
         try:
+            LOCK.acquire()
             self._connect()
             send_success = self._writekey(command)
         except bluepy.btle.BTLEException:
             _LOGGER.warning("Error talking to Switchbot", exc_info=True)
         finally:
             self._disconnect()
+            LOCK.release()
         if send_success:
             return True
         if retry < 1:
