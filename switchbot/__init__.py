@@ -203,7 +203,10 @@ class GetSwitchbotDevices:
         _switchbot_data = {}
 
         for item in self._all_services_data:
-            if self._all_services_data[item]["mac_address"] == mac:
+            if (
+                self._all_services_data[item]["mac_address"]
+                == mac.replace("-", ":").lower()
+            ):
                 _switchbot_data = self._all_services_data[item]
 
         return _switchbot_data
