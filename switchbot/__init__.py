@@ -215,7 +215,7 @@ class SwitchbotDevice:
     def __init__(self, mac, password=None, interface=None, **kwargs) -> None:
         """Switchbot base class constructor."""
         self._interface = interface
-        self._mac = mac
+        self._mac = mac.replace("-", ":").lower()
         self._device = None
         self._switchbot_device_data = {}
         self._scan_timeout = kwargs.pop("scan_timeout", DEFAULT_SCAN_TIMEOUT)
