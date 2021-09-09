@@ -16,6 +16,7 @@ HANDLE = "cba20002-224d-11e6-9fb8-0002a5d5c51b"
 NOTIFICATION_HANDLE = "cba20003-224d-11e6-9fb8-0002a5d5c51b"
 
 KEY_PASSWORD_PREFIX = "5711"
+KEY_PASSWORD_NOTIFY_PREFIX = "5712"
 
 PRESS_KEY = "570100"
 ON_KEY = "570101"
@@ -263,14 +264,15 @@ class SwitchbotDevice:
             key_suffix = ON_KEY_SUFFIX
         elif key == OFF_KEY:
             key_suffix = OFF_KEY_SUFFIX
+        elif key == DEVICE_BASIC_SETTINGS_KEY:
+            return KEY_PASSWORD_NOTIFY_PREFIX + self._password_encoded
         return KEY_PASSWORD_PREFIX + self._password_encoded + key_suffix
 
     def _writekey(self, key) -> bool:
         _LOGGER.debug("Prepare to send")
-        hand_service = self._device.getServiceByUUID(UUID)
-        hand = hand_service.getCharacteristics(HANDLE)[0]
+        hand = self._device.getCharacteristics(uuid=HANDLE)[0]
         _LOGGER.debug("Sending command, %s", key)
-        write_result = hand.write(binascii.a2b_hex(key), withResponse=True)
+        write_result = hand.write(binascii.a2b_hex(key), withResponse=False)
         if not write_result:
             _LOGGER.error(
                 "Sent command but didn't get a response from Switchbot confirming command was sent."
@@ -280,13 +282,23 @@ class SwitchbotDevice:
             _LOGGER.info("Successfully sent command to Switchbot (MAC: %s)", self._mac)
         return write_result
 
-    def _readkey(self) -> bool:
-        _LOGGER.debug("Prepare to send")
-        receive_handle = self._device.getCharacteristics(uuid=NOTIFICATION_HANDLE)
-        for char in receive_handle:
-            read_result = char.read()
+    def _subscribe(self, key) -> bool:
+        _LOGGER.debug("Subscribe to notifications")
+        handle = self._device.getCharacteristics(uuid=NOTIFICATION_HANDLE)[0]
+        notify_handle = handle.getHandle() + 1
+        response = self._device.writeCharacteristic(
+            notify_handle, binascii.a2b_hex(key), withResponse=False
+        )
+        return response
 
-        return read_result
+    def _readkey(self) -> bool:
+        _LOGGER.debug("Prepare to read")
+        receive_handle = self._device.getCharacteristics(uuid=NOTIFICATION_HANDLE)
+        if receive_handle:
+            for char in receive_handle:
+                read_result = char.read()
+            return read_result
+        return None
 
     def _sendcommand(self, key, retry) -> bool:
         send_success = False
@@ -390,6 +402,7 @@ class SwitchbotDevice:
         command = self._commandkey(DEVICE_BASIC_SETTINGS_KEY)
         try:
             self._connect()
+            self._subscribe(command)
             send_success = self._writekey(command)
             value = self._readkey()
         except bluepy.btle.BTLEException:
