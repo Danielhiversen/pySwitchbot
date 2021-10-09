@@ -142,21 +142,21 @@ class GetSwitchbotDevices:
                                 value[4:]
                             )
                             self._all_services_data[dev_id]["data"]["rssi"] = dev.rssi
-                            self._all_services_data[dev_id]["model"] = _model
+                            self._all_services_data[dev_id]["model"] = chr(_model)
                             self._all_services_data[dev_id]["modelName"] = "WoHand"
                         elif _model == "c":
                             self._all_services_data[dev_id][
                                 "data"
                             ] = _process_wocurtain(value[4:])
                             self._all_services_data[dev_id]["data"]["rssi"] = dev.rssi
-                            self._all_services_data[dev_id]["model"] = _model
+                            self._all_services_data[dev_id]["model"] = chr(_model)
                             self._all_services_data[dev_id]["modelName"] = "WoCurtain"
                         elif _model == "T":
                             self._all_services_data[dev_id][
                                 "data"
                             ] = _process_wosensorth(value[4:])
                             self._all_services_data[dev_id]["data"]["rssi"] = dev.rssi
-                            self._all_services_data[dev_id]["model"] = _model
+                            self._all_services_data[dev_id]["model"] = chr(_model)
                             self._all_services_data[dev_id]["modelName"] = "WoSensorTH"
 
                         else:
@@ -347,21 +347,21 @@ class SwitchbotDevice:
                                 value[4:]
                             )
                             self._switchbot_device_data["data"]["rssi"] = dev.rssi
-                            self._switchbot_device_data["model"] = _model
+                            self._switchbot_device_data["model"] = chr(_model)
                             self._switchbot_device_data["modelName"] = "WoHand"
                         elif _model == "c":
                             self._switchbot_device_data["data"] = _process_wocurtain(
                                 value[4:]
                             )
                             self._switchbot_device_data["data"]["rssi"] = dev.rssi
-                            self._switchbot_device_data["model"] = _model
+                            self._switchbot_device_data["model"] = chr(_model)
                             self._switchbot_device_data["modelName"] = "WoCurtain"
                         elif _model == "T":
                             self._switchbot_device_data["data"] = _process_wosensorth(
                                 value[4:]
                             )
                             self._switchbot_device_data["data"]["rssi"] = dev.rssi
-                            self._switchbot_device_data["model"] = _model
+                            self._switchbot_device_data["model"] = chr(_model)
                             self._switchbot_device_data["modelName"] = "WoSensorTH"
 
                         else:
