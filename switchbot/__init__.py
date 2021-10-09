@@ -136,7 +136,7 @@ class GetSwitchbotDevices:
                 self._all_services_data[dev_id]["mac_address"] = dev.addr
                 for (adtype, desc, value) in dev.getScanData():
                     if adtype == 22:
-                        _model = binascii.unhexlify(value[4:6]).decode()
+                        _model = binascii.unhexlify(value[4:6] & 0b01111111).decode()
                         if _model == "H":
                             self._all_services_data[dev_id]["data"] = _process_wohand(
                                 value[4:]
@@ -341,7 +341,7 @@ class SwitchbotDevice:
                 self._switchbot_device_data["mac_address"] = dev.addr
                 for (adtype, desc, value) in dev.getScanData():
                     if adtype == 22:
-                        _model = binascii.unhexlify(value[4:6]).decode()
+                        _model = binascii.unhexlify(value[4:6] & 0b01111111).decode()
                         if _model == "H":
                             self._switchbot_device_data["data"] = _process_wohand(
                                 value[4:]
