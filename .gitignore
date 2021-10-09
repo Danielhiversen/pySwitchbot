@@ -105,3 +105,4 @@ venv.bak/
 switchbot/.vs/slnx.sqlite
 switchbot/.vs/switchbot/v16/.suo
 switchbot/.vs/VSWorkspaceState.json
+switchbot/.vs/ProjectSettings.json
