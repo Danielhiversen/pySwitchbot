@@ -3,7 +3,7 @@ from __future__ import annotations
 
 import binascii
 import logging
-from multiprocessing import Manager, Process
+import threading
 import time
 
 import bluepy
@@ -31,6 +31,7 @@ OFF_KEY_SUFFIX = "02"
 PRESS_KEY_SUFFIX = "00"
 
 _LOGGER = logging.getLogger(__name__)
+CONNECT_LOCK = threading.Lock()
 
 
 def _process_wohand(data) -> dict:
@@ -93,34 +94,6 @@ def _process_wosensorth(data) -> dict:
     return _wosensorth_data
 
 
-class BLEScanner:
-    """Helper for bluepy device scanning."""
-
-    def __init__(self, scan_timeout=DEFAULT_SCAN_TIMEOUT, interface=None) -> None:
-        """Init class constructor."""
-        self._scan_timeout = scan_timeout
-        self._interface = interface
-        self._devices = None
-
-    def start(self) -> dict | None:
-        """Start scan in seperate process."""
-        with Manager() as manager:
-            _devices = manager.dict()
-            process = Process(target=self._scan, args=(_devices,))
-            process.start()
-            process.join()
-
-            return _devices.get(0, None)
-
-    def _scan(self, devices) -> dict | None:
-        """Scan for advertisement data."""
-        try:
-            devices[0] = bluepy.btle.Scanner(self._interface).scan(self._scan_timeout)
-
-        except bluepy.btle.BTLEDisconnectError:
-            pass
-
-
 class GetSwitchbotDevices:
     """Scan for all Switchbot devices and return by type."""
 
@@ -137,9 +110,7 @@ class GetSwitchbotDevices:
         devices = None
 
         try:
-            devices = BLEScanner(
-                scan_timeout=scan_timeout, interface=self._interface
-            ).start()
+            devices = bluepy.btle.Scanner(self._interface).scan(scan_timeout)
 
         except bluepy.btle.BTLEManagementError:
             _LOGGER.error("Error scanning for switchbot devices", exc_info=True)
@@ -229,7 +200,7 @@ class GetSwitchbotDevices:
         _switchbot_data = {}
 
         for item in self._all_services_data:
-            if self._all_services_data[item]["mac_address"] == mac.replace("-", ":").lower():
+            if self._all_services_data[item]["mac_address"] == mac:
                 _switchbot_data = self._all_services_data[item]
 
         return _switchbot_data
@@ -241,7 +212,7 @@ class SwitchbotDevice:
     def __init__(self, mac, password=None, interface=None, **kwargs) -> None:
         """Switchbot base class constructor."""
         self._interface = interface
-        self._mac = mac.replace("-", ":").lower()
+        self._mac = mac
         self._device = None
         self._switchbot_device_data = {}
         self._scan_timeout = kwargs.pop("scan_timeout", DEFAULT_SCAN_TIMEOUT)
@@ -307,13 +278,14 @@ class SwitchbotDevice:
         send_success = False
         command = self._commandkey(key)
         _LOGGER.debug("Sending command to switchbot %s", command)
-        try:
-            self._connect()
-            send_success = self._writekey(command)
-        except bluepy.btle.BTLEException:
-            _LOGGER.warning("Error talking to Switchbot", exc_info=True)
-        finally:
-            self._disconnect()
+        with CONNECT_LOCK:
+            try:
+                self._connect()
+                send_success = self._writekey(command)
+            except bluepy.btle.BTLEException:
+                _LOGGER.warning("Error talking to Switchbot", exc_info=True)
+            finally:
+                self._disconnect()
         if send_success:
             return True
         if retry < 1:
@@ -345,9 +317,7 @@ class SwitchbotDevice:
         devices = None
 
         try:
-            devices = BLEScanner(
-                scan_timeout=self._scan_timeout, interface=_interface
-            ).start()
+            devices = bluepy.btle.Scanner(_interface).scan(self._scan_timeout)
 
         except bluepy.btle.BTLEManagementError:
             _LOGGER.error("Error scanning for switchbot devices", exc_info=True)
