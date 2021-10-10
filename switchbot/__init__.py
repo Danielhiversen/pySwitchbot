@@ -14,6 +14,7 @@ DEFAULT_SCAN_TIMEOUT = 5
 
 UUID = "cba20d00-224d-11e6-9fb8-0002a5d5c51b"
 HANDLE = "cba20002-224d-11e6-9fb8-0002a5d5c51b"
+NOTIFICATION_HANDLE = "cba20003-224d-11e6-9fb8-0002a5d5c51b"
 
 KEY_PASSWORD_PREFIX = "5711"
 
@@ -257,14 +258,15 @@ class SwitchbotDevice:
             key_suffix = ON_KEY_SUFFIX
         elif key == OFF_KEY:
             key_suffix = OFF_KEY_SUFFIX
+        elif key == DEVICE_BASIC_SETTINGS_KEY:
+            return KEY_PASSWORD_NOTIFY_PREFIX + self._password_encoded
         return KEY_PASSWORD_PREFIX + self._password_encoded + key_suffix
 
     def _writekey(self, key) -> bool:
         _LOGGER.debug("Prepare to send")
-        hand_service = self._device.getServiceByUUID(UUID)
-        hand = hand_service.getCharacteristics(HANDLE)[0]
+        hand = self._device.getCharacteristics(uuid=HANDLE)[0]
         _LOGGER.debug("Sending command, %s", key)
-        write_result = hand.write(binascii.a2b_hex(key), withResponse=True)
+        write_result = hand.write(binascii.a2b_hex(key), withResponse=False)
         if not write_result:
             _LOGGER.error(
                 "Sent command but didn't get a response from Switchbot confirming command was sent."
@@ -273,6 +275,24 @@ class SwitchbotDevice:
         else:
             _LOGGER.info("Successfully sent command to Switchbot (MAC: %s)", self._mac)
         return write_result
+
+    def _subscribe(self, key) -> bool:
+        _LOGGER.debug("Subscribe to notifications")
+        handle = self._device.getCharacteristics(uuid=NOTIFICATION_HANDLE)[0]
+        notify_handle = handle.getHandle() + 1
+        response = self._device.writeCharacteristic(
+            notify_handle, binascii.a2b_hex(key), withResponse=False
+        )
+        return response
+
+    def _readkey(self) -> bool:
+        _LOGGER.debug("Prepare to read")
+        receive_handle = self._device.getCharacteristics(uuid=NOTIFICATION_HANDLE)
+        if receive_handle:
+            for char in receive_handle:
+                read_result = char.read()
+            return read_result
+        return None
 
     def _sendcommand(self, key, retry) -> bool:
         send_success = False
@@ -371,6 +391,66 @@ class SwitchbotDevice:
 
         return self._switchbot_device_data
 
+    def _get_basic_info(self, model, retry=DEFAULT_RETRY_COUNT) -> dict | None:
+        """Find switchbot devices and their advertisement data."""
+        send_success = False
+        command = self._commandkey(DEVICE_BASIC_SETTINGS_KEY)
+        try:
+            self._connect()
+            self._subscribe(command)
+            send_success = self._writekey(command)
+            value = self._readkey()
+        except bluepy.btle.BTLEException:
+            _LOGGER.warning("Error talking to Switchbot", exc_info=True)
+        finally:
+            self._disconnect()
+
+        if send_success:
+
+            print("Successfully retrieved data from device " + str(self._mac))
+            print(value)
+            if model == "H":
+                settings = {}
+
+                settings["battery"] = value[1]
+                settings["firmware"] = value[2] / 10.0
+
+                settings["n_timers"] = value[8]
+                settings["dual_state_mode"] = bool(value[9] & 16)
+                settings["inverse_direction"] = bool(value[9] & 1)
+                settings["hold_seconds"] = value[10]
+
+            elif model == "c":
+                settings = {}
+
+                settings["battery"] = value[1]
+                settings["firmware"] = value[2] / 10.0
+
+                settings["chain_length"] = value[3]
+
+                settings["direction"] = value[4] & 0b10000000
+                settings["touch"] = value[4] & 0b01000000
+                settings["lighting_effect"] = value[4] & 0b00100000
+                settings["fault"] = value[4] & 0b00001000
+
+                settings["solar_panel"] = value[5] & 0b00001000
+                settings["calibrated"] = value[5] & 0b00000100
+                settings["motion"] = value[5] & 0b01000011
+
+                settings["position"] = value[6]
+                settings["timers"] = value[7]
+
+            return settings
+
+        if retry < 1:
+            _LOGGER.error(
+                "Switchbot communication failed. Stopping trying", exc_info=True
+            )
+            return False
+        _LOGGER.warning("Cannot connect to Switchbot. Retrying (remaining: %d)", retry)
+        time.sleep(DEFAULT_RETRY_TIMEOUT)
+        return self._get_basic_info(model, retry - 1)
+
 
 class Switchbot(SwitchbotDevice):
     """Representation of a Switchbot."""
@@ -395,6 +475,10 @@ class Switchbot(SwitchbotDevice):
     def press(self) -> bool:
         """Press command to device."""
         return self._sendcommand(PRESS_KEY, self._retry_count)
+
+    def get_basic_info(self) -> bool:
+        """Press command to device."""
+        return self._get_basic_info(model="H")
 
     def switch_mode(self) -> str:
         """Return true or false from cache."""
@@ -460,6 +544,10 @@ class SwitchbotCurtain(SwitchbotDevice):
         if not self._switchbot_device_data:
             return None
         return self._switchbot_device_data["data"]["position"]
+
+    def get_basic_info(self) -> bool:
+        """Press command to device."""
+        return self._get_basic_info(model="c")
 
     def get_light_level(self) -> int:
         """Return cached light level."""
