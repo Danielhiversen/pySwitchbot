@@ -66,11 +66,13 @@ def _process_wocurtain(data, reverse=True) -> dict:
 
     _curtain_data["calibration"] = bool(_sensor_data[1] & 0b01000000)
     _curtain_data["battery"] = _sensor_data[2] & 0b01111111
+    _curtain_data["inMotion"] = bool(_sensor_data[3] & 0b10000000)
     _position = max(min(_sensor_data[3] & 0b01111111, 100), 0)
     _curtain_data["position"] = (100 - _position) if reverse else _position
 
     # light sensor level (1-10)
     _curtain_data["lightLevel"] = (_sensor_data[4] >> 4) & 0b00001111
+    _curtain_data["deviceChain"] = _sensor_data[4] & 0b00000111
 
     return _curtain_data
 
@@ -417,10 +419,10 @@ class SwitchbotDevice:
                 settings["battery"] = value[1]
                 settings["firmware"] = value[2] / 10.0
 
-                settings["n_timers"] = value[8]
-                settings["dual_state_mode"] = bool(value[9] & 16)
-                settings["inverse_direction"] = bool(value[9] & 1)
-                settings["hold_seconds"] = value[10]
+                settings["timers"] = value[8]
+                settings["dualStateMode"] = bool(value[9] & 16)
+                settings["inverseDirection"] = bool(value[9] & 1)
+                settings["holdSeconds"] = value[10]
 
             elif model == "c":
                 settings = {}
@@ -428,16 +430,19 @@ class SwitchbotDevice:
                 settings["battery"] = value[1]
                 settings["firmware"] = value[2] / 10.0
 
-                settings["chain_length"] = value[3]
+                settings["chainLength"] = value[3]
 
-                settings["direction"] = value[4] & 0b10000000
-                settings["touch"] = value[4] & 0b01000000
-                settings["lighting_effect"] = value[4] & 0b00100000
-                settings["fault"] = value[4] & 0b00001000
+                settings["openDirection"] = (
+                    "right_to_left" if value[4] & 0b10000000 == 128 else "left_to_right"
+                )
 
-                settings["solar_panel"] = value[5] & 0b00001000
-                settings["calibrated"] = value[5] & 0b00000100
-                settings["motion"] = value[5] & 0b01000011
+                settings["touchToOpen"] = bool(value[4] & 0b01000000)
+                settings["light"] = bool(value[4] & 0b00100000)
+                settings["fault"] = bool(value[4] & 0b00001000)
+
+                settings["solarPanel"] = bool(value[5] & 0b00001000)
+                settings["calibrated"] = bool(value[5] & 0b00000100)
+                settings["inMotion"] = bool(value[5] & 0b01000011)
 
                 settings["position"] = value[6]
                 settings["timers"] = value[7]
