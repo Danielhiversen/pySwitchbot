@@ -645,7 +645,7 @@ class SwitchbotCurtain(SwitchbotDevice):
         # 2:Solar panel charging,
         # 3:The adapter connection is full,
         # 4:The solar panel connection is full,
-        # 5:The solar panel is connected and not charged when it is not fully charged.
+        # 5:The solar panel is connected and not charging when it is not fully charged.
         # 6:Hardware error.
 
         data = self._get_device_notifications(
@@ -663,20 +663,11 @@ class SwitchbotCurtain(SwitchbotDevice):
 
         if data[4]:
             self.ext_info_adv["device1"] = {}
-            self.ext_info_adv["device1"]["battery"] = data[1]
-            self.ext_info_adv["device1"]["firmware"] = data[2] / 10.0
-            self.ext_info_adv["device1"]["stateOfCharge"] = data[3]
+            self.ext_info_adv["device1"]["battery"] = data[4]
+            self.ext_info_adv["device1"]["firmware"] = data[5] / 10.0
+            self.ext_info_adv["device1"]["stateOfCharge"] = data[6]
 
         return self.ext_info_adv
-
-    def get_extended_info_chain(self) -> dict[str, Any]:
-        """Get device chain info."""
-        ext_chain_info = self._get_device_notifications(
-            key=CURTAIN_EXT_CHAIN_INFO_KEY,
-            retry=self._retry_count,
-        )
-
-        return ext_chain_info
 
     def get_light_level(self) -> Any:
         """Return cached light level."""
