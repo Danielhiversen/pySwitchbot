@@ -679,7 +679,19 @@ class SwitchbotCurtain(SwitchbotDevice):
             self.ext_info_adv["device1"] = {}
             self.ext_info_adv["device1"]["battery"] = data[4]
             self.ext_info_adv["device1"]["firmware"] = data[5] / 10.0
-            self.ext_info_adv["device1"]["stateOfCharge"] = data[6]
+
+            if data[6] == 0:
+                self.ext_info_adv["device0"]["stateOfCharge"] = "not_charging"
+            elif data[6] == 1:
+                self.ext_info_adv["device0"]["stateOfCharge"] = "charging_by_adapter"
+            elif data[6] == 2:
+                self.ext_info_adv["device0"]["stateOfCharge"] = "charging_by_solar"
+            elif data[6] == 3 or 4:
+                self.ext_info_adv["device0"]["stateOfCharge"] = "fully_charged"
+            elif data[6] == 5:
+                self.ext_info_adv["device0"]["stateOfCharge"] = "solar_not_charging"
+            elif data[6] == 6:
+                self.ext_info_adv["device0"]["stateOfCharge"] = "charging_error"
 
         return self.ext_info_adv
 
