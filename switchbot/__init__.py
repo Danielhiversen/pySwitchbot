@@ -13,22 +13,31 @@ DEFAULT_RETRY_COUNT = 3
 DEFAULT_RETRY_TIMEOUT = 1
 DEFAULT_SCAN_TIMEOUT = 5
 
+# Switchbot device BTLE handles
 UUID = "cba20d00-224d-11e6-9fb8-0002a5d5c51b"
 HANDLE = "cba20002-224d-11e6-9fb8-0002a5d5c51b"
 NOTIFICATION_HANDLE = "cba20003-224d-11e6-9fb8-0002a5d5c51b"
 
-KEY_PASSWORD_PREFIX = "5711"
-KEY_PASSWORD_NOTIFY_PREFIX = "5712"
+# Keys common to all device types
+DEVICE_BASIC_SETTINGS_KEY = "5702"
 
+# Bot keys
 PRESS_KEY = "570100"
 ON_KEY = "570101"
 OFF_KEY = "570102"
 
+# Curtain keys
 OPEN_KEY = "570f450105ff00"  # 570F4501010100
 CLOSE_KEY = "570f450105ff64"  # 570F4501010164
 POSITION_KEY = "570F450105ff"  # +actual_position ex: 570F450105ff32 for 50%
 STOP_KEY = "570F450100ff"
-DEVICE_BASIC_SETTINGS_KEY = "5702"
+CURTAIN_EXT_SUM_KEY = "570f460401"
+CURTAIN_EXT_ADV_KEY = "570f460402"
+CURTAIN_EXT_CHAIN_INFO_KEY = "570f468101"
+
+# Keys used when encryption is set
+KEY_PASSWORD_PREFIX = "5711"
+KEY_PASSWORD_NOTIFY_PREFIX = "5712"
 
 ON_KEY_SUFFIX = "01"
 OFF_KEY_SUFFIX = "02"
@@ -289,7 +298,7 @@ class SwitchbotDevice:
         _LOGGER.debug("Prepare to send")
         hand = self._device.getCharacteristics(uuid=HANDLE)[0]
         _LOGGER.debug("Sending command, %s", key)
-        write_result = hand.write(binascii.a2b_hex(key), withResponse=False)
+        write_result = hand.write(bytes.fromhex(key), withResponse=False)
         if not write_result:
             _LOGGER.error(
                 "Sent command but didn't get a response from Switchbot confirming command was sent."
@@ -299,14 +308,13 @@ class SwitchbotDevice:
             _LOGGER.info("Successfully sent command to Switchbot (MAC: %s)", self._mac)
         return write_result
 
-    def _subscribe(self, key: str) -> Any:
+    def _subscribe(self, key: str) -> None:
         _LOGGER.debug("Subscribe to notifications")
         handle = self._device.getCharacteristics(uuid=NOTIFICATION_HANDLE)[0]
         notify_handle = handle.getHandle() + 1
-        response = self._device.writeCharacteristic(
-            notify_handle, binascii.a2b_hex(key), withResponse=False
+        self._device.writeCharacteristic(
+            notify_handle, bytes.fromhex(key), withResponse=False
         )
-        return response
 
     def _readkey(self) -> bytes | None:
         _LOGGER.debug("Prepare to read")
@@ -570,6 +578,7 @@ class SwitchbotCurtain(SwitchbotDevice):
         settings_data = self._get_device_notifications(
             key=DEVICE_BASIC_SETTINGS_KEY, retry=self._retry_count
         )
+        print(settings_data)
         self._settings["battery"] = settings_data[1]
         self._settings["firmware"] = settings_data[2] / 10.0
 
@@ -593,6 +602,31 @@ class SwitchbotCurtain(SwitchbotDevice):
         self._settings["timers"] = settings_data[7]
 
         return self._settings
+
+    def get_extended_info_summary(self) -> dict[str, Any]:
+        """Get extended summary info."""
+        ext_info_sum = self._get_device_notifications(
+            key=CURTAIN_EXT_SUM_KEY, retry=self._retry_count
+        )
+
+        return ext_info_sum
+
+    def get_extended_info_adv(self) -> dict[str, Any]:
+        """Get advance page info."""
+        ext_info_adv = self._get_device_notifications(
+            key=CURTAIN_EXT_ADV_KEY, retry=self._retry_count
+        )
+
+        return ext_info_adv
+
+    def get_extended_info_chain(self) -> dict[str, Any]:
+        """Get device chain info."""
+        ext_chain_info = self._get_device_notifications(
+            key=CURTAIN_EXT_CHAIN_INFO_KEY,
+            retry=self._retry_count,
+        )
+
+        return ext_chain_info
 
     def get_light_level(self) -> Any:
         """Return cached light level."""
