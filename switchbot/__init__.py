@@ -581,7 +581,7 @@ class SwitchbotCurtain(SwitchbotDevice):
             return None
         return self._switchbot_device_data["data"]["position"]
 
-    def get_basic_info(self) -> dict[str, Any]:
+    def get_basic_info(self) -> dict[str, Any] | None:
         """Get device basic settings."""
         settings_data = self._get_device_notifications(
             key=DEVICE_BASIC_SETTINGS_KEY, retry=self._retry_count
