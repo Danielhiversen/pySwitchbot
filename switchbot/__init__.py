@@ -1,6 +1,6 @@
 """Library to handle connection with Switchbot."""
 from __future__ import annotations
-
+#add extended options
 import binascii
 import logging
 import threading
