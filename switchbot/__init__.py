@@ -1,6 +1,6 @@
 """Library to handle connection with Switchbot."""
 from __future__ import annotations
-#add extended options
+
 import binascii
 import logging
 import threading
@@ -424,10 +424,12 @@ class SwitchbotDevice:
 
         return self._switchbot_device_data
 
-    def _get_basic_info(self, retry: int = DEFAULT_RETRY_COUNT) -> bytes:
+    def _get_device_notifications(
+        self, key: str, retry: int = DEFAULT_RETRY_COUNT
+    ) -> bytes:
         """Get device basic settings."""
         send_success = False
-        command = self._commandkey(DEVICE_BASIC_SETTINGS_KEY)
+        command = self._commandkey(key)
         try:
             self._connect()
             self._subscribe(command)
@@ -451,7 +453,7 @@ class SwitchbotDevice:
             return bytes(0)
         _LOGGER.warning("Cannot connect to Switchbot. Retrying (remaining: %d)", retry)
         time.sleep(DEFAULT_RETRY_TIMEOUT)
-        return self._get_basic_info(retry - 1)
+        return self._get_device_notifications(key=key, retry=retry - 1)
 
 
 class Switchbot(SwitchbotDevice):
@@ -479,9 +481,14 @@ class Switchbot(SwitchbotDevice):
         """Press command to device."""
         return self._sendcommand(PRESS_KEY, self._retry_count)
 
-    def get_basic_info(self) -> dict[str, Any]:
+    def get_basic_info(self) -> dict[str, Any] | None:
         """Get device basic settings."""
-        settings_data = self._get_basic_info()
+        settings_data = self._get_device_notifications(
+            key=DEVICE_BASIC_SETTINGS_KEY, retry=self._retry_count
+        )
+        if settings_data == b"\x07":
+            _LOGGER.warning("Device encrypted, please specify password")
+            return None
         self._settings["battery"] = settings_data[1]
         self._settings["firmware"] = settings_data[2] / 10.0
 
@@ -560,7 +567,9 @@ class SwitchbotCurtain(SwitchbotDevice):
 
     def get_basic_info(self) -> dict[str, Any]:
         """Get device basic settings."""
-        settings_data = self._get_basic_info()
+        settings_data = self._get_device_notifications(
+            key=DEVICE_BASIC_SETTINGS_KEY, retry=self._retry_count
+        )
         self._settings["battery"] = settings_data[1]
         self._settings["firmware"] = settings_data[2] / 10.0
 
