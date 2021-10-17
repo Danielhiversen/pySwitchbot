@@ -112,14 +112,17 @@ class GetSwitchbotDevices:
         self._all_services_data: dict[str, Any] = {}
 
     def discover(
-        self, retry: int = DEFAULT_RETRY_COUNT, scan_timeout: int = DEFAULT_SCAN_TIMEOUT
+        self,
+        retry: int = DEFAULT_RETRY_COUNT,
+        scan_timeout: int = DEFAULT_SCAN_TIMEOUT,
+        passive: bool = False,
     ) -> dict | None:
         """Find switchbot devices and their advertisement data."""
 
         devices = None
 
         try:
-            devices = bluepy.btle.Scanner(self._interface).scan(scan_timeout)
+            devices = bluepy.btle.Scanner(self._interface).scan(scan_timeout, passive)
 
         except bluepy.btle.BTLEManagementError:
             _LOGGER.error("Error scanning for switchbot devices", exc_info=True)
@@ -317,34 +320,42 @@ class SwitchbotDevice:
             notify_handle, enable_notify_flag, withResponse=False
         )
 
-    def _readkey(self) -> bytes | None:
+    def _readkey(self) -> bytes:
         _LOGGER.debug("Prepare to read")
         receive_handle = self._device.getCharacteristics(uuid=NOTIFICATION_HANDLE)
         if receive_handle:
             for char in receive_handle:
                 read_result: bytes = char.read()
             return read_result
-        return None
+        return b""
 
-    def _sendcommand(self, key: str, retry: int) -> bool:
+    def _sendcommand(self, key: str, retry: int) -> bytes:
         send_success = False
         command = self._commandkey(key)
+        notify_msg = b"\x00"
         _LOGGER.debug("Sending command to switchbot %s", command)
         with CONNECT_LOCK:
             try:
                 self._connect()
+                self._subscribe()
                 send_success = self._writekey(command)
+                notify_msg = self._readkey()
             except bluepy.btle.BTLEException:
                 _LOGGER.warning("Error talking to Switchbot", exc_info=True)
             finally:
                 self._disconnect()
         if send_success:
-            return True
+            if notify_msg == b"\x07":
+                _LOGGER.error("Password required")
+            elif notify_msg == b"\t":
+                _LOGGER.error("Password incorrect")
+
+            return notify_msg
         if retry < 1:
             _LOGGER.error(
                 "Switchbot communication failed. Stopping trying", exc_info=True
             )
-            return False
+            return notify_msg
         _LOGGER.warning("Cannot connect to Switchbot. Retrying (remaining: %d)", retry)
         time.sleep(DEFAULT_RETRY_TIMEOUT)
         return self._sendcommand(key, retry - 1)
@@ -360,7 +371,10 @@ class SwitchbotDevice:
         return self._switchbot_device_data["data"]["battery"]
 
     def get_device_data(
-        self, retry: int = DEFAULT_RETRY_COUNT, interface: int | None = None
+        self,
+        retry: int = DEFAULT_RETRY_COUNT,
+        interface: int | None = None,
+        passive: bool = False,
     ) -> dict | None:
         """Find switchbot devices and their advertisement data."""
         if interface:
@@ -371,7 +385,9 @@ class SwitchbotDevice:
         devices = None
 
         try:
-            devices = bluepy.btle.Scanner(_interface).scan(self._scan_timeout)
+            devices = bluepy.btle.Scanner(_interface).scan(
+                self._scan_timeout, passive=passive
+            )
 
         except bluepy.btle.BTLEManagementError:
             _LOGGER.error("Error scanning for switchbot devices", exc_info=True)
@@ -433,37 +449,6 @@ class SwitchbotDevice:
 
         return self._switchbot_device_data
 
-    def _get_device_notifications(
-        self, key: str, retry: int = DEFAULT_RETRY_COUNT
-    ) -> bytes:
-        """Get device basic settings."""
-        send_success = False
-        command = self._commandkey(key)
-        try:
-            self._connect()
-            self._subscribe()
-            send_success = self._writekey(command)
-            value = self._readkey()
-        except bluepy.btle.BTLEException:
-            _LOGGER.warning("Error talking to Switchbot", exc_info=True)
-        finally:
-            self._disconnect()
-
-        if send_success and value:
-
-            print("Successfully retrieved data from device " + str(self._mac))
-
-            return value
-
-        if retry < 1:
-            _LOGGER.error(
-                "Switchbot communication failed. Stopping trying", exc_info=True
-            )
-            return bytes(0)
-        _LOGGER.warning("Cannot connect to Switchbot. Retrying (remaining: %d)", retry)
-        time.sleep(DEFAULT_RETRY_TIMEOUT)
-        return self._get_device_notifications(key=key, retry=retry - 1)
-
 
 class Switchbot(SwitchbotDevice):
     """Representation of a Switchbot."""
@@ -474,25 +459,48 @@ class Switchbot(SwitchbotDevice):
         self._inverse: bool = kwargs.pop("inverse_mode", False)
         self._settings: dict[str, Any] = {}
 
-    def update(self, interface: int | None = None) -> None:
+    def update(self, interface: int | None = None, passive: bool = False) -> None:
         """Update mode, battery percent and state of device."""
-        self.get_device_data(retry=self._retry_count, interface=interface)
+        self.get_device_data(
+            retry=self._retry_count, interface=interface, passive=passive
+        )
 
     def turn_on(self) -> bool:
         """Turn device on."""
-        return self._sendcommand(ON_KEY, self._retry_count)
+        result = self._sendcommand(ON_KEY, self._retry_count)
+        if result[0] == 1:
+            return True
+
+        if result[0] == 5:
+            _LOGGER.error("Action not supported in current mode")
+
+        return False
 
     def turn_off(self) -> bool:
         """Turn device off."""
-        return self._sendcommand(OFF_KEY, self._retry_count)
+        result = self._sendcommand(OFF_KEY, self._retry_count)
+        if result[0] == 1:
+            return True
+
+        if result[0] == 5:
+            _LOGGER.error("Action not supported in current mode")
+
+        return False
 
     def press(self) -> bool:
         """Press command to device."""
-        return self._sendcommand(PRESS_KEY, self._retry_count)
+        result = self._sendcommand(PRESS_KEY, self._retry_count)
+        if result[0] == 1:
+            return True
+
+        if result[0] == 5:
+            _LOGGER.error("Action not supported in current mode")
+
+        return False
 
     def get_basic_info(self) -> dict[str, Any] | None:
         """Get device basic settings."""
-        settings_data = self._get_device_notifications(
+        settings_data = self._sendcommand(
             key=DEVICE_BASIC_SETTINGS_KEY, retry=self._retry_count
         )
 
@@ -500,9 +508,6 @@ class Switchbot(SwitchbotDevice):
             _LOGGER.warning("Unsuccessfull, please try again")
             return None
 
-        if settings_data == b"\x07":
-            _LOGGER.warning("Device encrypted, please specify password")
-            return None
         self._settings["battery"] = settings_data[1]
         self._settings["firmware"] = settings_data[2] / 10.0
 
@@ -554,25 +559,43 @@ class SwitchbotCurtain(SwitchbotDevice):
 
     def open(self) -> bool:
         """Send open command."""
-        return self._sendcommand(OPEN_KEY, self._retry_count)
+        result = self._sendcommand(OPEN_KEY, self._retry_count)
+        if result[0] == 1:
+            return True
+
+        return False
 
     def close(self) -> bool:
         """Send close command."""
-        return self._sendcommand(CLOSE_KEY, self._retry_count)
+        result = self._sendcommand(CLOSE_KEY, self._retry_count)
+        if result[0] == 1:
+            return True
+
+        return False
 
     def stop(self) -> bool:
         """Send stop command to device."""
-        return self._sendcommand(STOP_KEY, self._retry_count)
+        result = self._sendcommand(STOP_KEY, self._retry_count)
+        if result[0] == 1:
+            return True
+
+        return False
 
     def set_position(self, position: int) -> bool:
         """Send position command (0-100) to device."""
         position = (100 - position) if self._reverse else position
         hex_position = "%0.2X" % position
-        return self._sendcommand(POSITION_KEY + hex_position, self._retry_count)
+        result = self._sendcommand(POSITION_KEY + hex_position, self._retry_count)
+        if result[0] == 1:
+            return True
 
-    def update(self, interface: int | None = None) -> None:
+        return False
+
+    def update(self, interface: int | None = None, passive: bool = False) -> None:
         """Update position, battery percent and light level of device."""
-        self.get_device_data(retry=self._retry_count, interface=interface)
+        self.get_device_data(
+            retry=self._retry_count, interface=interface, passive=passive
+        )
 
     def get_position(self) -> Any:
         """Return cached position (0-100) of Curtain."""
@@ -583,7 +606,7 @@ class SwitchbotCurtain(SwitchbotDevice):
 
     def get_basic_info(self) -> dict[str, Any] | None:
         """Get device basic settings."""
-        settings_data = self._get_device_notifications(
+        settings_data = self._sendcommand(
             key=DEVICE_BASIC_SETTINGS_KEY, retry=self._retry_count
         )
 
@@ -617,9 +640,7 @@ class SwitchbotCurtain(SwitchbotDevice):
 
     def get_extended_info_summary(self) -> dict[str, Any] | None:
         """Get basic info for all devices in chain."""
-        data = self._get_device_notifications(
-            key=CURTAIN_EXT_SUM_KEY, retry=self._retry_count
-        )
+        data = self._sendcommand(key=CURTAIN_EXT_SUM_KEY, retry=self._retry_count)
         if not data or data[0] != 1:
             _LOGGER.warning("Unsuccessfull, please try again")
             return None
@@ -650,9 +671,7 @@ class SwitchbotCurtain(SwitchbotDevice):
     def get_extended_info_adv(self) -> dict[str, Any] | None:
         """Get advance page info for device chain."""
 
-        data = self._get_device_notifications(
-            key=CURTAIN_EXT_ADV_KEY, retry=self._retry_count
-        )
+        data = self._sendcommand(key=CURTAIN_EXT_ADV_KEY, retry=self._retry_count)
 
         if not data or data[0] != 1:
             _LOGGER.warning("Unsuccessfull, please try again")
@@ -668,7 +687,7 @@ class SwitchbotCurtain(SwitchbotDevice):
             self.ext_info_adv["device0"]["stateOfCharge"] = "charging_by_adapter"
         elif data[3] == 2:
             self.ext_info_adv["device0"]["stateOfCharge"] = "charging_by_solar"
-        elif data[3] == 3 or 4:
+        elif data[3] == 3 or data[3] == 4:
             self.ext_info_adv["device0"]["stateOfCharge"] = "fully_charged"
         elif data[3] == 5:
             self.ext_info_adv["device0"]["stateOfCharge"] = "solar_not_charging"
@@ -686,7 +705,7 @@ class SwitchbotCurtain(SwitchbotDevice):
                 self.ext_info_adv["device0"]["stateOfCharge"] = "charging_by_adapter"
             elif data[6] == 2:
                 self.ext_info_adv["device0"]["stateOfCharge"] = "charging_by_solar"
-            elif data[6] == 3 or 4:
+            elif data[6] == 3 or data[6] == 4:
                 self.ext_info_adv["device0"]["stateOfCharge"] = "fully_charged"
             elif data[6] == 5:
                 self.ext_info_adv["device0"]["stateOfCharge"] = "solar_not_charging"
@@ -703,7 +722,7 @@ class SwitchbotCurtain(SwitchbotDevice):
         return self._switchbot_device_data["data"]["lightLevel"]
 
     def is_reversed(self) -> bool:
-        """Return True if the curtain open from left to right."""
+        """Return True if curtain position is opposite from SB data."""
         return self._reverse
 
     def is_calibrated(self) -> Any:
