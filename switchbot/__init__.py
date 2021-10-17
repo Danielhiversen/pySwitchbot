@@ -495,6 +495,11 @@ class Switchbot(SwitchbotDevice):
         settings_data = self._get_device_notifications(
             key=DEVICE_BASIC_SETTINGS_KEY, retry=self._retry_count
         )
+
+        if not settings_data:
+            _LOGGER.warning("Unsuccessfull, please try again")
+            return None
+
         if settings_data == b"\x07":
             _LOGGER.warning("Device encrypted, please specify password")
             return None
@@ -581,6 +586,11 @@ class SwitchbotCurtain(SwitchbotDevice):
         settings_data = self._get_device_notifications(
             key=DEVICE_BASIC_SETTINGS_KEY, retry=self._retry_count
         )
+
+        if not settings_data:
+            _LOGGER.warning("Unsuccessfull, please try again")
+            return None
+
         self._settings["battery"] = settings_data[1]
         self._settings["firmware"] = settings_data[2] / 10.0
 
@@ -610,7 +620,7 @@ class SwitchbotCurtain(SwitchbotDevice):
         data = self._get_device_notifications(
             key=CURTAIN_EXT_SUM_KEY, retry=self._retry_count
         )
-        if data[0] != 1:
+        if not data or data[0] != 1:
             _LOGGER.warning("Unsuccessfull, please try again")
             return None
 
@@ -639,27 +649,31 @@ class SwitchbotCurtain(SwitchbotDevice):
 
     def get_extended_info_adv(self) -> dict[str, Any] | None:
         """Get advance page info for device chain."""
-        # stateOfCharge:
-        # 0:Not charging,
-        # 1:Adapter charging,
-        # 2:Solar panel charging,
-        # 3:The adapter connection is full,
-        # 4:The solar panel connection is full,
-        # 5:The solar panel is connected and not charging when it is not fully charged.
-        # 6:Hardware error.
 
         data = self._get_device_notifications(
             key=CURTAIN_EXT_ADV_KEY, retry=self._retry_count
         )
 
-        if data[0] != 1:
+        if not data or data[0] != 1:
             _LOGGER.warning("Unsuccessfull, please try again")
             return None
 
         self.ext_info_adv["device0"] = {}
         self.ext_info_adv["device0"]["battery"] = data[1]
         self.ext_info_adv["device0"]["firmware"] = data[2] / 10.0
-        self.ext_info_adv["device0"]["stateOfCharge"] = data[3]
+
+        if data[3] == 0:
+            self.ext_info_adv["device0"]["stateOfCharge"] = "not_charging"
+        elif data[3] == 1:
+            self.ext_info_adv["device0"]["stateOfCharge"] = "charging_by_adapter"
+        elif data[3] == 2:
+            self.ext_info_adv["device0"]["stateOfCharge"] = "charging_by_solar"
+        elif data[3] == 3 or 4:
+            self.ext_info_adv["device0"]["stateOfCharge"] = "fully_charged"
+        elif data[3] == 5:
+            self.ext_info_adv["device0"]["stateOfCharge"] = "solar_not_charging"
+        elif data[3] == 6:
+            self.ext_info_adv["device0"]["stateOfCharge"] = "charging_error"
 
         if data[4]:
             self.ext_info_adv["device1"] = {}
