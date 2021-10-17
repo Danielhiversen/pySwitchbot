@@ -308,12 +308,13 @@ class SwitchbotDevice:
             _LOGGER.info("Successfully sent command to Switchbot (MAC: %s)", self._mac)
         return write_result
 
-    def _subscribe(self, key: str) -> None:
+    def _subscribe(self) -> None:
         _LOGGER.debug("Subscribe to notifications")
+        enable_notify_flag = b"\x01\x00"  # standard gatt flag to enable notification
         handle = self._device.getCharacteristics(uuid=NOTIFICATION_HANDLE)[0]
         notify_handle = handle.getHandle() + 1
         self._device.writeCharacteristic(
-            notify_handle, bytes.fromhex(key), withResponse=False
+            notify_handle, enable_notify_flag, withResponse=False
         )
 
     def _readkey(self) -> bytes | None:
@@ -440,7 +441,7 @@ class SwitchbotDevice:
         command = self._commandkey(key)
         try:
             self._connect()
-            self._subscribe(command)
+            self._subscribe()
             send_success = self._writekey(command)
             value = self._readkey()
         except bluepy.btle.BTLEException:
