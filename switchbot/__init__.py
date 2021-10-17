@@ -544,6 +544,8 @@ class SwitchbotCurtain(SwitchbotDevice):
         super().__init__(*args, **kwargs)
         self._reverse: bool = kwargs.pop("reverse_mode", True)
         self._settings: dict[str, Any] = {}
+        self.ext_info_sum: dict[str, Any] = {}
+        self.ext_info_adv: dict[str, Any] = {}
 
     def open(self) -> bool:
         """Send open command."""
@@ -579,7 +581,6 @@ class SwitchbotCurtain(SwitchbotDevice):
         settings_data = self._get_device_notifications(
             key=DEVICE_BASIC_SETTINGS_KEY, retry=self._retry_count
         )
-        print(settings_data)
         self._settings["battery"] = settings_data[1]
         self._settings["firmware"] = settings_data[2] / 10.0
 
@@ -605,20 +606,68 @@ class SwitchbotCurtain(SwitchbotDevice):
         return self._settings
 
     def get_extended_info_summary(self) -> dict[str, Any]:
-        """Get extended summary info."""
-        ext_info_sum = self._get_device_notifications(
+        """Get basic info for all devices in chain."""
+        data = self._get_device_notifications(
             key=CURTAIN_EXT_SUM_KEY, retry=self._retry_count
         )
+        if data[0] != 1:
+            _LOGGER.warning("Unsuccessfull, please try again")
+            return None
 
-        return ext_info_sum
+        self.ext_info_sum["device0"] = {}
+        self.ext_info_sum["device0"]["openDirectionDefault"] = not bool(
+            data[1] & 0b10000000
+        )
+        self.ext_info_sum["device0"]["touchToOpen"] = bool(data[1] & 0b01000000)
+        self.ext_info_sum["device0"]["light"] = bool(data[1] & 0b00100000)
+        self.ext_info_sum["device0"]["openDirection"] = (
+            "left_to_right" if data[1] & 0b00010000 == 1 else "right_to_left"
+        )
+
+        if data[2] != "0b0":
+            self.ext_info_sum["device1"] = {}
+            self.ext_info_sum["device1"]["openDirectionDefault"] = not bool(
+                data[1] & 0b10000000
+            )
+            self.ext_info_sum["device1"]["touchToOpen"] = bool(data[1] & 0b01000000)
+            self.ext_info_sum["device1"]["light"] = bool(data[1] & 0b00100000)
+            self.ext_info_sum["device1"]["openDirection"] = (
+                "left_to_right" if data[1] & 0b00010000 else "right_to_left"
+            )
+
+        return self.ext_info_sum
 
     def get_extended_info_adv(self) -> dict[str, Any]:
-        """Get advance page info."""
-        ext_info_adv = self._get_device_notifications(
+        """Get advance page info for device chain."""
+        # stateOfCharge:
+        # 0:Not charging,
+        # 1:Adapter charging,
+        # 2:Solar panel charging,
+        # 3:The adapter connection is full,
+        # 4:The solar panel connection is full,
+        # 5:The solar panel is connected and not charged when it is not fully charged.
+        # 6:Hardware error.
+
+        data = self._get_device_notifications(
             key=CURTAIN_EXT_ADV_KEY, retry=self._retry_count
         )
 
-        return ext_info_adv
+        if data[0] != 1:
+            _LOGGER.warning("Unsuccessfull, please try again")
+            return None
+
+        self.ext_info_adv["device0"] = {}
+        self.ext_info_adv["device0"]["battery"] = data[1]
+        self.ext_info_adv["device0"]["firmware"] = data[2] / 10.0
+        self.ext_info_adv["device0"]["stateOfCharge"] = data[3]
+
+        if data[4]:
+            self.ext_info_adv["device1"] = {}
+            self.ext_info_adv["device1"]["battery"] = data[1]
+            self.ext_info_adv["device1"]["firmware"] = data[2] / 10.0
+            self.ext_info_adv["device1"]["stateOfCharge"] = data[3]
+
+        return self.ext_info_adv
 
     def get_extended_info_chain(self) -> dict[str, Any]:
         """Get device chain info."""
