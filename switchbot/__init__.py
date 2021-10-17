@@ -605,7 +605,7 @@ class SwitchbotCurtain(SwitchbotDevice):
 
         return self._settings
 
-    def get_extended_info_summary(self) -> dict[str, Any]:
+    def get_extended_info_summary(self) -> dict[str, Any] | None:
         """Get basic info for all devices in chain."""
         data = self._get_device_notifications(
             key=CURTAIN_EXT_SUM_KEY, retry=self._retry_count
@@ -624,7 +624,7 @@ class SwitchbotCurtain(SwitchbotDevice):
             "left_to_right" if data[1] & 0b00010000 == 1 else "right_to_left"
         )
 
-        if data[2] != "0b0":
+        if data[2] != 0:
             self.ext_info_sum["device1"] = {}
             self.ext_info_sum["device1"]["openDirectionDefault"] = not bool(
                 data[1] & 0b10000000
@@ -637,7 +637,7 @@ class SwitchbotCurtain(SwitchbotDevice):
 
         return self.ext_info_sum
 
-    def get_extended_info_adv(self) -> dict[str, Any]:
+    def get_extended_info_adv(self) -> dict[str, Any] | None:
         """Get advance page info for device chain."""
         # stateOfCharge:
         # 0:Not charging,
