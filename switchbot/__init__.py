@@ -514,7 +514,7 @@ class Switchbot(SwitchbotDevice):
 
         return False
 
-    def set_long_press(self, duration: int = 3) -> bool:
+    def set_long_press(self, duration: int = 0) -> bool:
         """Set bot long press duration."""
         duration_key = f"{duration:0{2}x}"  # to hex with padding to double digit
 
