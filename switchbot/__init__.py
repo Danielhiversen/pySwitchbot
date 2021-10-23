@@ -102,7 +102,7 @@ def _process_wosensorth(data: bytes) -> dict[str, Any]:
 class GetSwitchbotDevices:
     """Scan for all Switchbot devices and return by type."""
 
-    def __init__(self, interface: int | None = None) -> None:
+    def __init__(self, interface: int = 0) -> None:
         """Get switchbot devices class constructor."""
         self._interface = interface
         self._all_services_data: dict[str, Any] = {}
@@ -244,7 +244,7 @@ class SwitchbotDevice:
         self,
         mac: str,
         password: str | None = None,
-        interface: int | None = None,
+        interface: int = 0,
         **kwargs: Any,
     ) -> None:
         """Switchbot base class constructor."""
@@ -459,11 +459,13 @@ class Switchbot(SwitchbotDevice):
     def turn_on(self) -> bool:
         """Turn device on."""
         result = self._sendcommand(ON_KEY, self._retry_count)
+
         if result[0] == 1:
             return True
 
         if result[0] == 5:
-            _LOGGER.error("Action not supported in current mode")
+            _LOGGER.warning("Bot is in press mode and doesn't have on state")
+            return True
 
         return False
 
@@ -474,7 +476,8 @@ class Switchbot(SwitchbotDevice):
             return True
 
         if result[0] == 5:
-            _LOGGER.error("Action not supported in current mode")
+            _LOGGER.warning("Bot is in press mode and doesn't have off state")
+            return True
 
         return False
 
@@ -485,7 +488,8 @@ class Switchbot(SwitchbotDevice):
             return True
 
         if result[0] == 5:
-            _LOGGER.error("Action not supported in current mode")
+            _LOGGER.warning("Bot is in switch mode")
+            return True
 
         return False
 
