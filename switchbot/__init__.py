@@ -19,8 +19,9 @@ HANDLE = "cba20002-224d-11e6-9fb8-0002a5d5c51b"
 NOTIFICATION_HANDLE = "cba20003-224d-11e6-9fb8-0002a5d5c51b"
 
 # Keys common to all device types
-DEVICE_BASIC_SETTINGS_KEY = "5702"
+DEVICE_GET_BASIC_SETTINGS_KEY = "5702"
 DEVICE_SET_MODE_KEY = "5703"
+DEVICE_SET_EXTENDED_KEY = "570f"
 
 # Bot keys
 PRESS_KEY = "570100"
@@ -117,11 +118,14 @@ class GetSwitchbotDevices:
 
         devices = None
 
-        try:
-            devices = bluepy.btle.Scanner(self._interface).scan(scan_timeout, passive)
+        with CONNECT_LOCK:
+            try:
+                devices = bluepy.btle.Scanner(self._interface).scan(
+                    scan_timeout, passive
+                )
 
-        except bluepy.btle.BTLEManagementError:
-            _LOGGER.error("Error scanning for switchbot devices", exc_info=True)
+            except bluepy.btle.BTLEManagementError:
+                _LOGGER.error("Error scanning for switchbot devices", exc_info=True)
 
         if devices is None:
             if retry < 1:
@@ -375,13 +379,14 @@ class SwitchbotDevice:
 
         devices = None
 
-        try:
-            devices = bluepy.btle.Scanner(_interface).scan(
-                self._scan_timeout, passive=passive
-            )
+        with CONNECT_LOCK:
+            try:
+                devices = bluepy.btle.Scanner(_interface).scan(
+                    self._scan_timeout, passive=passive
+                )
 
-        except bluepy.btle.BTLEManagementError:
-            _LOGGER.error("Error scanning for switchbot devices", exc_info=True)
+            except bluepy.btle.BTLEManagementError:
+                _LOGGER.error("Error scanning for switchbot devices", exc_info=True)
 
         if devices is None:
             if retry < 1:
@@ -493,9 +498,11 @@ class Switchbot(SwitchbotDevice):
 
         return False
 
-    def set_switch_mode(self, switch_mode: bool = False, strength: int = 100) -> bool:
+    def set_switch_mode(
+        self, switch_mode: bool = False, strength: int = 100, inverse: bool = False
+    ) -> bool:
         """Change bot mode."""
-        mode_key = "10" if switch_mode else "00"
+        mode_key = format(switch_mode, "b") + format(inverse, "b")
         strength_key = f"{strength:0{2}x}"  # to hex with padding to double digit
 
         result = self._sendcommand(
@@ -510,9 +517,10 @@ class Switchbot(SwitchbotDevice):
     def set_long_press(self, duration: int = 3) -> bool:
         """Set bot long press duration."""
         duration_key = f"{duration:0{2}x}"  # to hex with padding to double digit
-        set_extended_key = "570f08"
 
-        result = self._sendcommand(set_extended_key + duration_key, self._retry_count)
+        result = self._sendcommand(
+            DEVICE_SET_EXTENDED_KEY + "08" + duration_key, self._retry_count
+        )
 
         if result[0] == 1:
             return True
@@ -522,11 +530,14 @@ class Switchbot(SwitchbotDevice):
     def get_basic_info(self) -> dict[str, Any] | None:
         """Get device basic settings."""
         settings_data = self._sendcommand(
-            key=DEVICE_BASIC_SETTINGS_KEY, retry=self._retry_count
+            key=DEVICE_GET_BASIC_SETTINGS_KEY, retry=self._retry_count
         )
 
         if not settings_data:
             _LOGGER.warning("Unsuccessfull, please try again")
+            return None
+
+        if settings_data in (b"\x07", b"\x00"):
             return None
 
         self._settings["battery"] = settings_data[1]
@@ -629,11 +640,14 @@ class SwitchbotCurtain(SwitchbotDevice):
     def get_basic_info(self) -> dict[str, Any] | None:
         """Get device basic settings."""
         settings_data = self._sendcommand(
-            key=DEVICE_BASIC_SETTINGS_KEY, retry=self._retry_count
+            key=DEVICE_GET_BASIC_SETTINGS_KEY, retry=self._retry_count
         )
 
         if not settings_data:
             _LOGGER.warning("Unsuccessfull, please try again")
+            return None
+
+        if settings_data in (b"\x07", b"\x00"):
             return None
 
         self._settings["battery"] = settings_data[1]
