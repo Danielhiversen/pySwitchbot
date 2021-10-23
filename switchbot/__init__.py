@@ -20,6 +20,7 @@ NOTIFICATION_HANDLE = "cba20003-224d-11e6-9fb8-0002a5d5c51b"
 
 # Keys common to all device types
 DEVICE_BASIC_SETTINGS_KEY = "5702"
+DEVICE_SET_MODE_KEY = "5703"
 
 # Bot keys
 PRESS_KEY = "570100"
@@ -36,12 +37,7 @@ CURTAIN_EXT_ADV_KEY = "570f460402"
 CURTAIN_EXT_CHAIN_INFO_KEY = "570f468101"
 
 # Keys used when encryption is set
-KEY_PASSWORD_PREFIX = "5711"
-KEY_PASSWORD_NOTIFY_PREFIX = "5712"
-
-ON_KEY_SUFFIX = "01"
-OFF_KEY_SUFFIX = "02"
-PRESS_KEY_SUFFIX = "00"
+KEY_PASSWORD_PREFIX = "571"
 
 _LOGGER = logging.getLogger(__name__)
 CONNECT_LOCK = threading.Lock()
@@ -288,14 +284,9 @@ class SwitchbotDevice:
     def _commandkey(self, key: str) -> str:
         if self._password_encoded is None:
             return key
-        key_suffix = PRESS_KEY_SUFFIX
-        if key == ON_KEY:
-            key_suffix = ON_KEY_SUFFIX
-        elif key == OFF_KEY:
-            key_suffix = OFF_KEY_SUFFIX
-        elif key == DEVICE_BASIC_SETTINGS_KEY:
-            return KEY_PASSWORD_NOTIFY_PREFIX + self._password_encoded
-        return KEY_PASSWORD_PREFIX + self._password_encoded + key_suffix
+        key_action = key[3]
+        key_suffix = key[4:]
+        return KEY_PASSWORD_PREFIX + key_action + self._password_encoded + key_suffix
 
     def _writekey(self, key: str) -> Any:
         _LOGGER.debug("Prepare to send")
@@ -498,6 +489,32 @@ class Switchbot(SwitchbotDevice):
 
         return False
 
+    def set_switch_mode(self, switch_mode: bool = False, strength: int = 100) -> bool:
+        """Change bot mode."""
+        mode_key = "10" if switch_mode else "00"
+        strength_key = f"{strength:0{2}x}"  # to hex with padding to double digit
+
+        result = self._sendcommand(
+            DEVICE_SET_MODE_KEY + strength_key + mode_key, self._retry_count
+        )
+
+        if result[0] == 1:
+            return True
+
+        return False
+
+    def set_long_press(self, duration: int = 3) -> bool:
+        """Set bot long press duration."""
+        duration_key = f"{duration:0{2}x}"  # to hex with padding to double digit
+        set_extended_key = "570f08"
+
+        result = self._sendcommand(set_extended_key + duration_key, self._retry_count)
+
+        if result[0] == 1:
+            return True
+
+        return False
+
     def get_basic_info(self) -> dict[str, Any] | None:
         """Get device basic settings."""
         settings_data = self._sendcommand(
@@ -510,9 +527,10 @@ class Switchbot(SwitchbotDevice):
 
         self._settings["battery"] = settings_data[1]
         self._settings["firmware"] = settings_data[2] / 10.0
+        self._settings["strength"] = settings_data[3]
 
         self._settings["timers"] = settings_data[8]
-        self._settings["dualStateMode"] = bool(settings_data[9] & 16)
+        self._settings["switchMode"] = bool(settings_data[9] & 16)
         self._settings["inverseDirection"] = bool(settings_data[9] & 1)
         self._settings["holdSeconds"] = settings_data[10]
 
