@@ -27,6 +27,8 @@ DEVICE_SET_EXTENDED_KEY = "570f"
 PRESS_KEY = "570100"
 ON_KEY = "570101"
 OFF_KEY = "570102"
+DOWN_KEY = "570103"
+UP_KEY = "570104"
 
 # Curtain keys
 OPEN_KEY = "570f450105ff00"  # 570F4501010100
@@ -469,7 +471,7 @@ class Switchbot(SwitchbotDevice):
             return True
 
         if result[0] == 5:
-            _LOGGER.warning("Bot is in press mode and doesn't have on state")
+            _LOGGER.debug("Bot is in press mode and doesn't have on state")
             return True
 
         return False
@@ -481,7 +483,31 @@ class Switchbot(SwitchbotDevice):
             return True
 
         if result[0] == 5:
-            _LOGGER.warning("Bot is in press mode and doesn't have off state")
+            _LOGGER.debug("Bot is in press mode and doesn't have off state")
+            return True
+
+        return False
+
+    def hand_up(self) -> bool:
+        """Raise device arm."""
+        result = self._sendcommand(UP_KEY, self._retry_count)
+        if result[0] == 1:
+            return True
+
+        if result[0] == 5:
+            _LOGGER.debug("Bot is in press mode")
+            return True
+
+        return False
+
+    def hand_down(self) -> bool:
+        """Lower device arm."""
+        result = self._sendcommand(DOWN_KEY, self._retry_count)
+        if result[0] == 1:
+            return True
+
+        if result[0] == 5:
+            _LOGGER.debug("Bot is in press mode")
             return True
 
         return False
@@ -493,7 +519,7 @@ class Switchbot(SwitchbotDevice):
             return True
 
         if result[0] == 5:
-            _LOGGER.warning("Bot is in switch mode")
+            _LOGGER.debug("Bot is in switch mode")
             return True
 
         return False
