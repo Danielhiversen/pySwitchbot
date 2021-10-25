@@ -324,7 +324,7 @@ class SwitchbotDevice:
             for char in receive_handle:
                 read_result: bytes = char.read()
             return read_result
-        return b""
+        return b"\x00"
 
     def _sendcommand(self, key: str, retry: int) -> bytes:
         send_success = False
