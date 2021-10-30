@@ -263,7 +263,7 @@ class SwitchbotDevice:
         except bleak.BleakError:
             _LOGGER.warning("Error disconnecting from Switchbot", exc_info=True)
 
-    async def _commandkey(self, key: str) -> str:
+    def _commandkey(self, key: str) -> str:
         if self._password_encoded is None:
             return key
         key_action = key[3]
@@ -318,11 +318,11 @@ class SwitchbotDevice:
         time.sleep(DEFAULT_RETRY_TIMEOUT)
         return self._sendcommand(key, retry - 1)
 
-    async def get_mac(self) -> str:
+    def get_mac(self) -> str:
         """Return mac address of device."""
         return self._mac
 
-    async def get_battery_percent(self) -> Any:
+    def get_battery_percent(self) -> Any:
         """Return device battery level in percent."""
         if not self._switchbot_device_data:
             return None
@@ -468,14 +468,14 @@ class Switchbot(SwitchbotDevice):
 
         return self._settings
 
-    async def switch_mode(self) -> Any:
+    def switch_mode(self) -> Any:
         """Return true or false from cache."""
         # To get actual position call update() first.
         if not self._switchbot_device_data:
             return None
         return self._switchbot_device_data["data"]["switchMode"]
 
-    async def is_on(self) -> Any:
+    def is_on(self) -> Any:
         """Return switch state from cache."""
         # To get actual position call update() first.
         if not self._switchbot_device_data:
@@ -547,7 +547,7 @@ class SwitchbotCurtain(SwitchbotDevice):
             retry=self._retry_count, interface=interface, passive=passive
         )
 
-    async def get_position(self) -> Any:
+    def get_position(self) -> Any:
         """Return cached position (0-100) of Curtain."""
         # To get actual position call update() first.
         if not self._switchbot_device_data:
@@ -667,18 +667,18 @@ class SwitchbotCurtain(SwitchbotDevice):
 
         return self.ext_info_adv
 
-    async def get_light_level(self) -> Any:
+    def get_light_level(self) -> Any:
         """Return cached light level."""
         # To get actual light level call update() first.
         if not self._switchbot_device_data:
             return None
         return self._switchbot_device_data["data"]["lightLevel"]
 
-    async def is_reversed(self) -> bool:
+    def is_reversed(self) -> bool:
         """Return True if curtain position is opposite from SB data."""
         return self._reverse
 
-    async def is_calibrated(self) -> Any:
+    def is_calibrated(self) -> Any:
         """Return True curtain is calibrated."""
         # To get actual light level call update() first.
         if not self._switchbot_device_data:
