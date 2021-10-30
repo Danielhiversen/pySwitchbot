@@ -107,17 +107,20 @@ class GetSwitchbotDevices:
     def __init__(self, interface: int = 0) -> None:
         """Get switchbot devices class constructor."""
         self._interface = f"hci{interface}"
-        self._all_services_data: dict[str, Any] = {}
-        self._data = {}
+        self._data: dict[str, Any] = {}
 
-    def detection_callback(self, device, advertisement_data):
+    def detection_callback(
+        self,
+        device: bleak.backends.device.BLEDevice,
+        advertisement_data: bleak.backends.scanner.AdvertisementData,
+    ) -> None:
         """BTLE adv scan callback."""
         _device = device.address.replace(":", "")
         _service_data = list(advertisement_data.service_data.values())[0]
         _model = chr(_service_data[0] & 0b01111111)
 
         self._data[_device] = {
-            "mac_address": device.address,
+            "mac_address": device.address.lower(),
             "service_data": list(advertisement_data.service_data.values())[0],
             "isEncrypted": bool(_service_data[0] & 0b10000000),
             "model": _model,
@@ -166,58 +169,58 @@ class GetSwitchbotDevices:
                 retry,
             )
             time.sleep(DEFAULT_RETRY_TIMEOUT)
-            return self.discover(retry - 1, scan_timeout, passive)
+            return await self.discover(retry - 1, scan_timeout, passive)
 
         return self._data
 
-    def get_curtains(self) -> dict:
+    async def get_curtains(self) -> dict:
         """Return all WoCurtain/Curtains devices with services data."""
-        if not self._all_services_data:
-            self.discover()
+        if not self._data:
+            await self.discover()
 
         _curtain_devices = {}
 
-        for device, data in self._all_services_data.items():
+        for device, data in self._data.items():
             if data.get("model") == "c":
                 _curtain_devices[device] = data
 
         return _curtain_devices
 
-    def get_bots(self) -> dict:
+    async def get_bots(self) -> dict[str, Any] | None:
         """Return all WoHand/Bot devices with services data."""
-        if not self._all_services_data:
-            self.discover()
+        if not self._data:
+            await self.discover()
 
         _bot_devices = {}
 
-        for device, data in self._all_services_data.items():
+        for device, data in self._data.items():
             if data.get("model") == "H":
                 _bot_devices[device] = data
 
         return _bot_devices
 
-    def get_tempsensors(self) -> dict:
+    async def get_tempsensors(self) -> dict[str, Any] | None:
         """Return all WoSensorTH/Temp sensor devices with services data."""
-        if not self._all_services_data:
-            self.discover()
+        if not self._data:
+            await self.discover()
 
         _bot_temp = {}
 
-        for device, data in self._all_services_data.items():
+        for device, data in self._data.items():
             if data.get("model") == "T":
                 _bot_temp[device] = data
 
         return _bot_temp
 
-    def get_device_data(self, mac: str) -> dict:
+    async def get_device_data(self, mac: str) -> dict[str, Any] | None:
         """Return data for specific device."""
-        if not self._all_services_data:
-            self.discover()
+        if not self._data:
+            await self.discover()
 
         _switchbot_data = {}
 
-        for device in self._all_services_data.values():
-            if device["mac_address"] == mac:
+        for device in self._data.values():
+            if device["mac_address"] == mac.lower():
                 _switchbot_data = device
 
         return _switchbot_data
@@ -235,9 +238,9 @@ class SwitchbotDevice:
     ) -> None:
         """Switchbot base class constructor."""
         self._interface = f"hci{interface}"
-        self._mac = mac
+        self._mac = mac.lower()
         self._device = bleak.BleakClient(mac)
-        self._switchbot_device_data: dict[str, Any] = {}
+        self._switchbot_device_data: dict[str, Any] | None = {}
         self._scan_timeout: int = kwargs.pop("scan_timeout", DEFAULT_SCAN_TIMEOUT)
         self._retry_count: int = kwargs.pop("retry_count", DEFAULT_RETRY_COUNT)
         if password is None or password == "":
@@ -246,6 +249,11 @@ class SwitchbotDevice:
             self._password_encoded = "%x" % (
                 binascii.crc32(password.encode("ascii")) & 0xFFFFFFFF
             )
+        self._last_notification = bytearray()
+
+    async def _notification_handler(self, sender: int, data: bytearray) -> None:
+        """Handler for notification responses."""
+        self._last_notification = data
 
     async def _connect(self) -> None:
         try:
@@ -272,51 +280,52 @@ class SwitchbotDevice:
 
     async def _writekey(self, key: str) -> Any:
         _LOGGER.debug("Sending command, %s", key)
-        await self._device.write_gatt_char(HANDLE, bytearray.fromhex(key), False)
+        return await self._device.write_gatt_char(HANDLE, bytearray.fromhex(key), False)
 
-    async def keypress_handler(sender, data, other):
-        """Test method for notification responses."""
-        print(sender, data, other)
-
-    async def _subscribe(self) -> None:
+    async def _subscribe(self) -> Any:
         _LOGGER.debug("Subscribe to notifications")
-        await self._device.start_notify(NOTIFICATION_HANDLE, self.keypress_handler)
+        return await self._device.start_notify(
+            NOTIFICATION_HANDLE, self._notification_handler
+        )
 
-    async def _readkey(self) -> bytes:
+    async def _unsubscribe(self) -> Any:
+        _LOGGER.debug("Subscribe to notifications")
+        return await self._device.stop_notify(NOTIFICATION_HANDLE)
+
+    async def _readkey(self) -> Any:
         _LOGGER.debug("Prepare to read")
-        receive_handle = await self._device.read_gatt_char(NOTIFICATION_HANDLE)
-        print("Receive message", receive_handle)
-        return receive_handle
+        return await self._device.read_gatt_char(NOTIFICATION_HANDLE)
 
-    async def _sendcommand(self, key: str, retry: int) -> bytes:
+    async def _sendcommand(self, key: str, retry: int) -> bytearray:
         command = self._commandkey(key)
-        notify_msg = b"\x00"
         _LOGGER.debug("Sending command to switchbot %s", command)
 
         try:
             await self._connect()
             await self._subscribe()
             await self._writekey(command)
-            notify_msg = await self._readkey()
+            await self._readkey()
+            await self._unsubscribe()
+            print(self._last_notification)
         except bleak.BleakError:
             _LOGGER.warning("Error talking to Switchbot", exc_info=True)
         finally:
             await self._disconnect()
-        if notify_msg:
-            if notify_msg == b"\x07":
+        if self._last_notification:
+            if self._last_notification == b"\x07":
                 _LOGGER.error("Password required")
-            elif notify_msg == b"\t":
+            elif self._last_notification == b"\t":
                 _LOGGER.error("Password incorrect")
 
-            return notify_msg
+            return self._last_notification
         if retry < 1:
             _LOGGER.error(
                 "Switchbot communication failed. Stopping trying", exc_info=True
             )
-            return notify_msg
+            return self._last_notification
         _LOGGER.warning("Cannot connect to Switchbot. Retrying (remaining: %d)", retry)
         time.sleep(DEFAULT_RETRY_TIMEOUT)
-        return self._sendcommand(key, retry - 1)
+        return await self._sendcommand(key, retry - 1)
 
     def get_mac(self) -> str:
         """Return mac address of device."""
@@ -336,9 +345,9 @@ class SwitchbotDevice:
     ) -> dict | None:
         """Find switchbot devices and their advertisement data."""
         if interface:
-            _interface: int | None = interface
+            _interface: int = interface
         else:
-            _interface = self._interface
+            _interface = int(self._interface.replace("hci", ""))
 
         self._switchbot_device_data = await GetSwitchbotDevices(
             interface=_interface
@@ -356,7 +365,7 @@ class SwitchbotDevice:
                 retry,
             )
             time.sleep(DEFAULT_RETRY_TIMEOUT)
-            return self.get_device_data(
+            return await self.get_device_data(
                 retry=retry - 1, interface=_interface, passive=passive
             )
 
