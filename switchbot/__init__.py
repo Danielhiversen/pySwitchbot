@@ -115,7 +115,7 @@ class GetSwitchbotDevices:
         advertisement_data: bleak.backends.scanner.AdvertisementData,
     ) -> None:
         """BTLE adv scan callback."""
-        _device = device.address.replace(":", "")
+        _device = device.address.replace(":", "").lower()
         _service_data = list(advertisement_data.service_data.values())[0]
         _model = chr(_service_data[0] & 0b01111111)
 
@@ -140,22 +140,22 @@ class GetSwitchbotDevices:
             self._data[_device]["data"] = _process_wosensorth(_service_data)
 
     async def discover(
-        self,
-        retry: int = DEFAULT_RETRY_COUNT,
-        scan_timeout: int = DEFAULT_SCAN_TIMEOUT,
-        passive: bool = False,
+        self, retry: int = DEFAULT_RETRY_COUNT, scan_timeout: int = DEFAULT_SCAN_TIMEOUT
     ) -> dict | None:
         """Find switchbot devices and their advertisement data."""
 
         devices = None
 
         devices = bleak.BleakScanner(
-            filters={"UUIDs": [str(UUID_SERVICE)]}, adapter=self._interface
+            filters={"UUIDs": [str(UUID_SERVICE)]},
+            adapter=self._interface,
         )
         devices.register_detection_callback(self.detection_callback)
-        await devices.start()
-        await asyncio.sleep(scan_timeout)
-        await devices.stop()
+
+        async with CONNECT_LOCK:
+            await devices.start()
+            await asyncio.sleep(scan_timeout)
+            await devices.stop()
 
         if devices is None:
             if retry < 1:
@@ -169,7 +169,7 @@ class GetSwitchbotDevices:
                 retry,
             )
             time.sleep(DEFAULT_RETRY_TIMEOUT)
-            return await self.discover(retry - 1, scan_timeout, passive)
+            return await self.discover(retry - 1, scan_timeout)
 
         return self._data
 
@@ -252,7 +252,7 @@ class SwitchbotDevice:
         self._last_notification = bytearray()
 
     async def _notification_handler(self, sender: int, data: bytearray) -> None:
-        """Handler for notification responses."""
+        """Handle notification responses."""
         self._last_notification = data
 
     async def _connect(self) -> None:
@@ -301,12 +301,12 @@ class SwitchbotDevice:
         _LOGGER.debug("Sending command to switchbot %s", command)
 
         try:
-            await self._connect()
-            await self._subscribe()
-            await self._writekey(command)
-            await self._readkey()
-            await self._unsubscribe()
-            print(self._last_notification)
+            async with CONNECT_LOCK:
+                await self._connect()
+                await self._subscribe()
+                await self._writekey(command)
+                await self._readkey()
+                await self._unsubscribe()
         except bleak.BleakError:
             _LOGGER.warning("Error talking to Switchbot", exc_info=True)
         finally:
@@ -338,10 +338,7 @@ class SwitchbotDevice:
         return self._switchbot_device_data["data"]["battery"]
 
     async def get_device_data(
-        self,
-        retry: int = DEFAULT_RETRY_COUNT,
-        interface: int | None = None,
-        passive: bool = False,
+        self, retry: int = DEFAULT_RETRY_COUNT, interface: int | None = None
     ) -> dict | None:
         """Find switchbot devices and their advertisement data."""
         if interface:
@@ -365,9 +362,7 @@ class SwitchbotDevice:
                 retry,
             )
             time.sleep(DEFAULT_RETRY_TIMEOUT)
-            return await self.get_device_data(
-                retry=retry - 1, interface=_interface, passive=passive
-            )
+            return await self.get_device_data(retry=retry - 1, interface=_interface)
 
         return self._switchbot_device_data
 
@@ -381,11 +376,9 @@ class Switchbot(SwitchbotDevice):
         self._inverse: bool = kwargs.pop("inverse_mode", False)
         self._settings: dict[str, Any] = {}
 
-    async def update(self, interface: int | None = None, passive: bool = False) -> None:
+    async def update(self, interface: int | None = None) -> None:
         """Update mode, battery percent and state of device."""
-        await self.get_device_data(
-            retry=self._retry_count, interface=interface, passive=passive
-        )
+        await self.get_device_data(retry=self._retry_count, interface=interface)
 
     async def turn_on(self) -> bool:
         """Turn device on."""
@@ -395,7 +388,7 @@ class Switchbot(SwitchbotDevice):
             return True
 
         if result[0] == 5:
-            _LOGGER.warning("Bot is in press mode and doesn't have on state")
+            _LOGGER.debug("Bot is in press mode and doesn't have on state")
             return True
 
         return False
@@ -407,7 +400,7 @@ class Switchbot(SwitchbotDevice):
             return True
 
         if result[0] == 5:
-            _LOGGER.warning("Bot is in press mode and doesn't have off state")
+            _LOGGER.debug("Bot is in press mode and doesn't have off state")
             return True
 
         return False
@@ -419,7 +412,7 @@ class Switchbot(SwitchbotDevice):
             return True
 
         if result[0] == 5:
-            _LOGGER.warning("Bot is in switch mode")
+            _LOGGER.debug("Bot is in switch mode")
             return True
 
         return False
@@ -550,11 +543,9 @@ class SwitchbotCurtain(SwitchbotDevice):
 
         return False
 
-    async def update(self, interface: int | None = None, passive: bool = False) -> None:
+    async def update(self, interface: int | None = None) -> None:
         """Update position, battery percent and light level of device."""
-        await self.get_device_data(
-            retry=self._retry_count, interface=interface, passive=passive
-        )
+        await self.get_device_data(retry=self._retry_count, interface=interface)
 
     def get_position(self) -> Any:
         """Return cached position (0-100) of Curtain."""
