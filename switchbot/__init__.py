@@ -102,6 +102,89 @@ def _process_wosensorth(data: bytes) -> dict[str, Any]:
     return _wosensorth_data
 
 
+def _btle_scan(
+    retry: int = DEFAULT_RETRY_COUNT,
+    interface: int = 0,
+    passive: bool = False,
+    scan_timeout: int = 5,
+    mac: str | None = None,
+) -> dict[str, Any]:
+    """Scan for bluetooth le adv data."""
+    devices = None
+    _data: dict[str, Any] = {}
+
+    with CONNECT_LOCK:
+        try:
+            devices = bluepy.btle.Scanner(interface).scan(scan_timeout, passive)
+            time.sleep(0.5)
+
+        except bluepy.btle.BTLEManagementError:
+            _LOGGER.error("Error scanning for switchbot devices", exc_info=True)
+
+    if devices is None:
+        if retry < 1:
+            _LOGGER.error(
+                "Scanning for Switchbot devices failed. Stop trying", exc_info=True
+            )
+            return _data
+
+        _LOGGER.warning(
+            "Error scanning for Switchbot devices. Retrying (remaining: %d)",
+            retry,
+        )
+        time.sleep(DEFAULT_RETRY_TIMEOUT)
+        return _btle_scan(
+            retry=retry - 1,
+            interface=interface,
+            passive=passive,
+            scan_timeout=scan_timeout,
+            mac=mac,
+        )
+
+    for dev in devices:
+        if dev.getValueText(7) == UUID:
+            if mac:
+                if dev.addr.lower() == mac.lower():
+                    _data = _process_btle_adv_data(dev)
+            else:
+                dev_id = dev.addr.replace(":", "")
+                _data[dev_id] = _process_btle_adv_data(dev)
+
+    return _data
+
+
+def _process_btle_adv_data(dev: bluepy.btle.ScanEntry) -> dict[str, Any]:
+    """Process bt le adv data."""
+    _adv_data: dict[str, Any] = {}
+
+    _adv_data = {"mac_address": dev.addr}
+    for (adtype, desc, value) in dev.getScanData():
+        if adtype == 22:
+            _data = bytes.fromhex(value[4:])
+            _model = chr(_data[0] & 0b01111111)
+            _adv_data["isEncrypted"] = bool(_data[0] & 0b10000000)
+            _adv_data["model"] = _model
+            if _model == "H":
+                _adv_data["data"] = _process_wohand(_data)
+                _adv_data["data"]["rssi"] = dev.rssi
+                _adv_data["modelName"] = "WoHand"
+            elif _model == "c":
+                _adv_data["data"] = _process_wocurtain(_data)
+                _adv_data["data"]["rssi"] = dev.rssi
+                _adv_data["modelName"] = "WoCurtain"
+            elif _model == "T":
+                _adv_data["data"] = _process_wosensorth(_data)
+                _adv_data["data"]["rssi"] = dev.rssi
+                _adv_data["modelName"] = "WoSensorTH"
+
+            else:
+                continue
+        else:
+            _adv_data[desc] = value
+
+    return _adv_data
+
+
 class GetSwitchbotDevices:
     """Scan for all Switchbot devices and return by type."""
 
@@ -115,66 +198,14 @@ class GetSwitchbotDevices:
         retry: int = DEFAULT_RETRY_COUNT,
         scan_timeout: int = DEFAULT_SCAN_TIMEOUT,
         passive: bool = False,
-    ) -> dict | None:
+    ) -> dict[str, Any] | None:
         """Find switchbot devices and their advertisement data."""
-
-        devices = None
-
-        with CONNECT_LOCK:
-            try:
-                devices = bluepy.btle.Scanner(self._interface).scan(
-                    scan_timeout, passive
-                )
-                time.sleep(0.5)
-
-            except bluepy.btle.BTLEManagementError:
-                _LOGGER.error("Error scanning for switchbot devices", exc_info=True)
-
-        if devices is None:
-            if retry < 1:
-                _LOGGER.error(
-                    "Scanning for Switchbot devices failed. Stop trying", exc_info=True
-                )
-                return None
-
-            _LOGGER.warning(
-                "Error scanning for Switchbot devices. Retrying (remaining: %d)",
-                retry,
-            )
-            time.sleep(DEFAULT_RETRY_TIMEOUT)
-            return self.discover(
-                retry=retry - 1, scan_timeout=scan_timeout, passive=passive
-            )
-
-        for dev in devices:
-            if dev.getValueText(7) == UUID:
-                dev_id = dev.addr.replace(":", "")
-                self._adv_data[dev_id] = {"mac_address": dev.addr}
-                for (adtype, desc, value) in dev.getScanData():
-                    if adtype == 22:
-                        _data = bytes.fromhex(value[4:])
-                        _model = chr(_data[0] & 0b01111111)
-                        self._adv_data[dev_id]["isEncrypted"] = bool(
-                            _data[0] & 0b10000000
-                        )
-                        self._adv_data[dev_id]["model"] = _model
-                        if _model == "H":
-                            self._adv_data[dev_id]["data"] = _process_wohand(_data)
-                            self._adv_data[dev_id]["data"]["rssi"] = dev.rssi
-                            self._adv_data[dev_id]["modelName"] = "WoHand"
-                        elif _model == "c":
-                            self._adv_data[dev_id]["data"] = _process_wocurtain(_data)
-                            self._adv_data[dev_id]["data"]["rssi"] = dev.rssi
-                            self._adv_data[dev_id]["modelName"] = "WoCurtain"
-                        elif _model == "T":
-                            self._adv_data[dev_id]["data"] = _process_wosensorth(_data)
-                            self._adv_data[dev_id]["data"]["rssi"] = dev.rssi
-                            self._adv_data[dev_id]["modelName"] = "WoSensorTH"
-
-                        else:
-                            continue
-                    else:
-                        self._adv_data[dev_id][desc] = value
+        self._adv_data = _btle_scan(
+            retry=retry,
+            interface=self._interface,
+            passive=passive,
+            scan_timeout=scan_timeout,
+        )
 
         return self._adv_data
 
@@ -373,64 +404,17 @@ class SwitchbotDevice:
     ) -> dict | None:
         """Find switchbot devices and their advertisement data."""
         if interface:
-            _interface: int | None = interface
+            _interface: int = interface
         else:
             _interface = self._interface
 
-        devices = None
-
-        with CONNECT_LOCK:
-            try:
-                devices = bluepy.btle.Scanner(_interface).scan(
-                    self._scan_timeout, passive=passive
-                )
-                time.sleep(0.5)
-
-            except bluepy.btle.BTLEManagementError:
-                _LOGGER.error("Error scanning for switchbot devices", exc_info=True)
-
-        if devices is None:
-            if retry < 1:
-                _LOGGER.error(
-                    "Scanning for Switchbot devices failed. Stop trying", exc_info=True
-                )
-                return None
-
-            _LOGGER.warning(
-                "Error scanning for Switchbot devices. Retrying (remaining: %d)",
-                retry,
-            )
-            time.sleep(DEFAULT_RETRY_TIMEOUT)
-            return self.get_device_data(
-                retry=retry - 1, interface=_interface, passive=passive
-            )
-
-        for dev in devices:
-            if self._mac.lower() == dev.addr.lower():
-                self._sb_adv_data["mac_address"] = dev.addr
-                for (adtype, desc, value) in dev.getScanData():
-                    if adtype == 22:
-                        _data = bytes.fromhex(value[4:])
-                        _model = chr(_data[0] & 0b01111111)
-                        self._sb_adv_data["model"] = _model
-                        self._sb_adv_data["isEncrypted"] = bool(_data[0] & 0b10000000)
-                        if _model == "H":
-                            self._sb_adv_data["data"] = _process_wohand(_data)
-                            self._sb_adv_data["data"]["rssi"] = dev.rssi
-                            self._sb_adv_data["modelName"] = "WoHand"
-                        elif _model == "c":
-                            self._sb_adv_data["data"] = _process_wocurtain(_data)
-                            self._sb_adv_data["data"]["rssi"] = dev.rssi
-                            self._sb_adv_data["modelName"] = "WoCurtain"
-                        elif _model == "T":
-                            self._sb_adv_data["data"] = _process_wosensorth(_data)
-                            self._sb_adv_data["data"]["rssi"] = dev.rssi
-                            self._sb_adv_data["modelName"] = "WoSensorTH"
-
-                        else:
-                            continue
-                    else:
-                        self._sb_adv_data[desc] = value
+        self._sb_adv_data = _btle_scan(
+            retry=retry,
+            interface=_interface,
+            passive=passive,
+            scan_timeout=self._scan_timeout,
+            mac=self._mac,
+        )
 
         return self._sb_adv_data
 
