@@ -125,6 +125,7 @@ class GetSwitchbotDevices:
                 devices = bluepy.btle.Scanner(self._interface).scan(
                     scan_timeout, passive
                 )
+                time.sleep(0.5)
 
             except bluepy.btle.BTLEManagementError:
                 _LOGGER.error("Error scanning for switchbot devices", exc_info=True)
@@ -348,6 +349,7 @@ class SwitchbotDevice:
                 _LOGGER.warning("Error talking to Switchbot", exc_info=True)
             finally:
                 self._disconnect()
+                time.sleep(0.5)
         if send_success:
             if notify_msg == b"\x07":
                 _LOGGER.error("Password required")
@@ -393,6 +395,7 @@ class SwitchbotDevice:
                 devices = bluepy.btle.Scanner(_interface).scan(
                     self._scan_timeout, passive=passive
                 )
+                time.sleep(0.5)
 
             except bluepy.btle.BTLEManagementError:
                 _LOGGER.error("Error scanning for switchbot devices", exc_info=True)
