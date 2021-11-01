@@ -108,7 +108,7 @@ class GetSwitchbotDevices:
     def __init__(self, interface: int = 0) -> None:
         """Get switchbot devices class constructor."""
         self._interface = interface
-        self._all_services_data: dict[str, Any] = {}
+        self._adv_data: dict[str, Any] = {}
 
     def discover(
         self,
@@ -149,58 +149,43 @@ class GetSwitchbotDevices:
         for dev in devices:
             if dev.getValueText(7) == UUID:
                 dev_id = dev.addr.replace(":", "")
-                self._all_services_data[dev_id] = {}
-                self._all_services_data[dev_id]["mac_address"] = dev.addr
+                self._adv_data[dev_id] = {"mac_address": dev.addr}
                 for (adtype, desc, value) in dev.getScanData():
                     if adtype == 22:
                         _data = bytes.fromhex(value[4:])
                         _model = chr(_data[0] & 0b01111111)
+                        self._adv_data[dev_id]["isEncrypted"] = bool(
+                            _data[0] & 0b10000000
+                        )
+                        self._adv_data[dev_id]["model"] = _model
                         if _model == "H":
-                            self._all_services_data[dev_id]["data"] = _process_wohand(
-                                _data
-                            )
-                            self._all_services_data[dev_id]["data"]["rssi"] = dev.rssi
-                            self._all_services_data[dev_id]["isEncrypted"] = bool(
-                                _data[0] & 0b10000000
-                            )
-                            self._all_services_data[dev_id]["model"] = _model
-                            self._all_services_data[dev_id]["modelName"] = "WoHand"
+                            self._adv_data[dev_id]["data"] = _process_wohand(_data)
+                            self._adv_data[dev_id]["data"]["rssi"] = dev.rssi
+                            self._adv_data[dev_id]["modelName"] = "WoHand"
                         elif _model == "c":
-                            self._all_services_data[dev_id][
-                                "data"
-                            ] = _process_wocurtain(_data)
-                            self._all_services_data[dev_id]["data"]["rssi"] = dev.rssi
-                            self._all_services_data[dev_id]["isEncrypted"] = bool(
-                                _data[0] & 0b10000000
-                            )
-                            self._all_services_data[dev_id]["model"] = _model
-                            self._all_services_data[dev_id]["modelName"] = "WoCurtain"
+                            self._adv_data[dev_id]["data"] = _process_wocurtain(_data)
+                            self._adv_data[dev_id]["data"]["rssi"] = dev.rssi
+                            self._adv_data[dev_id]["modelName"] = "WoCurtain"
                         elif _model == "T":
-                            self._all_services_data[dev_id][
-                                "data"
-                            ] = _process_wosensorth(_data)
-                            self._all_services_data[dev_id]["data"]["rssi"] = dev.rssi
-                            self._all_services_data[dev_id]["isEncrypted"] = bool(
-                                _data[0] & 0b10000000
-                            )
-                            self._all_services_data[dev_id]["model"] = _model
-                            self._all_services_data[dev_id]["modelName"] = "WoSensorTH"
+                            self._adv_data[dev_id]["data"] = _process_wosensorth(_data)
+                            self._adv_data[dev_id]["data"]["rssi"] = dev.rssi
+                            self._adv_data[dev_id]["modelName"] = "WoSensorTH"
 
                         else:
                             continue
                     else:
-                        self._all_services_data[dev_id][desc] = value
+                        self._adv_data[dev_id][desc] = value
 
-        return self._all_services_data
+        return self._adv_data
 
     def get_curtains(self) -> dict:
         """Return all WoCurtain/Curtains devices with services data."""
-        if not self._all_services_data:
+        if not self._adv_data:
             self.discover()
 
         _curtain_devices = {}
 
-        for device, data in self._all_services_data.items():
+        for device, data in self._adv_data.items():
             if data.get("model") == "c":
                 _curtain_devices[device] = data
 
@@ -208,12 +193,12 @@ class GetSwitchbotDevices:
 
     def get_bots(self) -> dict:
         """Return all WoHand/Bot devices with services data."""
-        if not self._all_services_data:
+        if not self._adv_data:
             self.discover()
 
         _bot_devices = {}
 
-        for device, data in self._all_services_data.items():
+        for device, data in self._adv_data.items():
             if data.get("model") == "H":
                 _bot_devices[device] = data
 
@@ -221,12 +206,12 @@ class GetSwitchbotDevices:
 
     def get_tempsensors(self) -> dict:
         """Return all WoSensorTH/Temp sensor devices with services data."""
-        if not self._all_services_data:
+        if not self._adv_data:
             self.discover()
 
         _bot_temp = {}
 
-        for device, data in self._all_services_data.items():
+        for device, data in self._adv_data.items():
             if data.get("model") == "T":
                 _bot_temp[device] = data
 
@@ -234,12 +219,12 @@ class GetSwitchbotDevices:
 
     def get_device_data(self, mac: str) -> dict:
         """Return data for specific device."""
-        if not self._all_services_data:
+        if not self._adv_data:
             self.discover()
 
         _switchbot_data = {}
 
-        for device in self._all_services_data.values():
+        for device in self._adv_data.values():
             if device["mac_address"] == mac:
                 _switchbot_data = device
 
@@ -262,7 +247,7 @@ class SwitchbotDevice:
         self._device = bluepy.btle.Peripheral(
             deviceAddr=None, addrType=bluepy.btle.ADDR_TYPE_RANDOM, iface=interface
         )
-        self._switchbot_device_data: dict[str, Any] = {}
+        self._sb_adv_data: dict[str, Any] = {}
         self._scan_timeout: int = kwargs.pop("scan_timeout", DEFAULT_SCAN_TIMEOUT)
         self._retry_count: int = kwargs.pop("retry_count", DEFAULT_RETRY_COUNT)
         if password is None or password == "":
@@ -376,9 +361,9 @@ class SwitchbotDevice:
 
     def get_battery_percent(self) -> Any:
         """Return device battery level in percent."""
-        if not self._switchbot_device_data:
+        if not self._sb_adv_data:
             return None
-        return self._switchbot_device_data["data"]["battery"]
+        return self._sb_adv_data["data"]["battery"]
 
     def get_device_data(
         self,
@@ -422,46 +407,32 @@ class SwitchbotDevice:
 
         for dev in devices:
             if self._mac.lower() == dev.addr.lower():
-                self._switchbot_device_data["mac_address"] = dev.addr
+                self._sb_adv_data["mac_address"] = dev.addr
                 for (adtype, desc, value) in dev.getScanData():
                     if adtype == 22:
                         _data = bytes.fromhex(value[4:])
                         _model = chr(_data[0] & 0b01111111)
+                        self._sb_adv_data["model"] = _model
+                        self._sb_adv_data["isEncrypted"] = bool(_data[0] & 0b10000000)
                         if _model == "H":
-                            self._switchbot_device_data["data"] = _process_wohand(_data)
-                            self._switchbot_device_data["data"]["rssi"] = dev.rssi
-                            self._switchbot_device_data["isEncrypted"] = bool(
-                                _data[0] & 0b10000000
-                            )
-                            self._switchbot_device_data["model"] = _model
-                            self._switchbot_device_data["modelName"] = "WoHand"
+                            self._sb_adv_data["data"] = _process_wohand(_data)
+                            self._sb_adv_data["data"]["rssi"] = dev.rssi
+                            self._sb_adv_data["modelName"] = "WoHand"
                         elif _model == "c":
-                            self._switchbot_device_data["data"] = _process_wocurtain(
-                                _data
-                            )
-                            self._switchbot_device_data["data"]["rssi"] = dev.rssi
-                            self._switchbot_device_data["isEncrypted"] = bool(
-                                _data[0] & 0b10000000
-                            )
-                            self._switchbot_device_data["model"] = _model
-                            self._switchbot_device_data["modelName"] = "WoCurtain"
+                            self._sb_adv_data["data"] = _process_wocurtain(_data)
+                            self._sb_adv_data["data"]["rssi"] = dev.rssi
+                            self._sb_adv_data["modelName"] = "WoCurtain"
                         elif _model == "T":
-                            self._switchbot_device_data["data"] = _process_wosensorth(
-                                _data
-                            )
-                            self._switchbot_device_data["data"]["rssi"] = dev.rssi
-                            self._switchbot_device_data["isEncrypted"] = bool(
-                                _data[0] & 0b10000000
-                            )
-                            self._switchbot_device_data["model"] = _model
-                            self._switchbot_device_data["modelName"] = "WoSensorTH"
+                            self._sb_adv_data["data"] = _process_wosensorth(_data)
+                            self._sb_adv_data["data"]["rssi"] = dev.rssi
+                            self._sb_adv_data["modelName"] = "WoSensorTH"
 
                         else:
                             continue
                     else:
-                        self._switchbot_device_data[desc] = value
+                        self._sb_adv_data[desc] = value
 
-        return self._switchbot_device_data
+        return self._sb_adv_data
 
 
 class Switchbot(SwitchbotDevice):
@@ -571,45 +542,43 @@ class Switchbot(SwitchbotDevice):
 
     def get_basic_info(self) -> dict[str, Any] | None:
         """Get device basic settings."""
-        settings_data = self._sendcommand(
+        _data = self._sendcommand(
             key=DEVICE_GET_BASIC_SETTINGS_KEY, retry=self._retry_count
         )
 
-        if not settings_data:
-            _LOGGER.warning("Unsuccessfull, please try again")
+        if _data in (b"\x07", b"\x00"):
+            _LOGGER.error("Unsuccessfull, please try again")
             return None
 
-        if settings_data in (b"\x07", b"\x00"):
-            return None
-
-        self._settings["battery"] = settings_data[1]
-        self._settings["firmware"] = settings_data[2] / 10.0
-        self._settings["strength"] = settings_data[3]
-
-        self._settings["timers"] = settings_data[8]
-        self._settings["switchMode"] = bool(settings_data[9] & 16)
-        self._settings["inverseDirection"] = bool(settings_data[9] & 1)
-        self._settings["holdSeconds"] = settings_data[10]
+        self._settings = {
+            "battery": _data[1],
+            "firmware": _data[2] / 10.0,
+            "strength": _data[3],
+            "timers": _data[8],
+            "switchMode": bool(_data[9] & 16),
+            "inverseDirection": bool(_data[9] & 1),
+            "holdSeconds": _data[10],
+        }
 
         return self._settings
 
     def switch_mode(self) -> Any:
         """Return true or false from cache."""
         # To get actual position call update() first.
-        if not self._switchbot_device_data:
+        if not self._sb_adv_data:
             return None
-        return self._switchbot_device_data["data"]["switchMode"]
+        return self._sb_adv_data["data"]["switchMode"]
 
     def is_on(self) -> Any:
         """Return switch state from cache."""
         # To get actual position call update() first.
-        if not self._switchbot_device_data:
+        if not self._sb_adv_data:
             return None
 
         if self._inverse:
-            return not self._switchbot_device_data["data"]["isOn"]
+            return not self._sb_adv_data["data"]["isOn"]
 
-        return self._switchbot_device_data["data"]["isOn"]
+        return self._sb_adv_data["data"]["isOn"]
 
 
 class SwitchbotCurtain(SwitchbotDevice):
@@ -675,129 +644,110 @@ class SwitchbotCurtain(SwitchbotDevice):
     def get_position(self) -> Any:
         """Return cached position (0-100) of Curtain."""
         # To get actual position call update() first.
-        if not self._switchbot_device_data:
+        if not self._sb_adv_data:
             return None
-        return self._switchbot_device_data["data"]["position"]
+        return self._sb_adv_data["data"]["position"]
 
     def get_basic_info(self) -> dict[str, Any] | None:
         """Get device basic settings."""
-        settings_data = self._sendcommand(
+        _data = self._sendcommand(
             key=DEVICE_GET_BASIC_SETTINGS_KEY, retry=self._retry_count
         )
 
-        if not settings_data:
-            _LOGGER.warning("Unsuccessfull, please try again")
+        if _data in (b"\x07", b"\x00"):
+            _LOGGER.error("Unsuccessfull, please try again")
             return None
 
-        if settings_data in (b"\x07", b"\x00"):
-            return None
+        _position = max(min(_data[6], 100), 0)
 
-        self._settings["battery"] = settings_data[1]
-        self._settings["firmware"] = settings_data[2] / 10.0
-
-        self._settings["chainLength"] = settings_data[3]
-
-        self._settings["openDirection"] = (
-            "right_to_left" if settings_data[4] & 0b10000000 == 128 else "left_to_right"
-        )
-
-        self._settings["touchToOpen"] = bool(settings_data[4] & 0b01000000)
-        self._settings["light"] = bool(settings_data[4] & 0b00100000)
-        self._settings["fault"] = bool(settings_data[4] & 0b00001000)
-
-        self._settings["solarPanel"] = bool(settings_data[5] & 0b00001000)
-        self._settings["calibrated"] = bool(settings_data[5] & 0b00000100)
-        self._settings["inMotion"] = bool(settings_data[5] & 0b01000011)
-
-        _position = max(min(settings_data[6], 100), 0)
-        self._settings["position"] = (100 - _position) if self._reverse else _position
-
-        self._settings["timers"] = settings_data[7]
+        self._settings = {
+            "battery": _data[1],
+            "firmware": _data[2] / 10.0,
+            "chainLength": _data[3],
+            "openDirection": (
+                "right_to_left" if _data[4] & 0b10000000 == 128 else "left_to_right"
+            ),
+            "touchToOpen": bool(_data[4] & 0b01000000),
+            "light": bool(_data[4] & 0b00100000),
+            "fault": bool(_data[4] & 0b00001000),
+            "solarPanel": bool(_data[5] & 0b00001000),
+            "calibrated": bool(_data[5] & 0b00000100),
+            "inMotion": bool(_data[5] & 0b01000011),
+            "position": (100 - _position) if self._reverse else _position,
+            "timers": _data[7],
+        }
 
         return self._settings
 
     def get_extended_info_summary(self) -> dict[str, Any] | None:
         """Get basic info for all devices in chain."""
-        data = self._sendcommand(key=CURTAIN_EXT_SUM_KEY, retry=self._retry_count)
-        if not data or data[0] != 1:
-            _LOGGER.warning("Unsuccessfull, please try again")
+        _data = self._sendcommand(key=CURTAIN_EXT_SUM_KEY, retry=self._retry_count)
+
+        if _data in (b"\x07", b"\x00"):
+            _LOGGER.error("Unsuccessfull, please try again")
             return None
 
-        self.ext_info_sum["device0"] = {}
-        self.ext_info_sum["device0"]["openDirectionDefault"] = not bool(
-            data[1] & 0b10000000
-        )
-        self.ext_info_sum["device0"]["touchToOpen"] = bool(data[1] & 0b01000000)
-        self.ext_info_sum["device0"]["light"] = bool(data[1] & 0b00100000)
-        self.ext_info_sum["device0"]["openDirection"] = (
-            "left_to_right" if data[1] & 0b00010000 == 1 else "right_to_left"
-        )
+        self.ext_info_sum["device0"] = {
+            "openDirectionDefault": not bool(_data[1] & 0b10000000),
+            "touchToOpen": bool(_data[1] & 0b01000000),
+            "light": bool(_data[1] & 0b00100000),
+            "openDirection": (
+                "left_to_right" if _data[1] & 0b00010000 == 1 else "right_to_left"
+            ),
+        }
 
-        if data[2] != 0:
-            self.ext_info_sum["device1"] = {}
-            self.ext_info_sum["device1"]["openDirectionDefault"] = not bool(
-                data[1] & 0b10000000
-            )
-            self.ext_info_sum["device1"]["touchToOpen"] = bool(data[1] & 0b01000000)
-            self.ext_info_sum["device1"]["light"] = bool(data[1] & 0b00100000)
-            self.ext_info_sum["device1"]["openDirection"] = (
-                "left_to_right" if data[1] & 0b00010000 else "right_to_left"
-            )
+        # if grouped curtain device present.
+        if _data[2] != 0:
+            self.ext_info_sum["device1"] = {
+                "openDirectionDefault": not bool(_data[1] & 0b10000000),
+                "touchToOpen": bool(_data[1] & 0b01000000),
+                "light": bool(_data[1] & 0b00100000),
+                "openDirection": (
+                    "left_to_right" if _data[1] & 0b00010000 else "right_to_left"
+                ),
+            }
 
         return self.ext_info_sum
 
     def get_extended_info_adv(self) -> dict[str, Any] | None:
         """Get advance page info for device chain."""
+        _data = self._sendcommand(key=CURTAIN_EXT_ADV_KEY, retry=self._retry_count)
 
-        data = self._sendcommand(key=CURTAIN_EXT_ADV_KEY, retry=self._retry_count)
-
-        if not data or data[0] != 1:
-            _LOGGER.warning("Unsuccessfull, please try again")
+        if _data in (b"\x07", b"\x00"):
+            _LOGGER.error("Unsuccessfull, please try again")
             return None
 
-        self.ext_info_adv["device0"] = {}
-        self.ext_info_adv["device0"]["battery"] = data[1]
-        self.ext_info_adv["device0"]["firmware"] = data[2] / 10.0
+        _state_of_charge = [
+            "not_charging",
+            "charging_by_adapter",
+            "charging_by_solar",
+            "fully_charged",
+            "solar_not_charging",
+            "charging_error",
+        ]
 
-        if data[3] == 0:
-            self.ext_info_adv["device0"]["stateOfCharge"] = "not_charging"
-        elif data[3] == 1:
-            self.ext_info_adv["device0"]["stateOfCharge"] = "charging_by_adapter"
-        elif data[3] == 2:
-            self.ext_info_adv["device0"]["stateOfCharge"] = "charging_by_solar"
-        elif data[3] == 3 or data[3] == 4:
-            self.ext_info_adv["device0"]["stateOfCharge"] = "fully_charged"
-        elif data[3] == 5:
-            self.ext_info_adv["device0"]["stateOfCharge"] = "solar_not_charging"
-        elif data[3] == 6:
-            self.ext_info_adv["device0"]["stateOfCharge"] = "charging_error"
+        self.ext_info_adv["device0"] = {
+            "battery": _data[1],
+            "firmware": _data[2] / 10.0,
+            "stateOfCharge": _state_of_charge[_data[3]],
+        }
 
-        if data[4]:
-            self.ext_info_adv["device1"] = {}
-            self.ext_info_adv["device1"]["battery"] = data[4]
-            self.ext_info_adv["device1"]["firmware"] = data[5] / 10.0
-
-            if data[6] == 0:
-                self.ext_info_adv["device0"]["stateOfCharge"] = "not_charging"
-            elif data[6] == 1:
-                self.ext_info_adv["device0"]["stateOfCharge"] = "charging_by_adapter"
-            elif data[6] == 2:
-                self.ext_info_adv["device0"]["stateOfCharge"] = "charging_by_solar"
-            elif data[6] == 3 or data[6] == 4:
-                self.ext_info_adv["device0"]["stateOfCharge"] = "fully_charged"
-            elif data[6] == 5:
-                self.ext_info_adv["device0"]["stateOfCharge"] = "solar_not_charging"
-            elif data[6] == 6:
-                self.ext_info_adv["device0"]["stateOfCharge"] = "charging_error"
+        # If grouped curtain device present.
+        if _data[4]:
+            self.ext_info_adv["device1"] = {
+                "battery": _data[4],
+                "firmware": _data[5] / 10.0,
+                "stateOfCharge": _state_of_charge[_data[6]],
+            }
 
         return self.ext_info_adv
 
     def get_light_level(self) -> Any:
         """Return cached light level."""
         # To get actual light level call update() first.
-        if not self._switchbot_device_data:
+        if not self._sb_adv_data:
             return None
-        return self._switchbot_device_data["data"]["lightLevel"]
+        return self._sb_adv_data["data"]["lightLevel"]
 
     def is_reversed(self) -> bool:
         """Return True if curtain position is opposite from SB data."""
@@ -806,6 +756,6 @@ class SwitchbotCurtain(SwitchbotDevice):
     def is_calibrated(self) -> Any:
         """Return True curtain is calibrated."""
         # To get actual light level call update() first.
-        if not self._switchbot_device_data:
+        if not self._sb_adv_data:
             return None
-        return self._switchbot_device_data["data"]["calibration"]
+        return self._sb_adv_data["data"]["calibration"]
