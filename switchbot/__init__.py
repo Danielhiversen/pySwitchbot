@@ -142,7 +142,9 @@ class GetSwitchbotDevices:
                 retry,
             )
             time.sleep(DEFAULT_RETRY_TIMEOUT)
-            return self.discover(retry - 1, scan_timeout)
+            return self.discover(
+                retry=retry - 1, scan_timeout=scan_timeout, passive=passive
+            )
 
         for dev in devices:
             if dev.getValueText(7) == UUID:
@@ -414,7 +416,9 @@ class SwitchbotDevice:
                 retry,
             )
             time.sleep(DEFAULT_RETRY_TIMEOUT)
-            return self.get_device_data(retry=retry - 1, interface=_interface)
+            return self.get_device_data(
+                retry=retry - 1, interface=_interface, passive=passive
+            )
 
         for dev in devices:
             if self._mac.lower() == dev.addr.lower():
