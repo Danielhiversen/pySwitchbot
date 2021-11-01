@@ -349,7 +349,7 @@ class SwitchbotDevice:
                 _LOGGER.warning("Error talking to Switchbot", exc_info=True)
             finally:
                 self._disconnect()
-                time.sleep(0.5)
+                time.sleep(1)
         if send_success:
             if notify_msg == b"\x07":
                 _LOGGER.error("Password required")
