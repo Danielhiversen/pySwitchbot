@@ -214,11 +214,11 @@ class GetSwitchbotDevices:
         if not self._adv_data:
             self.discover()
 
-        _curtain_devices = {}
-
-        for device, data in self._adv_data.items():
-            if data.get("model") == "c":
-                _curtain_devices[device] = data
+        _curtain_devices = {
+            device: data
+            for device, data in self._adv_data.items()
+            if data.get("model") == "c"
+        }
 
         return _curtain_devices
 
@@ -227,11 +227,11 @@ class GetSwitchbotDevices:
         if not self._adv_data:
             self.discover()
 
-        _bot_devices = {}
-
-        for device, data in self._adv_data.items():
-            if data.get("model") == "H":
-                _bot_devices[device] = data
+        _bot_devices = {
+            device: data
+            for device, data in self._adv_data.items()
+            if data.get("model") == "H"
+        }
 
         return _bot_devices
 
@@ -240,11 +240,11 @@ class GetSwitchbotDevices:
         if not self._adv_data:
             self.discover()
 
-        _bot_temp = {}
-
-        for device, data in self._adv_data.items():
-            if data.get("model") == "T":
-                _bot_temp[device] = data
+        _bot_temp = {
+            device: data
+            for device, data in self._adv_data.items()
+            if data.get("model") == "T"
+        }
 
         return _bot_temp
 
@@ -253,11 +253,11 @@ class GetSwitchbotDevices:
         if not self._adv_data:
             self.discover()
 
-        _switchbot_data = {}
-
-        for device in self._adv_data.values():
-            if device["mac_address"] == mac:
-                _switchbot_data = device
+        _switchbot_data = {
+            device: data
+            for device, data in self._adv_data.items()
+            if data.get("mac_address") == mac
+        }
 
         return _switchbot_data
 
