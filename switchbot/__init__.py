@@ -116,8 +116,6 @@ def _btle_scan(
     with CONNECT_LOCK:
         try:
             devices = bluepy.btle.Scanner(interface).scan(scan_timeout, passive)
-            time.sleep(0.5)
-
         except bluepy.btle.BTLEManagementError:
             _LOGGER.error("Error scanning for switchbot devices", exc_info=True)
 
@@ -350,12 +348,6 @@ class SwitchbotDevice:
         command = self._commandkey(key)
         notify_msg = b"\x00"
         _LOGGER.debug("Sending command to switchbot %s", command)
-        if self._device._helper:  # pylint: disable=protected-access
-            _LOGGER.warning(
-                "Device is in %s state, calling disconnect first",
-                self._device.getState(),
-            )
-            self._disconnect()
         with CONNECT_LOCK:
             try:
                 self._connect()
@@ -366,7 +358,6 @@ class SwitchbotDevice:
                 _LOGGER.warning("Error talking to Switchbot", exc_info=True)
             finally:
                 self._disconnect()
-                time.sleep(1)
         if send_success:
             if notify_msg == b"\x07":
                 _LOGGER.error("Password required")
