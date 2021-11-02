@@ -351,14 +351,11 @@ class SwitchbotDevice:
         notify_msg = b"\x00"
         _LOGGER.debug("Sending command to switchbot %s", command)
         if self._device._helper:  # pylint: disable=protected-access
-            _LOGGER.warning(self._device.getState())
-            if self._device.getState() in ("conn", "scan"):
-                _LOGGER.error(
-                    "Device is in %s state, waiting for %s seconds",
-                    self._device.getState(),
-                    self._scan_timeout,
-                )
-                time.sleep(self._scan_timeout)
+            _LOGGER.warning(
+                "Device is in %s state, calling disconnect first",
+                self._device.getState(),
+            )
+            self._disconnect()
         with CONNECT_LOCK:
             try:
                 self._connect()
