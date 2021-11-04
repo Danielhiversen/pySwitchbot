@@ -14,9 +14,9 @@ DEFAULT_RETRY_TIMEOUT = 1
 DEFAULT_SCAN_TIMEOUT = 5
 
 # Switchbot device BTLE handles
-UUID = "cba20d00-224d-11e6-9fb8-0002a5d5c51b"
-HANDLE = "cba20002-224d-11e6-9fb8-0002a5d5c51b"
-NOTIFICATION_HANDLE = "cba20003-224d-11e6-9fb8-0002a5d5c51b"
+UUID = bluepy.btle.UUID("cba20d00-224d-11e6-9fb8-0002a5d5c51b")
+HANDLE = bluepy.btle.UUID("cba20002-224d-11e6-9fb8-0002a5d5c51b")
+NOTIFICATION_HANDLE = bluepy.btle.UUID("cba20003-224d-11e6-9fb8-0002a5d5c51b")
 
 # Keys common to all device types
 DEVICE_GET_BASIC_SETTINGS_KEY = "5702"
@@ -140,7 +140,7 @@ def _btle_scan(
         )
 
     for dev in devices:
-        if dev.getValueText(7) == UUID:
+        if dev.getValueText(7) == str(UUID):
             if mac:
                 if dev.addr.lower() == mac.lower():
                     _data = _process_btle_adv_data(dev)
@@ -156,29 +156,23 @@ def _process_btle_adv_data(dev: bluepy.btle.ScanEntry) -> dict[str, Any]:
     _adv_data: dict[str, Any] = {}
 
     _adv_data = {"mac_address": dev.addr}
-    for (adtype, desc, value) in dev.getScanData():
-        if adtype == 22:
-            _data = bytes.fromhex(value[4:])
-            _model = chr(_data[0] & 0b01111111)
-            _adv_data["isEncrypted"] = bool(_data[0] & 0b10000000)
-            _adv_data["model"] = _model
-            if _model == "H":
-                _adv_data["data"] = _process_wohand(_data)
-                _adv_data["data"]["rssi"] = dev.rssi
-                _adv_data["modelName"] = "WoHand"
-            elif _model == "c":
-                _adv_data["data"] = _process_wocurtain(_data)
-                _adv_data["data"]["rssi"] = dev.rssi
-                _adv_data["modelName"] = "WoCurtain"
-            elif _model == "T":
-                _adv_data["data"] = _process_wosensorth(_data)
-                _adv_data["data"]["rssi"] = dev.rssi
-                _adv_data["modelName"] = "WoSensorTH"
+    _data = dev.getValue(22)[2:]
 
-            else:
-                continue
-        else:
-            _adv_data[desc] = value
+    _model = chr(_data[0] & 0b01111111)
+    _adv_data["isEncrypted"] = bool(_data[0] & 0b10000000)
+    _adv_data["model"] = _model
+    if _model == "H":
+        _adv_data["data"] = _process_wohand(_data)
+        _adv_data["data"]["rssi"] = dev.rssi
+        _adv_data["modelName"] = "WoHand"
+    elif _model == "c":
+        _adv_data["data"] = _process_wocurtain(_data)
+        _adv_data["data"]["rssi"] = dev.rssi
+        _adv_data["modelName"] = "WoCurtain"
+    elif _model == "T":
+        _adv_data["data"] = _process_wosensorth(_data)
+        _adv_data["data"]["rssi"] = dev.rssi
+        _adv_data["modelName"] = "WoSensorTH"
 
     return _adv_data
 
