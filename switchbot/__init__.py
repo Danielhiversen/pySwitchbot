@@ -14,9 +14,9 @@ DEFAULT_RETRY_TIMEOUT = 1
 DEFAULT_SCAN_TIMEOUT = 5
 
 # Switchbot device BTLE handles
-UUID = bluepy.btle.UUID("cba20d00-224d-11e6-9fb8-0002a5d5c51b")
-HANDLE = bluepy.btle.UUID("cba20002-224d-11e6-9fb8-0002a5d5c51b")
-NOTIFICATION_HANDLE = bluepy.btle.UUID("cba20003-224d-11e6-9fb8-0002a5d5c51b")
+UUID = "cba20d00-224d-11e6-9fb8-0002a5d5c51b"
+HANDLE = "cba20002-224d-11e6-9fb8-0002a5d5c51b"
+NOTIFICATION_HANDLE = "cba20003-224d-11e6-9fb8-0002a5d5c51b"
 
 # Keys common to all device types
 DEVICE_GET_BASIC_SETTINGS_KEY = "5702"
