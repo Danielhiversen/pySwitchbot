@@ -269,6 +269,7 @@ class SwitchbotDevice(bluepy.btle.Peripheral):
         self._writeCmd("conn %s %s\n" % (self._mac, bluepy.btle.ADDR_TYPE_RANDOM))
         rsp = self._getResp("stat", timeout)
         if rsp is None:
+            self._stopHelper()
             raise bluepy.btle.BTLEDisconnectError(
                 "Timed out while trying to connect to peripheral %s" % self._mac,
                 rsp,
