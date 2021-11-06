@@ -233,7 +233,7 @@ class GetSwitchbotDevices:
         return _switchbot_data
 
 
-class SwitchbotDevice:
+class SwitchbotDevice(bluepy.btle.Peripheral):
     """Base Representation of a Switchbot Device."""
 
     def __init__(
@@ -244,11 +244,14 @@ class SwitchbotDevice:
         **kwargs: Any,
     ) -> None:
         """Switchbot base class constructor."""
-        self._interface = interface
-        self._mac = mac
-        self._device = bluepy.btle.Peripheral(
-            deviceAddr=None, addrType=bluepy.btle.ADDR_TYPE_RANDOM, iface=interface
+        bluepy.btle.Peripheral.__init__(
+            self,
+            deviceAddr=None,
+            addrType=bluepy.btle.ADDR_TYPE_RANDOM,
+            iface=interface,
         )
+        self._interface = interface
+        self._mac = mac.replace("-", ":").lower()
         self._sb_adv_data: dict[str, Any] = {}
         self._scan_timeout: int = kwargs.pop("scan_timeout", DEFAULT_SCAN_TIMEOUT)
         self._retry_count: int = kwargs.pop("retry_count", DEFAULT_RETRY_COUNT)
@@ -259,23 +262,37 @@ class SwitchbotDevice:
                 binascii.crc32(password.encode("ascii")) & 0xFFFFFFFF
             )
 
-    def _connect(self) -> None:
-        try:
-            _LOGGER.debug("Connecting to Switchbot")
-            self._device.connect(
-                self._mac, bluepy.btle.ADDR_TYPE_RANDOM, self._interface
+    # pylint: disable=arguments-differ
+    def _connect(self, timeout: int = None) -> None:
+        _LOGGER.debug("Connecting to Switchbot")
+        self._startHelper(self._interface)
+        self._writeCmd("conn %s %s\n" % (self._mac, bluepy.btle.ADDR_TYPE_RANDOM))
+        rsp = self._getResp("stat", timeout)
+        if rsp is None:
+            raise bluepy.btle.BTLEDisconnectError(
+                "Timed out while trying to connect to peripheral %s" % self._mac,
+                rsp,
             )
-            _LOGGER.debug("Connected to Switchbot")
-        except bluepy.btle.BTLEException:
-            _LOGGER.debug("Failed connecting to Switchbot", exc_info=True)
-            raise
+        while rsp and rsp["state"][0] in [
+            "tryconn",
+            "scan",
+        ]:  # Wait for scan to finish.
+            rsp = self._getResp("stat", timeout)
 
-    def _disconnect(self) -> None:
-        _LOGGER.debug("Disconnecting")
-        try:
-            self._device.disconnect()
-        except bluepy.btle.BTLEException:
-            _LOGGER.warning("Error disconnecting from Switchbot", exc_info=True)
+        # If operation in progress, disc is returned.
+        # Bluepy helper can't handle state. Execute stop, wait and retry.
+        if rsp["state"][0] == "disc":
+            _LOGGER.warning("Bluepy busy, waiting before retry")
+            self._stopHelper()
+            time.sleep(self._scan_timeout)
+            return self._connect(timeout)
+
+        if rsp["state"][0] != "conn":
+            _LOGGER.warning("Bluehelper returned unable to connect state: %s", rsp)
+            self._stopHelper()
+            raise bluepy.btle.BTLEDisconnectError(
+                "Failed to connect to peripheral %s, rsp: %s" % (self._mac, rsp)
+            )
 
     def _commandkey(self, key: str) -> str:
         if self._password_encoded is None:
@@ -286,7 +303,7 @@ class SwitchbotDevice:
 
     def _writekey(self, key: str) -> Any:
         _LOGGER.debug("Prepare to send")
-        hand = self._device.getCharacteristics(uuid=_sb_uuid("tx"))[0]
+        hand = self.getCharacteristics(uuid=_sb_uuid("tx"))[0]
         _LOGGER.debug("Sending command, %s", key)
         write_result = hand.write(bytes.fromhex(key), withResponse=False)
         if not write_result:
@@ -301,26 +318,42 @@ class SwitchbotDevice:
     def _subscribe(self) -> None:
         _LOGGER.debug("Subscribe to notifications")
         enable_notify_flag = b"\x01\x00"  # standard gatt flag to enable notification
-        handle = self._device.getCharacteristics(uuid=_sb_uuid("rx"))[0]
-        notify_handle = handle.getHandle() + 1
-        self._device.writeCharacteristic(
-            notify_handle, enable_notify_flag, withResponse=False
-        )
+        try:
+            handle = self.getCharacteristics(uuid=_sb_uuid("rx"))[0]
+            notify_handle = handle.getHandle() + 1
+            self.writeCharacteristic(
+                notify_handle, enable_notify_flag, withResponse=False
+            )
+        except bluepy.btle.BTLEException:
+            _LOGGER.warning(
+                "Error while enabling notifications on Switchbot", exc_info=True
+            )
+            raise
 
     def _readkey(self) -> bytes:
         _LOGGER.debug("Prepare to read")
-        receive_handle = self._device.getCharacteristics(uuid=_sb_uuid("rx"))
-        if receive_handle:
-            for char in receive_handle:
-                read_result: bytes = char.read()
-            return read_result
-        return b"\x00"
+        try:
+            receive_handle = self.getCharacteristics(uuid=_sb_uuid("rx"))
+            if receive_handle:
+                for char in receive_handle:
+                    read_result: bytes = char.read()
+                return read_result
+            return b"\x00"
+        except bluepy.btle.BTLEException:
+            _LOGGER.warning(
+                "Error while reading notifications from Switchbot", exc_info=True
+            )
+            raise
 
     def _sendcommand(self, key: str, retry: int) -> bytes:
         send_success = False
         command = self._commandkey(key)
         notify_msg = b"\x00"
         _LOGGER.debug("Sending command to switchbot %s", command)
+
+        if len(self._mac.split(":")) != 6:
+            raise ValueError("Expected MAC address, got %s" % repr(self._mac))
+
         with CONNECT_LOCK:
             try:
                 self._connect()
@@ -330,7 +363,7 @@ class SwitchbotDevice:
             except bluepy.btle.BTLEException:
                 _LOGGER.warning("Error talking to Switchbot", exc_info=True)
             finally:
-                self._disconnect()
+                self.disconnect()
         if send_success:
             if notify_msg == b"\x07":
                 _LOGGER.error("Password required")
