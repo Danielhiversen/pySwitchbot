@@ -13,10 +13,10 @@ DEFAULT_RETRY_COUNT = 3
 DEFAULT_RETRY_TIMEOUT = 1
 DEFAULT_SCAN_TIMEOUT = 5
 
-# Switchbot device BTLE handles
-UUID = bluepy.btle.UUID("cba20d00-224d-11e6-9fb8-0002a5d5c51b")
-HANDLE = bluepy.btle.UUID("cba20002-224d-11e6-9fb8-0002a5d5c51b")
-NOTIFICATION_HANDLE = bluepy.btle.UUID("cba20003-224d-11e6-9fb8-0002a5d5c51b")
+# Switchbot device UUIDs
+SB_UUID = bluepy.btle.UUID("cba20d00-224d-11e6-9fb8-0002a5d5c51b")
+SB_TX_UUID = bluepy.btle.UUID("cba20002-224d-11e6-9fb8-0002a5d5c51b")
+SB_RX_UUID = bluepy.btle.UUID("cba20003-224d-11e6-9fb8-0002a5d5c51b")
 
 # Keys common to all device types
 DEVICE_GET_BASIC_SETTINGS_KEY = "5702"
@@ -39,7 +39,7 @@ CURTAIN_EXT_SUM_KEY = "570f460401"
 CURTAIN_EXT_ADV_KEY = "570f460402"
 CURTAIN_EXT_CHAIN_INFO_KEY = "570f468101"
 
-# Keys used when encryption is set
+# Base key when encryption is set
 KEY_PASSWORD_PREFIX = "571"
 
 _LOGGER = logging.getLogger(__name__)
@@ -48,131 +48,72 @@ CONNECT_LOCK = threading.Lock()
 
 def _process_wohand(data: bytes) -> dict[str, bool | int]:
     """Process woHand/Bot services data."""
-    _bot_data: dict[str, bool | int] = {}
+    _switch_mode = bool(data[1] & 0b10000000)
 
-    # 128 switch or 0 press.
-    _bot_data["switchMode"] = bool(data[1] & 0b10000000)
-
-    # 64 off or 0 for on, if not inversed in app.
-    if _bot_data["switchMode"]:
-        _bot_data["isOn"] = not bool(data[1] & 0b01000000)
-
-    else:
-        _bot_data["isOn"] = False
-
-    _bot_data["battery"] = data[2] & 0b01111111
+    _bot_data = {
+        "switchMode": _switch_mode,
+        "isOn": not bool(data[1] & 0b01000000) if _switch_mode else False,
+        "battery": data[2] & 0b01111111,
+    }
 
     return _bot_data
 
 
 def _process_wocurtain(data: bytes, reverse: bool = True) -> dict[str, bool | int]:
     """Process woCurtain/Curtain services data."""
-    _curtain_data: dict[str, bool | int] = {}
 
-    _curtain_data["calibration"] = bool(data[1] & 0b01000000)
-    _curtain_data["battery"] = data[2] & 0b01111111
-    _curtain_data["inMotion"] = bool(data[3] & 0b10000000)
     _position = max(min(data[3] & 0b01111111, 100), 0)
-    _curtain_data["position"] = (100 - _position) if reverse else _position
 
-    # light sensor level (1-10)
-    _curtain_data["lightLevel"] = (data[4] >> 4) & 0b00001111
-    _curtain_data["deviceChain"] = data[4] & 0b00000111
+    _curtain_data = {
+        "calibration": bool(data[1] & 0b01000000),
+        "battery": data[2] & 0b01111111,
+        "inMotion": bool(data[3] & 0b10000000),
+        "position": (100 - _position) if reverse else _position,
+        "lightLevel": (data[4] >> 4) & 0b00001111,
+        "deviceChain": data[4] & 0b00000111,
+    }
 
     return _curtain_data
 
 
-def _process_wosensorth(data: bytes) -> dict[str, Any]:
+def _process_wosensorth(data: bytes) -> dict[str, object]:
     """Process woSensorTH/Temp sensor services data."""
-    _wosensorth_data: dict[str, Any] = {}
 
     _temp_sign = 1 if data[4] & 0b10000000 else -1
     _temp_c = _temp_sign * ((data[4] & 0b01111111) + (data[3] / 10))
     _temp_f = (_temp_c * 9 / 5) + 32
     _temp_f = (_temp_f * 10) / 10
 
-    _wosensorth_data["temp"] = {}
-    _wosensorth_data["temp"]["c"] = _temp_c
-    _wosensorth_data["temp"]["f"] = _temp_f
-
-    _wosensorth_data["fahrenheit"] = bool(data[5] & 0b10000000)
-    _wosensorth_data["humidity"] = data[5] & 0b01111111
-    _wosensorth_data["battery"] = data[2] & 0b01111111
+    _wosensorth_data = {
+        "temp": {"c": _temp_c, "f": _temp_f},
+        "fahrenheit": bool(data[5] & 0b10000000),
+        "humidity": data[5] & 0b01111111,
+        "battery": data[2] & 0b01111111,
+    }
 
     return _wosensorth_data
 
 
-def _btle_scan(
-    retry: int = DEFAULT_RETRY_COUNT,
-    interface: int = 0,
-    passive: bool = False,
-    scan_timeout: int = 5,
-    mac: str | None = None,
-) -> dict[str, Any]:
-    """Scan for bluetooth le adv data."""
-    devices = None
-    _data: dict[str, Any] = {}
-
-    with CONNECT_LOCK:
-        try:
-            devices = bluepy.btle.Scanner(interface).scan(scan_timeout, passive)
-        except bluepy.btle.BTLEManagementError:
-            _LOGGER.error("Error scanning for switchbot devices", exc_info=True)
-
-    if devices is None:
-        if retry < 1:
-            _LOGGER.error(
-                "Scanning for Switchbot devices failed. Stop trying", exc_info=True
-            )
-            return _data
-
-        _LOGGER.warning(
-            "Error scanning for Switchbot devices. Retrying (remaining: %d)",
-            retry,
-        )
-        time.sleep(DEFAULT_RETRY_TIMEOUT)
-        return _btle_scan(
-            retry=retry - 1,
-            interface=interface,
-            passive=passive,
-            scan_timeout=scan_timeout,
-            mac=mac,
-        )
-
-    for dev in devices:
-        if dev.getValueText(7) == str(UUID):
-            if mac:
-                if dev.addr.lower() == mac.lower():
-                    _data = _process_btle_adv_data(dev)
-            else:
-                dev_id = dev.addr.replace(":", "")
-                _data[dev_id] = _process_btle_adv_data(dev)
-
-    return _data
-
-
 def _process_btle_adv_data(dev: bluepy.btle.ScanEntry) -> dict[str, Any]:
     """Process bt le adv data."""
-    _adv_data: dict[str, Any] = {}
-
     _adv_data = {"mac_address": dev.addr}
     _data = dev.getValue(22)[2:]
+
+    supported_types: dict[str, dict[str, Any]] = {
+        "H": {"modelName": "WoHand", "func": _process_wohand},
+        "c": {"modelName": "WoCurtain", "func": _process_wocurtain},
+        "T": {"modelName": "WoSensorTH", "func": _process_wosensorth},
+    }
 
     _model = chr(_data[0] & 0b01111111)
     _adv_data["isEncrypted"] = bool(_data[0] & 0b10000000)
     _adv_data["model"] = _model
-    if _model == "H":
-        _adv_data["data"] = _process_wohand(_data)
+    if _model in supported_types:
+        _adv_data["data"] = supported_types[_model]["func"](_data)
         _adv_data["data"]["rssi"] = dev.rssi
-        _adv_data["modelName"] = "WoHand"
-    elif _model == "c":
-        _adv_data["data"] = _process_wocurtain(_data)
-        _adv_data["data"]["rssi"] = dev.rssi
-        _adv_data["modelName"] = "WoCurtain"
-    elif _model == "T":
-        _adv_data["data"] = _process_wosensorth(_data)
-        _adv_data["data"]["rssi"] = dev.rssi
-        _adv_data["modelName"] = "WoSensorTH"
+        _adv_data["modelName"] = supported_types[_model]["modelName"]
+    else:
+        _adv_data["rawAdvData"] = dev.getValueText(22)
 
     return _adv_data
 
@@ -190,14 +131,46 @@ class GetSwitchbotDevices:
         retry: int = DEFAULT_RETRY_COUNT,
         scan_timeout: int = DEFAULT_SCAN_TIMEOUT,
         passive: bool = False,
-    ) -> dict[str, Any] | None:
+        mac: str | None = None,
+    ) -> dict[str, Any]:
         """Find switchbot devices and their advertisement data."""
-        self._adv_data = _btle_scan(
-            retry=retry,
-            interface=self._interface,
-            passive=passive,
-            scan_timeout=scan_timeout,
-        )
+        devices = None
+
+        with CONNECT_LOCK:
+            try:
+                devices = bluepy.btle.Scanner(self._interface).scan(
+                    scan_timeout, passive
+                )
+            except bluepy.btle.BTLEManagementError:
+                _LOGGER.error("Error scanning for switchbot devices", exc_info=True)
+
+        if devices is None:
+            if retry < 1:
+                _LOGGER.error(
+                    "Scanning for Switchbot devices failed. Stop trying", exc_info=True
+                )
+                return self._adv_data
+
+            _LOGGER.warning(
+                "Error scanning for Switchbot devices. Retrying (remaining: %d)",
+                retry,
+            )
+            time.sleep(DEFAULT_RETRY_TIMEOUT)
+            return self.discover(
+                retry=retry - 1,
+                scan_timeout=scan_timeout,
+                passive=passive,
+                mac=mac,
+            )
+
+        for dev in devices:
+            if dev.getValueText(7) == str(SB_UUID):
+                dev_id = dev.addr.replace(":", "")
+                if mac:
+                    if dev.addr.lower() == mac.lower():
+                        self._adv_data[dev_id] = _process_btle_adv_data(dev)
+                else:
+                    self._adv_data[dev_id] = _process_btle_adv_data(dev)
 
         return self._adv_data
 
@@ -307,7 +280,7 @@ class SwitchbotDevice:
 
     def _writekey(self, key: str) -> Any:
         _LOGGER.debug("Prepare to send")
-        hand = self._device.getCharacteristics(uuid=HANDLE)[0]
+        hand = self._device.getCharacteristics(uuid=SB_TX_UUID)[0]
         _LOGGER.debug("Sending command, %s", key)
         write_result = hand.write(bytes.fromhex(key), withResponse=False)
         if not write_result:
@@ -322,7 +295,7 @@ class SwitchbotDevice:
     def _subscribe(self) -> None:
         _LOGGER.debug("Subscribe to notifications")
         enable_notify_flag = b"\x01\x00"  # standard gatt flag to enable notification
-        handle = self._device.getCharacteristics(uuid=NOTIFICATION_HANDLE)[0]
+        handle = self._device.getCharacteristics(uuid=SB_RX_UUID)[0]
         notify_handle = handle.getHandle() + 1
         self._device.writeCharacteristic(
             notify_handle, enable_notify_flag, withResponse=False
@@ -330,7 +303,7 @@ class SwitchbotDevice:
 
     def _readkey(self) -> bytes:
         _LOGGER.debug("Prepare to read")
-        receive_handle = self._device.getCharacteristics(uuid=NOTIFICATION_HANDLE)
+        receive_handle = self._device.getCharacteristics(uuid=SB_RX_UUID)
         if receive_handle:
             for char in receive_handle:
                 read_result: bytes = char.read()
@@ -374,29 +347,33 @@ class SwitchbotDevice:
 
     def get_battery_percent(self) -> Any:
         """Return device battery level in percent."""
-        if not self._sb_adv_data:
+        if not self._sb_adv_data.get("data"):
             return None
-        return self._sb_adv_data["data"]["battery"]
+        return self._sb_adv_data["data"].get("battery")
 
     def get_device_data(
         self,
         retry: int = DEFAULT_RETRY_COUNT,
         interface: int | None = None,
         passive: bool = False,
-    ) -> dict | None:
+    ) -> dict[str, Any]:
         """Find switchbot devices and their advertisement data."""
         if interface:
             _interface: int = interface
         else:
             _interface = self._interface
 
-        self._sb_adv_data = _btle_scan(
+        dev_id = self._mac.replace(":", "")
+
+        _data = GetSwitchbotDevices(interface=_interface).discover(
             retry=retry,
-            interface=_interface,
-            passive=passive,
             scan_timeout=self._scan_timeout,
+            passive=passive,
             mac=self._mac,
         )
+
+        if _data.get(dev_id):
+            self._sb_adv_data = _data[dev_id]
 
         return self._sb_adv_data
 
@@ -531,20 +508,20 @@ class Switchbot(SwitchbotDevice):
     def switch_mode(self) -> Any:
         """Return true or false from cache."""
         # To get actual position call update() first.
-        if not self._sb_adv_data:
+        if not self._sb_adv_data.get("data"):
             return None
-        return self._sb_adv_data["data"]["switchMode"]
+        return self._sb_adv_data.get("switchMode")
 
     def is_on(self) -> Any:
         """Return switch state from cache."""
         # To get actual position call update() first.
-        if not self._sb_adv_data:
+        if not self._sb_adv_data.get("data"):
             return None
 
         if self._inverse:
-            return not self._sb_adv_data["data"]["isOn"]
+            return not self._sb_adv_data["data"].get("isOn")
 
-        return self._sb_adv_data["data"]["isOn"]
+        return self._sb_adv_data["data"].get("isOn")
 
 
 class SwitchbotCurtain(SwitchbotDevice):
@@ -610,9 +587,9 @@ class SwitchbotCurtain(SwitchbotDevice):
     def get_position(self) -> Any:
         """Return cached position (0-100) of Curtain."""
         # To get actual position call update() first.
-        if not self._sb_adv_data:
+        if not self._sb_adv_data.get("data"):
             return None
-        return self._sb_adv_data["data"]["position"]
+        return self._sb_adv_data["data"].get("position")
 
     def get_basic_info(self) -> dict[str, Any] | None:
         """Get device basic settings."""
@@ -711,9 +688,9 @@ class SwitchbotCurtain(SwitchbotDevice):
     def get_light_level(self) -> Any:
         """Return cached light level."""
         # To get actual light level call update() first.
-        if not self._sb_adv_data:
+        if not self._sb_adv_data.get("data"):
             return None
-        return self._sb_adv_data["data"]["lightLevel"]
+        return self._sb_adv_data["data"].get("lightLevel")
 
     def is_reversed(self) -> bool:
         """Return True if curtain position is opposite from SB data."""
@@ -722,6 +699,6 @@ class SwitchbotCurtain(SwitchbotDevice):
     def is_calibrated(self) -> Any:
         """Return True curtain is calibrated."""
         # To get actual light level call update() first.
-        if not self._sb_adv_data:
+        if not self._sb_adv_data.get("data"):
             return None
-        return self._sb_adv_data["data"]["calibration"]
+        return self._sb_adv_data["data"].get("calibration")
