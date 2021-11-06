@@ -3,7 +3,7 @@ from __future__ import annotations
 
 import binascii
 import logging
-import threading
+from threading import Lock
 import time
 from typing import Any
 
@@ -12,11 +12,6 @@ import bluepy
 DEFAULT_RETRY_COUNT = 3
 DEFAULT_RETRY_TIMEOUT = 1
 DEFAULT_SCAN_TIMEOUT = 5
-
-# Switchbot device UUIDs
-SB_UUID = bluepy.btle.UUID("cba20d00-224d-11e6-9fb8-0002a5d5c51b")
-SB_TX_UUID = bluepy.btle.UUID("cba20002-224d-11e6-9fb8-0002a5d5c51b")
-SB_RX_UUID = bluepy.btle.UUID("cba20003-224d-11e6-9fb8-0002a5d5c51b")
 
 # Keys common to all device types
 DEVICE_GET_BASIC_SETTINGS_KEY = "5702"
@@ -43,7 +38,18 @@ CURTAIN_EXT_CHAIN_INFO_KEY = "570f468101"
 KEY_PASSWORD_PREFIX = "571"
 
 _LOGGER = logging.getLogger(__name__)
-CONNECT_LOCK = threading.Lock()
+CONNECT_LOCK = Lock()
+
+
+def _sb_uuid(comms_type: str = "service") -> bluepy.btle.UUID:
+    """Return Switchbot UUID."""
+
+    _uuid = {"tx": "002", "rx": "003", "service": "d00"}
+
+    if comms_type in _uuid:
+        return bluepy.btle.UUID(f"cba20{_uuid[comms_type]}-224d-11e6-9fb8-0002a5d5c51b")
+
+    return "Incorrect type, choose between: tx, rx or service"
 
 
 def _process_wohand(data: bytes) -> dict[str, bool | int]:
@@ -164,7 +170,7 @@ class GetSwitchbotDevices:
             )
 
         for dev in devices:
-            if dev.getValueText(7) == str(SB_UUID):
+            if dev.getValueText(7) == str(_sb_uuid()):
                 dev_id = dev.addr.replace(":", "")
                 if mac:
                     if dev.addr.lower() == mac.lower():
@@ -280,7 +286,7 @@ class SwitchbotDevice:
 
     def _writekey(self, key: str) -> Any:
         _LOGGER.debug("Prepare to send")
-        hand = self._device.getCharacteristics(uuid=SB_TX_UUID)[0]
+        hand = self._device.getCharacteristics(uuid=_sb_uuid("tx"))[0]
         _LOGGER.debug("Sending command, %s", key)
         write_result = hand.write(bytes.fromhex(key), withResponse=False)
         if not write_result:
@@ -295,7 +301,7 @@ class SwitchbotDevice:
     def _subscribe(self) -> None:
         _LOGGER.debug("Subscribe to notifications")
         enable_notify_flag = b"\x01\x00"  # standard gatt flag to enable notification
-        handle = self._device.getCharacteristics(uuid=SB_RX_UUID)[0]
+        handle = self._device.getCharacteristics(uuid=_sb_uuid("rx"))[0]
         notify_handle = handle.getHandle() + 1
         self._device.writeCharacteristic(
             notify_handle, enable_notify_flag, withResponse=False
@@ -303,7 +309,7 @@ class SwitchbotDevice:
 
     def _readkey(self) -> bytes:
         _LOGGER.debug("Prepare to read")
-        receive_handle = self._device.getCharacteristics(uuid=SB_RX_UUID)
+        receive_handle = self._device.getCharacteristics(uuid=_sb_uuid("rx"))
         if receive_handle:
             for char in receive_handle:
                 read_result: bytes = char.read()
@@ -358,10 +364,7 @@ class SwitchbotDevice:
         passive: bool = False,
     ) -> dict[str, Any]:
         """Find switchbot devices and their advertisement data."""
-        if interface:
-            _interface: int = interface
-        else:
-            _interface = self._interface
+        _interface: int = interface if interface else self._interface
 
         dev_id = self._mac.replace(":", "")
 
