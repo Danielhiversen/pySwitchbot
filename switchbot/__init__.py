@@ -263,7 +263,7 @@ class SwitchbotDevice(bluepy.btle.Peripheral):
             )
 
     # pylint: disable=arguments-differ
-    def _connect(self, retry: int, timeout: int = None) -> None:
+    def _connect(self, retry: int, timeout: int | None = None) -> None:
         _LOGGER.debug("Connecting to Switchbot")
 
         if retry < 1:  # failsafe
@@ -368,7 +368,7 @@ class SwitchbotDevice(bluepy.btle.Peripheral):
 
     def _readkey(self) -> bytes:
         if self._helper is None:
-            return
+            return b''
         _LOGGER.debug("Prepare to read")
         try:
             receive_handle = self.getCharacteristics(uuid=_sb_uuid("rx"))
@@ -383,7 +383,7 @@ class SwitchbotDevice(bluepy.btle.Peripheral):
             )
             raise
 
-    def _sendcommand(self, key: str, retry: int, timeout: int = None) -> bytes:
+    def _sendcommand(self, key: str, retry: int, timeout: int | None = None) -> bytes:
         send_success = False
         command = self._commandkey(key)
         notify_msg = b"\x00"
