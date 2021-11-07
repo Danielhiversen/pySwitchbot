@@ -268,6 +268,7 @@ class SwitchbotDevice(bluepy.btle.Peripheral):
 
         if retry < 1:
             _LOGGER.warning("Switchbot connection failed, stop retry")
+            self._stopHelper()
             raise bluepy.btle.BTLEDisconnectError("Connection Retry exceeded")
 
         if self._helper is None:
