@@ -336,10 +336,18 @@ class SwitchbotDevice(bluepy.btle.Peripheral):
         return KEY_PASSWORD_PREFIX + key_action + self._password_encoded + key_suffix
 
     def _writekey(self, key: str) -> Any:
+        if self._helper is None:
+            return
         _LOGGER.debug("Prepare to send")
-        hand = self.getCharacteristics(uuid=_sb_uuid("tx"))[0]
-        _LOGGER.debug("Sending command, %s", key)
-        write_result = hand.write(bytes.fromhex(key), withResponse=False)
+        try:
+            hand = self.getCharacteristics(uuid=_sb_uuid("tx"))[0]
+            _LOGGER.debug("Sending command, %s", key)
+            write_result = hand.write(bytes.fromhex(key), withResponse=False)
+        except bluepy.btle.BTLEException:
+            _LOGGER.warning(
+                "Error while enabling notifications on Switchbot", exc_info=True
+            )
+            raise
         if not write_result:
             _LOGGER.error(
                 "Sent command but didn't get a response from Switchbot confirming command was sent."
@@ -350,6 +358,8 @@ class SwitchbotDevice(bluepy.btle.Peripheral):
         return write_result
 
     def _subscribe(self) -> None:
+        if self._helper is None:
+            return
         _LOGGER.debug("Subscribe to notifications")
         enable_notify_flag = b"\x01\x00"  # standard gatt flag to enable notification
         try:
@@ -365,6 +375,8 @@ class SwitchbotDevice(bluepy.btle.Peripheral):
             raise
 
     def _readkey(self) -> bytes:
+        if self._helper is None:
+            return
         _LOGGER.debug("Prepare to read")
         try:
             receive_handle = self.getCharacteristics(uuid=_sb_uuid("rx"))
