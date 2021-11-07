@@ -263,30 +263,62 @@ class SwitchbotDevice(bluepy.btle.Peripheral):
             )
 
     # pylint: disable=arguments-differ
-    def _connect(self, timeout: int = None) -> None:
+    def _connect(self, retry: int, timeout: int = None) -> None:
         _LOGGER.debug("Connecting to Switchbot")
-        self._startHelper(self._interface)
+
+        if retry < 1:
+            _LOGGER.warning("Switchbot connection failed, stop retry")
+            raise bluepy.btle.BTLEDisconnectError("Connection Retry exceeded")
+
+        if self._helper is None:
+            self._startHelper(self._interface)
         self._writeCmd("conn %s %s\n" % (self._mac, bluepy.btle.ADDR_TYPE_RANDOM))
-        rsp = self._getResp("stat", timeout)
+
+        rsp = self._getResp(["stat", "err"], timeout)
+
         if rsp is None:
             self._stopHelper()
             raise bluepy.btle.BTLEDisconnectError(
                 "Timed out while trying to connect to peripheral %s" % self._mac,
                 rsp,
             )
-        while rsp and rsp["state"][0] in [
+
+        while rsp.get("state") and rsp["state"][0] in [
             "tryconn",
             "scan",
         ]:  # Wait for scan to finish.
-            rsp = self._getResp("stat", timeout)
+            rsp = self._getResp(["stat", "err"], timeout)
+
+        if rsp["rsp"][0] == "err":
+            errcode = rsp["code"][0]
+            _LOGGER.debug(
+                "Error trying to connect to peripheral %s, error: %s",
+                self._mac,
+                errcode,
+            )
+
+            if errcode == "connfail":  # not terminal, can retry connection.
+                _LOGGER.warning(
+                    "Connection failed, retrying connection to %s", self._mac
+                )
+                return self._connect(retry - 1, timeout)
+
+            if errcode == "nomgmt":
+                raise bluepy.btle.BTLEManagementError(
+                    "Management not available (permissions problem?)", rsp
+                )
+            if errcode == "atterr":
+                raise bluepy.btle.BTLEGattError("Bluetooth command failed", rsp)
+
+            raise bluepy.btle.BTLEException(
+                "Error from bluepy-helper (%s)" % errcode, rsp
+            )
 
         # If operation in progress, disc is returned.
-        # Bluepy helper can't handle state. Execute stop, wait and retry.
         if rsp["state"][0] == "disc":
             _LOGGER.warning("Bluepy busy, waiting before retry")
-            self._stopHelper()
             time.sleep(self._scan_timeout)
-            return self._connect(timeout)
+            return self._connect(retry - 1, timeout)
 
         if rsp["state"][0] != "conn":
             _LOGGER.warning("Bluehelper returned unable to connect state: %s", rsp)
@@ -346,7 +378,7 @@ class SwitchbotDevice(bluepy.btle.Peripheral):
             )
             raise
 
-    def _sendcommand(self, key: str, retry: int) -> bytes:
+    def _sendcommand(self, key: str, retry: int, timeout: int = None) -> bytes:
         send_success = False
         command = self._commandkey(key)
         notify_msg = b"\x00"
@@ -357,7 +389,7 @@ class SwitchbotDevice(bluepy.btle.Peripheral):
 
         with CONNECT_LOCK:
             try:
-                self._connect()
+                self._connect(retry, timeout)
                 self._subscribe()
                 send_success = self._writekey(command)
                 notify_msg = self._readkey()
