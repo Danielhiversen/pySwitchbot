@@ -267,9 +267,9 @@ class SwitchbotDevice(bluepy.btle.Peripheral):
         _LOGGER.debug("Connecting to Switchbot")
 
         if retry < 1:
-            _LOGGER.warning("Switchbot connection failed, stop retry")
+            _LOGGER.warning("Switchbot connection attempt failed")
             self._stopHelper()
-            raise bluepy.btle.BTLEDisconnectError("Connection Retry exceeded")
+            return
 
         if self._helper is None:
             self._startHelper(self._interface)
@@ -287,7 +287,8 @@ class SwitchbotDevice(bluepy.btle.Peripheral):
         while rsp.get("state") and rsp["state"][0] in [
             "tryconn",
             "scan",
-        ]:  # Wait for scan to finish.
+            "disc",
+        ]:  # Wait for any operations to finish.
             rsp = self._getResp(["stat", "err"], timeout)
 
         if rsp["rsp"][0] == "err":
@@ -314,12 +315,6 @@ class SwitchbotDevice(bluepy.btle.Peripheral):
             raise bluepy.btle.BTLEException(
                 "Error from bluepy-helper (%s)" % errcode, rsp
             )
-
-        # If operation in progress, disc is returned.
-        if rsp["state"][0] == "disc":
-            _LOGGER.warning("Bluepy busy, waiting before retry")
-            time.sleep(self._scan_timeout)
-            return self._connect(retry - 1, timeout)
 
         if rsp["state"][0] != "conn":
             _LOGGER.warning("Bluehelper returned unable to connect state: %s", rsp)
