@@ -266,7 +266,7 @@ class SwitchbotDevice(bluepy.btle.Peripheral):
     def _connect(self, retry: int, timeout: int = None) -> None:
         _LOGGER.debug("Connecting to Switchbot")
 
-        if retry < 1:
+        if retry < 1:  # failsafe
             _LOGGER.warning("Switchbot connection attempt failed")
             self._stopHelper()
             return
@@ -294,9 +294,6 @@ class SwitchbotDevice(bluepy.btle.Peripheral):
             )
 
             if errcode == "connfail":  # not terminal, can retry connection.
-                _LOGGER.warning(
-                    "Connection failed, retrying connection to %s", self._mac
-                )
                 return self._connect(retry - 1, timeout)
 
             if errcode == "nomgmt":
