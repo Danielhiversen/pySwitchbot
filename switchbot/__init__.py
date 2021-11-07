@@ -273,16 +273,10 @@ class SwitchbotDevice(bluepy.btle.Peripheral):
 
         if self._helper is None:
             self._startHelper(self._interface)
+
         self._writeCmd("conn %s %s\n" % (self._mac, bluepy.btle.ADDR_TYPE_RANDOM))
 
         rsp = self._getResp(["stat", "err"], timeout)
-
-        if rsp is None:
-            self._stopHelper()
-            raise bluepy.btle.BTLEDisconnectError(
-                "Timed out while trying to connect to peripheral %s" % self._mac,
-                rsp,
-            )
 
         while rsp.get("state") and rsp["state"][0] in [
             "tryconn",
@@ -291,7 +285,7 @@ class SwitchbotDevice(bluepy.btle.Peripheral):
         ]:  # Wait for any operations to finish.
             rsp = self._getResp(["stat", "err"], timeout)
 
-        if rsp["rsp"][0] == "err":
+        if rsp and rsp["rsp"][0] == "err":
             errcode = rsp["code"][0]
             _LOGGER.debug(
                 "Error trying to connect to peripheral %s, error: %s",
@@ -316,9 +310,16 @@ class SwitchbotDevice(bluepy.btle.Peripheral):
                 "Error from bluepy-helper (%s)" % errcode, rsp
             )
 
-        if rsp["state"][0] != "conn":
+        if not rsp or rsp["state"][0] != "conn":
             _LOGGER.warning("Bluehelper returned unable to connect state: %s", rsp)
             self._stopHelper()
+
+            if rsp is None:
+                raise bluepy.btle.BTLEDisconnectError(
+                    "Timed out while trying to connect to peripheral %s" % self._mac,
+                    rsp,
+                )
+
             raise bluepy.btle.BTLEDisconnectError(
                 "Failed to connect to peripheral %s, rsp: %s" % (self._mac, rsp)
             )
