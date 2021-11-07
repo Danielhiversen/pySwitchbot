@@ -267,7 +267,6 @@ class SwitchbotDevice(bluepy.btle.Peripheral):
         _LOGGER.debug("Connecting to Switchbot")
 
         if retry < 1:  # failsafe
-            _LOGGER.warning("Switchbot connection attempt failed")
             self._stopHelper()
             return
 
