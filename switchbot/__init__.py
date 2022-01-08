@@ -363,7 +363,7 @@ class SwitchbotDevice(bluepy.btle.Peripheral):
         return True
 
     def _readkey(self) -> bytes:
-        _LOGGER.debug("Prepare to read")
+        _LOGGER.debug("Prepare to read notification from switchbot")
         if self._helper is None:
             return b"\x00"
         try:
@@ -378,7 +378,7 @@ class SwitchbotDevice(bluepy.btle.Peripheral):
             return read_result
 
         # Could disconnect before reading response. Assume it worked as this is executed after issueing command.
-        if self.getState() == "disc":
+        if self._helper and self.getState() == "disc":
             return b"\x01"
 
         return b"\x00"
