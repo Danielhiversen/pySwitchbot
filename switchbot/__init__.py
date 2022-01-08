@@ -368,7 +368,7 @@ class SwitchbotDevice(bluepy.btle.Peripheral):
 
     def _readkey(self) -> bytes:
         if self._helper is None:
-            return b""
+            return
         _LOGGER.debug("Prepare to read")
         try:
             receive_handle = self.getCharacteristics(uuid=_sb_uuid("rx"))
@@ -399,9 +399,10 @@ class SwitchbotDevice(bluepy.btle.Peripheral):
                 _LOGGER.warning("Error connecting to Switchbot", exc_info=True)
             else:
                 try:
-                    self._subscribe()
-                    send_success = self._writekey(command)
-                    notify_msg = self._readkey()
+                    while self._helper:
+                        self._subscribe()
+                        send_success = self._writekey(command)
+                        notify_msg = self._readkey()
                 except bluepy.btle.BTLEException:
                     _LOGGER.warning(
                         "Error sending commands to Switchbot", exc_info=True
