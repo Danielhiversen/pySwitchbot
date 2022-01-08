@@ -328,24 +328,18 @@ class SwitchbotDevice(bluepy.btle.Peripheral):
         return KEY_PASSWORD_PREFIX + key_action + self._password_encoded + key_suffix
 
     def _writekey(self, key: str) -> None:
-        if self._helper is None:
-            return
         _LOGGER.debug("Prepare to send")
         try:
             hand = self.getCharacteristics(uuid=_sb_uuid("tx"))[0]
             _LOGGER.debug("Sending command, %s", key)
             hand.write(bytes.fromhex(key), withResponse=False)
         except bluepy.btle.BTLEException:
-            _LOGGER.warning(
-                "Error while enabling notifications on Switchbot", exc_info=True
-            )
+            _LOGGER.warning("Error sending command to Switchbot", exc_info=True)
             raise
         else:
             _LOGGER.info("Successfully sent command to Switchbot (MAC: %s)", self._mac)
 
     def _subscribe(self) -> None:
-        if self._helper is None:
-            return
         _LOGGER.debug("Subscribe to notifications")
         enable_notify_flag = b"\x01\x00"  # standard gatt flag to enable notification
         try:
@@ -361,9 +355,6 @@ class SwitchbotDevice(bluepy.btle.Peripheral):
             raise
 
     def _readkey(self) -> bytes:
-        # Could disconnect before reading response. Assume it worked as this is executed after issueing command.
-        if self._helper is None:
-            return b"\x01"
         _LOGGER.debug("Prepare to read")
         try:
             receive_handle = self.getCharacteristics(uuid=_sb_uuid("rx"))
@@ -376,6 +367,7 @@ class SwitchbotDevice(bluepy.btle.Peripheral):
                 read_result: bytes = char.read()
             return read_result
 
+        # Could disconnect before reading response. Assume it worked as this is executed after issueing command.
         return b"\x01"
 
     def _sendcommand(self, key: str, retry: int, timeout: int | None = None) -> bytes:
