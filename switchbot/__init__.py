@@ -320,6 +320,11 @@ class SwitchbotDevice(bluepy.btle.Peripheral):
                 "Failed to connect to peripheral %s, rsp: %s" % (self._mac, rsp)
             )
 
+        if self._helper is None:
+            raise bluepy.btle.BTLEException(
+                "Error from bluepy-helper (%s)" % "Helper not started", rsp
+            )
+
     def _commandkey(self, key: str) -> str:
         if self._password_encoded is None:
             return key
