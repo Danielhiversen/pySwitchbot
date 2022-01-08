@@ -377,9 +377,11 @@ class SwitchbotDevice(bluepy.btle.Peripheral):
             )
             raise
 
-    def _sendcommand(self, key: str, retry: int, timeout: int | None = None) -> bytes:
+    def _sendcommand(
+        self, key: str, retry: int, timeout: int | None = None
+    ) -> None | bytes:
         command = self._commandkey(key)
-        notify_msg = b"\x00"
+        notify_msg = None
         _LOGGER.debug("Sending command to switchbot %s", command)
 
         if len(self._mac.split(":")) != 6:
@@ -388,10 +390,10 @@ class SwitchbotDevice(bluepy.btle.Peripheral):
         with CONNECT_LOCK:
             try:
                 self._connect(retry, timeout)
+                self._subscribe()
             except bluepy.btle.BTLEException:
                 _LOGGER.warning("Error connecting to Switchbot", exc_info=True)
             else:
-                self._subscribe()
                 try:
                     self._writekey(command)
                 except bluepy.btle.BTLEException:
@@ -405,12 +407,13 @@ class SwitchbotDevice(bluepy.btle.Peripheral):
 
         print("notify message", notify_msg)
 
-        if notify_msg != b"\x00":
+        if notify_msg:
             if notify_msg == b"\x07":
                 _LOGGER.error("Password required")
             elif notify_msg == b"\t":
                 _LOGGER.error("Password incorrect")
             return notify_msg
+
         if retry < 1:
             _LOGGER.error(
                 "Switchbot communication failed. Stopping trying", exc_info=True
