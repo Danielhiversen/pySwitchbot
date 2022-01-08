@@ -40,7 +40,7 @@ KEY_PASSWORD_PREFIX = "571"
 _LOGGER = logging.getLogger(__name__)
 CONNECT_LOCK = Lock()
 
-
+#fix connectivity failure notifications
 def _sb_uuid(comms_type: str = "service") -> bluepy.btle.UUID:
     """Return Switchbot UUID."""
 
