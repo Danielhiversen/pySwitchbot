@@ -327,32 +327,26 @@ class SwitchbotDevice(bluepy.btle.Peripheral):
         key_suffix = key[4:]
         return KEY_PASSWORD_PREFIX + key_action + self._password_encoded + key_suffix
 
-    def _writekey(self, key: str) -> Any:
-        if self._helper is None:
-            return
+    def _writekey(self, key: str) -> bool:
         _LOGGER.debug("Prepare to send")
+        if self._helper is None or self.getState() == "disc":
+            return False
         try:
             hand = self.getCharacteristics(uuid=_sb_uuid("tx"))[0]
             _LOGGER.debug("Sending command, %s", key)
-            write_result = hand.write(bytes.fromhex(key), withResponse=False)
+            hand.write(bytes.fromhex(key), withResponse=False)
         except bluepy.btle.BTLEException:
-            _LOGGER.warning(
-                "Error while enabling notifications on Switchbot", exc_info=True
-            )
+            _LOGGER.warning("Error sending command to Switchbot", exc_info=True)
             raise
-        if not write_result:
-            _LOGGER.error(
-                "Sent command but didn't get a response from Switchbot confirming command was sent."
-                " Please check the Switchbot"
-            )
         else:
             _LOGGER.info("Successfully sent command to Switchbot (MAC: %s)", self._mac)
-        return write_result
 
-    def _subscribe(self) -> None:
-        if self._helper is None:
-            return
+        return True
+
+    def _subscribe(self) -> bool:
         _LOGGER.debug("Subscribe to notifications")
+        if self._helper is None or self.getState() == "disc":
+            return False
         enable_notify_flag = b"\x01\x00"  # standard gatt flag to enable notification
         try:
             handle = self.getCharacteristics(uuid=_sb_uuid("rx"))[0]
@@ -366,27 +360,33 @@ class SwitchbotDevice(bluepy.btle.Peripheral):
             )
             raise
 
+        return True
+
     def _readkey(self) -> bytes:
+        _LOGGER.debug("Prepare to read notification from switchbot")
         if self._helper is None:
-            return b''
-        _LOGGER.debug("Prepare to read")
+            return b"\x00"
         try:
             receive_handle = self.getCharacteristics(uuid=_sb_uuid("rx"))
-            if receive_handle:
-                for char in receive_handle:
-                    read_result: bytes = char.read()
-                return read_result
-            return b"\x00"
         except bluepy.btle.BTLEException:
             _LOGGER.warning(
                 "Error while reading notifications from Switchbot", exc_info=True
             )
-            raise
+        else:
+            for char in receive_handle:
+                read_result: bytes = char.read()
+            return read_result
+
+        # Could disconnect before reading response. Assume it worked as this is executed after issueing command.
+        if self._helper and self.getState() == "disc":
+            return b"\x01"
+
+        return b"\x00"
 
     def _sendcommand(self, key: str, retry: int, timeout: int | None = None) -> bytes:
-        send_success = False
         command = self._commandkey(key)
-        notify_msg = b"\x00"
+        send_success = False
+        notify_msg = None
         _LOGGER.debug("Sending command to switchbot %s", command)
 
         if len(self._mac.split(":")) != 6:
@@ -395,25 +395,35 @@ class SwitchbotDevice(bluepy.btle.Peripheral):
         with CONNECT_LOCK:
             try:
                 self._connect(retry, timeout)
-                self._subscribe()
-                send_success = self._writekey(command)
-                notify_msg = self._readkey()
+                send_success = self._subscribe()
             except bluepy.btle.BTLEException:
-                _LOGGER.warning("Error talking to Switchbot", exc_info=True)
+                _LOGGER.warning("Error connecting to Switchbot", exc_info=True)
+            else:
+                try:
+                    send_success = self._writekey(command)
+                except bluepy.btle.BTLEException:
+                    _LOGGER.warning(
+                        "Error sending commands to Switchbot", exc_info=True
+                    )
+                else:
+                    notify_msg = self._readkey()
             finally:
                 self.disconnect()
-        if send_success:
+
+        print("notify message", notify_msg)
+
+        if notify_msg and send_success:
             if notify_msg == b"\x07":
                 _LOGGER.error("Password required")
             elif notify_msg == b"\t":
                 _LOGGER.error("Password incorrect")
-
             return notify_msg
+
         if retry < 1:
             _LOGGER.error(
                 "Switchbot communication failed. Stopping trying", exc_info=True
             )
-            return notify_msg
+            return b"\x00"
         _LOGGER.warning("Cannot connect to Switchbot. Retrying (remaining: %d)", retry)
         time.sleep(DEFAULT_RETRY_TIMEOUT)
         return self._sendcommand(key, retry - 1)
