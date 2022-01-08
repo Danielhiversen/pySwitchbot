@@ -371,10 +371,11 @@ class SwitchbotDevice(bluepy.btle.Peripheral):
                 "Error while reading notifications from Switchbot", exc_info=True
             )
         else:
-            # if receive_handle:
             for char in receive_handle:
                 read_result: bytes = char.read()
             return read_result
+        # Could disconnect before reading response. Assume it worked as this is executed after issueing command.
+        return b"\x01"
 
     def _sendcommand(self, key: str, retry: int, timeout: int | None = None) -> bytes:
         command = self._commandkey(key)
