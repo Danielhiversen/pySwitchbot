@@ -366,16 +366,15 @@ class SwitchbotDevice(bluepy.btle.Peripheral):
         _LOGGER.debug("Prepare to read")
         try:
             receive_handle = self.getCharacteristics(uuid=_sb_uuid("rx"))
-            if receive_handle:
-                for char in receive_handle:
-                    read_result: bytes = char.read()
-                return read_result
-            return b"\x00"
         except bluepy.btle.BTLEException:
             _LOGGER.warning(
                 "Error while reading notifications from Switchbot", exc_info=True
             )
-            raise
+        else:
+            # if receive_handle:
+            for char in receive_handle:
+                read_result: bytes = char.read()
+            return read_result
 
     def _sendcommand(self, key: str, retry: int, timeout: int | None = None) -> bytes:
         command = self._commandkey(key)
