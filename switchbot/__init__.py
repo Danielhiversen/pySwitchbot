@@ -263,7 +263,7 @@ class SwitchbotDevice(bluepy.btle.Peripheral):
             )
 
     # pylint: disable=arguments-differ
-    def _connect(self, retry: int, timeout: int | None = 1) -> None:
+    def _connect(self, retry: int, timeout: int | None = None) -> None:
         _LOGGER.debug("Connecting to Switchbot")
 
         if retry < 1:  # failsafe
