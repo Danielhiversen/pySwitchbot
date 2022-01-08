@@ -320,11 +320,6 @@ class SwitchbotDevice(bluepy.btle.Peripheral):
                 "Failed to connect to peripheral %s, rsp: %s" % (self._mac, rsp)
             )
 
-        if self._helper is None:
-            raise bluepy.btle.BTLEException(
-                "Error from bluepy-helper (%s)" % "Helper not started", rsp
-            )
-
     def _commandkey(self, key: str) -> str:
         if self._password_encoded is None:
             return key
@@ -373,7 +368,10 @@ class SwitchbotDevice(bluepy.btle.Peripheral):
             return read_result
 
         # Could disconnect before reading response. Assume it worked as this is executed after issueing command.
-        return b"\x01"
+        if self.getState() == "disc":
+            return b"\x01"
+
+        return b"\x00"
 
     def _sendcommand(self, key: str, retry: int, timeout: int | None = None) -> bytes:
         command = self._commandkey(key)
