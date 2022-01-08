@@ -399,7 +399,7 @@ class SwitchbotDevice(bluepy.btle.Peripheral):
                 _LOGGER.warning("Error connecting to Switchbot", exc_info=True)
             else:
                 try:
-                    while self._helper:
+                    if self._helper:
                         self._subscribe()
                         send_success = self._writekey(command)
                         notify_msg = self._readkey()
