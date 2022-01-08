@@ -398,19 +398,19 @@ class SwitchbotDevice(bluepy.btle.Peripheral):
             except bluepy.btle.BTLEException:
                 _LOGGER.warning("Error connecting to Switchbot", exc_info=True)
             else:
+                self._subscribe()
                 try:
-                    with self._helper:
-                        self._subscribe()
-                        send_success = self._writekey(command)
-                        notify_msg = self._readkey()
+                    send_success = self._writekey(command)
+                    print("send_success:", send_success)
                 except bluepy.btle.BTLEException:
                     _LOGGER.warning(
                         "Error sending commands to Switchbot", exc_info=True
                     )
+                notify_msg = self._readkey()
             finally:
                 self.disconnect()
 
-        print(notify_msg)
+        print("notify message", notify_msg)
 
         if send_success:
             if notify_msg == b"\x07":
