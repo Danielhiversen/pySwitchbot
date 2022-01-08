@@ -377,9 +377,7 @@ class SwitchbotDevice(bluepy.btle.Peripheral):
             )
             raise
 
-    def _sendcommand(
-        self, key: str, retry: int, timeout: int | None = None
-    ) -> None | bytes:
+    def _sendcommand(self, key: str, retry: int, timeout: int | None = None) -> bytes:
         command = self._commandkey(key)
         notify_msg = None
         _LOGGER.debug("Sending command to switchbot %s", command)
@@ -418,7 +416,7 @@ class SwitchbotDevice(bluepy.btle.Peripheral):
             _LOGGER.error(
                 "Switchbot communication failed. Stopping trying", exc_info=True
             )
-            return notify_msg
+            return b"\x00"
         _LOGGER.warning("Cannot connect to Switchbot. Retrying (remaining: %d)", retry)
         time.sleep(DEFAULT_RETRY_TIMEOUT)
         return self._sendcommand(key, retry - 1)
