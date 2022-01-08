@@ -364,6 +364,8 @@ class SwitchbotDevice(bluepy.btle.Peripheral):
 
     def _readkey(self) -> bytes:
         _LOGGER.debug("Prepare to read")
+        if self._helper is None:
+            return b"\x00"
         try:
             receive_handle = self.getCharacteristics(uuid=_sb_uuid("rx"))
         except bluepy.btle.BTLEException:
