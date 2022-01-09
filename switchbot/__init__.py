@@ -410,8 +410,6 @@ class SwitchbotDevice(bluepy.btle.Peripheral):
             finally:
                 self.disconnect()
 
-        print("notify message", notify_msg)
-
         if notify_msg and send_success:
             if notify_msg == b"\x07":
                 _LOGGER.error("Password required")
