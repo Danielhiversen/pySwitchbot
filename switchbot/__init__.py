@@ -282,7 +282,9 @@ class SwitchbotDevice(bluepy.btle.Peripheral):
             "tryconn",
             "scan",
             "disc",
-        ] and time.time() > timeout:  # Wait for any operations to finish.
+        ]:  # Wait for any operations to finish.
+            if time.time() > timeout:
+                break
             rsp = self._getResp(["stat", "err"], timeout)
 
         if rsp and rsp["rsp"][0] == "err":
