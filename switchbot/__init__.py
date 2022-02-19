@@ -275,8 +275,7 @@ class SwitchbotDevice(bluepy.btle.Peripheral):
 
         self._writeCmd("conn %s %s\n" % (self._mac, bluepy.btle.ADDR_TYPE_RANDOM))
 
-        rsp = self._getResp(["stat", "err"], timeout)
-        timeout = 5
+        rsp = self._getResp(["stat", "err"])
 
         while rsp.get("state") and rsp["state"][0] in [
             "tryconn",
@@ -384,7 +383,7 @@ class SwitchbotDevice(bluepy.btle.Peripheral):
 
         return b"\x00"
 
-    def _sendcommand(self, key: str, retry: int, timeout: int | None = None) -> bytes:
+    def _sendcommand(self, key: str, retry: int, timeout: int | None = 40) -> bytes:
         command = self._commandkey(key)
         send_success = False
         notify_msg = None
