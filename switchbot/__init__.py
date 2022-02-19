@@ -12,7 +12,6 @@ import bluepy
 DEFAULT_RETRY_COUNT = 3
 DEFAULT_RETRY_TIMEOUT = 1
 DEFAULT_SCAN_TIMEOUT = 5
-Debugging = False
 
 # Keys common to all device types
 DEVICE_GET_BASIC_SETTINGS_KEY = "5702"
@@ -41,10 +40,6 @@ KEY_PASSWORD_PREFIX = "571"
 _LOGGER = logging.getLogger(__name__)
 CONNECT_LOCK = Lock()
 
-def DBG(*args):
-    if Debugging:
-        msg = " ".join([str(a) for a in args])
-        print(msg)
 
 def _sb_uuid(comms_type: str = "service") -> bluepy.btle.UUID:
     """Return Switchbot UUID."""
