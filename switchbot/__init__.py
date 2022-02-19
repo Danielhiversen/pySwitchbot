@@ -280,6 +280,7 @@ class SwitchbotDevice(bluepy.btle.Peripheral):
         while rsp.get("state") and rsp["state"][0] in [
             "tryconn",
             "scan",
+            "disc",
         ]:  # Wait for any operations to finish.
             rsp = self._getResp(["stat", "err"], timeout)
 
