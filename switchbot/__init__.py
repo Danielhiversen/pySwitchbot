@@ -262,47 +262,6 @@ class SwitchbotDevice(bluepy.btle.Peripheral):
                 binascii.crc32(password.encode("ascii")) & 0xFFFFFFFF
             )
 
-    def _waitResp(self, wantType, timeout=None):
-        while True:
-            if self._helper.poll() is not None:
-                raise BTLEInternalError("Helper exited")
-
-            if timeout:
-                fds = self._poller.poll(timeout*1000)
-                if len(fds) == 0:
-                    DBG("Select timeout")
-                    return None
-
-            rv = self._helper.stdout.readline()
-            DBG("Got:", repr(rv))
-            if rv.startswith('#') or rv == '\n' or len(rv)==0:
-                continue
-
-            resp = BluepyHelper.parseResp(rv)
-            if 'rsp' not in resp:
-                raise BTLEInternalError("No response type indicator", resp)
-
-            respType = resp['rsp'][0]
-            if respType in wantType:
-                return resp
-            elif respType == 'stat':
-                if 'state' in resp and len(resp['state']) > 0 and resp['state'][0] == 'disc':
-                    self._stopHelper()
-                    raise BTLEDisconnectError("Device disconnected", resp)
-            elif respType == 'err':
-                errcode=resp['code'][0]
-                if errcode=='nomgmt':
-                    raise BTLEManagementError("Management not available (permissions problem?)", resp)
-                elif errcode=='atterr':
-                    raise BTLEGattError("Bluetooth command failed", resp)
-                else:
-                    raise BTLEException("Error from bluepy-helper (%s)" % errcode, resp)
-            elif respType == 'scan':
-                # Scan response when we weren't interested. Ignore it
-                continue
-            else:
-                raise BTLEInternalError("Unexpected response (%s)" % respType, resp)
-
     # pylint: disable=arguments-differ
     def _connect(self, retry: int, timeout: int | None = None) -> None:
         _LOGGER.debug("Connecting to Switchbot")
