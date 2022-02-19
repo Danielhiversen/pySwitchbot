@@ -383,7 +383,7 @@ class SwitchbotDevice(bluepy.btle.Peripheral):
 
         return b"\x00"
 
-    def _sendcommand(self, key: str, retry: int, timeout: int | None = None) -> bytes:
+    def _sendcommand(self, key: str, retry: int, timeout: int | None = 5) -> bytes:
         command = self._commandkey(key)
         send_success = False
         notify_msg = None
