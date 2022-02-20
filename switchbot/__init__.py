@@ -275,15 +275,12 @@ class SwitchbotDevice(bluepy.btle.Peripheral):
 
         self._writeCmd("conn %s %s\n" % (self._mac, bluepy.btle.ADDR_TYPE_RANDOM))
 
-        rsp = self._getResp(["stat", "err"])
+        rsp = self._getResp(["stat", "err"], timeout)
 
         while rsp and rsp["state"][0] in [
             "tryconn",
             "scan",
-            "disc",
         ]:  # Wait for any operations to finish.
-            if rsp["state"][0] == "disc":
-                time.sleep(2)  # After scan, disconnect follows. Could stil reconnect.
             rsp = self._getResp(["stat", "err"], timeout)
 
         if rsp and rsp["rsp"][0] == "err":
@@ -386,7 +383,7 @@ class SwitchbotDevice(bluepy.btle.Peripheral):
 
         return b"\x00"
 
-    def _sendcommand(self, key: str, retry: int, timeout: int | None = 20) -> bytes:
+    def _sendcommand(self, key: str, retry: int, timeout: int | None = 40) -> bytes:
         command = self._commandkey(key)
         send_success = False
         notify_msg = None
