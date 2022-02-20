@@ -282,6 +282,8 @@ class SwitchbotDevice(bluepy.btle.Peripheral):
             "scan",
             "disc",
         ]:  # Wait for any operations to finish.
+            if rsp["state"][0] == "disc":
+                time.sleep(2)  # After scan, disconnect follows. Could stil reconnect.
             rsp = self._getResp(["stat", "err"], timeout)
 
         if rsp and rsp["rsp"][0] == "err":
@@ -307,13 +309,15 @@ class SwitchbotDevice(bluepy.btle.Peripheral):
             )
 
         if rsp is None or rsp["state"][0] != "conn":
-            _LOGGER.warning("Bluehelper returned unable to connect state: %s", rsp)
             self._stopHelper()
 
             if rsp is None:
-                raise bluepy.btle.BTLEDisconnectError(
-                    "Timed out while trying to connect to peripheral %s" % self._mac
+                _LOGGER.warning(
+                    "Timed out while trying to connect to peripheral %s", self._mac
                 )
+                return self._connect(retry - 1, timeout)
+
+            _LOGGER.warning("Bluehelper returned unable to connect state: %s", rsp)
 
             raise bluepy.btle.BTLEDisconnectError(
                 "Failed to connect to peripheral %s, rsp: %s" % (self._mac, rsp)
