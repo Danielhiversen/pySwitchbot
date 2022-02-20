@@ -268,7 +268,9 @@ class SwitchbotDevice(bluepy.btle.Peripheral):
 
         if retry < 1:  # failsafe
             self._stopHelper()
-            return
+            raise bluepy.btle.BTLEDisconnectError(
+                "Failed to connect to peripheral %s" % self._mac
+            )
 
         if self._helper is None:
             self._startHelper(self._interface)
