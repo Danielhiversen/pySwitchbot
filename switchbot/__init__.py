@@ -283,6 +283,14 @@ class SwitchbotDevice(bluepy.btle.Peripheral):
         ]:  # Wait for any operations to finish.
             rsp = self._getResp(["stat", "err"], timeout)
 
+        # If operation in progress, disc is returned.
+        # Bluepy helper can't handle state. Execute stop, wait and retry.
+        if rsp and rsp["state"][0] == "disc":
+            _LOGGER.warning("Bluepy busy, waiting before retry")
+            self._stopHelper()
+            time.sleep(self._scan_timeout)
+            return self._connect(retry - 1, timeout)
+
         if rsp and rsp["rsp"][0] == "err":
             errcode = rsp["code"][0]
             _LOGGER.debug(
@@ -312,7 +320,6 @@ class SwitchbotDevice(bluepy.btle.Peripheral):
                 _LOGGER.warning(
                     "Timed out while trying to connect to peripheral %s", self._mac
                 )
-                return self._connect(retry - 1, timeout)
 
             _LOGGER.warning("Bluehelper returned unable to connect state: %s", rsp)
 
