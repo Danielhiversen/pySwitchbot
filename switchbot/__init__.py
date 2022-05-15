@@ -35,7 +35,7 @@ CURTAIN_EXT_SUM_KEY = "570f460401"
 CURTAIN_EXT_ADV_KEY = "570f460402"
 CURTAIN_EXT_CHAIN_INFO_KEY = "570f468101"
 
-# Keys used when encryption is set
+# Base key when encryption is set
 KEY_PASSWORD_PREFIX = "571"
 
 _LOGGER = logging.getLogger(__name__)
@@ -420,7 +420,7 @@ class Switchbot(SwitchbotDevice):
             return True
 
         if result[0] == 5:
-            _LOGGER.debug("Bot is in press mode and doesn't have off state")
+            _LOGGER.debug("Bot is in press mode")
             return True
 
         return False
@@ -432,7 +432,7 @@ class Switchbot(SwitchbotDevice):
             return True
 
         if result[0] == 5:
-            _LOGGER.debug("Bot is in press mode and doesn't have off state")
+            _LOGGER.debug("Bot is in press mode")
             return True
 
         return False
@@ -484,11 +484,8 @@ class Switchbot(SwitchbotDevice):
             key=DEVICE_GET_BASIC_SETTINGS_KEY, retry=self._retry_count
         )
 
-        if not _data:
-            _LOGGER.warning("Unsuccessfull, please try again")
-            return None
-
         if _data in (b"\x07", b"\x00"):
+            _LOGGER.error("Unsuccessfull, please try again")
             return None
 
         self._settings = {
@@ -506,20 +503,20 @@ class Switchbot(SwitchbotDevice):
     def switch_mode(self) -> Any:
         """Return true or false from cache."""
         # To get actual position call update() first.
-        if not self._sb_adv_data:
+        if not self._sb_adv_data.get("data"):
             return None
-        return self._sb_adv_data["data"]["switchMode"]
+        return self._sb_adv_data["data"].get("switchMode")
 
     def is_on(self) -> Any:
         """Return switch state from cache."""
         # To get actual position call update() first.
-        if not self._sb_adv_data:
+        if not self._sb_adv_data.get("data"):
             return None
 
         if self._inverse:
-            return not self._sb_adv_data["data"]["isOn"]
+            return not self._sb_adv_data["data"].get("isOn")
 
-        return self._sb_adv_data["data"]["isOn"]
+        return self._sb_adv_data["data"].get("isOn")
 
 
 class SwitchbotCurtain(SwitchbotDevice):
@@ -583,9 +580,9 @@ class SwitchbotCurtain(SwitchbotDevice):
     def get_position(self) -> Any:
         """Return cached position (0-100) of Curtain."""
         # To get actual position call update() first.
-        if not self._sb_adv_data:
+        if not self._sb_adv_data.get("data"):
             return None
-        return self._sb_adv_data["data"]["position"]
+        return self._sb_adv_data["data"].get("position")
 
     async def get_basic_info(self) -> dict[str, Any] | None:
         """Get device basic settings."""
@@ -689,9 +686,9 @@ class SwitchbotCurtain(SwitchbotDevice):
     def get_light_level(self) -> Any:
         """Return cached light level."""
         # To get actual light level call update() first.
-        if not self._sb_adv_data:
+        if not self._sb_adv_data.get("data"):
             return None
-        return self._sb_adv_data["data"]["lightLevel"]
+        return self._sb_adv_data["data"].get("lightLevel")
 
     def is_reversed(self) -> bool:
         """Return True if curtain position is opposite from SB data."""
@@ -700,6 +697,6 @@ class SwitchbotCurtain(SwitchbotDevice):
     def is_calibrated(self) -> Any:
         """Return True curtain is calibrated."""
         # To get actual light level call update() first.
-        if not self._sb_adv_data:
+        if not self._sb_adv_data.get("data"):
             return None
-        return self._sb_adv_data["data"]["calibration"]
+        return self._sb_adv_data["data"].get("calibration")
