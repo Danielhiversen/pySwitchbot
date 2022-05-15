@@ -14,11 +14,6 @@ DEFAULT_RETRY_COUNT = 3
 DEFAULT_RETRY_TIMEOUT = 1
 DEFAULT_SCAN_TIMEOUT = 5
 
-# Switchbot device BTLE handles
-UUID_SERVICE = UUID("{cba20d00-224d-11e6-9fb8-0002a5d5c51b}")
-HANDLE = UUID("{cba20002-224d-11e6-9fb8-0002a5d5c51b}")
-NOTIFICATION_HANDLE = UUID("{cba20003-224d-11e6-9fb8-0002a5d5c51b}")
-
 # Keys common to all device types
 DEVICE_GET_BASIC_SETTINGS_KEY = "5702"
 DEVICE_SET_MODE_KEY = "5703"
@@ -28,6 +23,8 @@ DEVICE_SET_EXTENDED_KEY = "570f"
 PRESS_KEY = "570100"
 ON_KEY = "570101"
 OFF_KEY = "570102"
+DOWN_KEY = "570103"
+UP_KEY = "570104"
 
 # Curtain keys
 OPEN_KEY = "570f450105ff00"  # 570F4501010100
@@ -45,58 +42,61 @@ _LOGGER = logging.getLogger(__name__)
 CONNECT_LOCK = asyncio.Lock()
 
 
+def _sb_uuid(comms_type: str = "service") -> UUID | str:
+    """Return Switchbot UUID."""
+
+    _uuid = {"tx": "002", "rx": "003", "service": "d00"}
+
+    if comms_type in _uuid:
+        return UUID(f"cba20{_uuid[comms_type]}-224d-11e6-9fb8-0002a5d5c51b")
+
+    return "Incorrect type, choose between: tx, rx or service"
+
+
 def _process_wohand(data: bytes) -> dict[str, bool | int]:
     """Process woHand/Bot services data."""
-    _bot_data: dict[str, bool | int] = {}
+    _switch_mode = bool(data[1] & 0b10000000)
 
-    # 128 switch or 0 press.
-    _bot_data["switchMode"] = bool(data[1] & 0b10000000)
-
-    # 64 off or 0 for on, if not inversed in app.
-    if _bot_data["switchMode"]:
-        _bot_data["isOn"] = not bool(data[1] & 0b01000000)
-
-    else:
-        _bot_data["isOn"] = False
-
-    _bot_data["battery"] = data[2] & 0b01111111
+    _bot_data = {
+        "switchMode": _switch_mode,
+        "isOn": not bool(data[1] & 0b01000000) if _switch_mode else False,
+        "battery": data[2] & 0b01111111,
+    }
 
     return _bot_data
 
 
 def _process_wocurtain(data: bytes, reverse: bool = True) -> dict[str, bool | int]:
     """Process woCurtain/Curtain services data."""
-    _curtain_data: dict[str, bool | int] = {}
 
-    _curtain_data["calibration"] = bool(data[1] & 0b01000000)
-    _curtain_data["battery"] = data[2] & 0b01111111
-    _curtain_data["inMotion"] = bool(data[3] & 0b10000000)
     _position = max(min(data[3] & 0b01111111, 100), 0)
-    _curtain_data["position"] = (100 - _position) if reverse else _position
 
-    # light sensor level (1-10)
-    _curtain_data["lightLevel"] = (data[4] >> 4) & 0b00001111
-    _curtain_data["deviceChain"] = data[4] & 0b00000111
+    _curtain_data = {
+        "calibration": bool(data[1] & 0b01000000),
+        "battery": data[2] & 0b01111111,
+        "inMotion": bool(data[3] & 0b10000000),
+        "position": (100 - _position) if reverse else _position,
+        "lightLevel": (data[4] >> 4) & 0b00001111,
+        "deviceChain": data[4] & 0b00000111,
+    }
 
     return _curtain_data
 
 
-def _process_wosensorth(data: bytes) -> dict[str, Any]:
+def _process_wosensorth(data: bytes) -> dict[str, object]:
     """Process woSensorTH/Temp sensor services data."""
-    _wosensorth_data: dict[str, Any] = {}
 
     _temp_sign = 1 if data[4] & 0b10000000 else -1
     _temp_c = _temp_sign * ((data[4] & 0b01111111) + (data[3] / 10))
     _temp_f = (_temp_c * 9 / 5) + 32
     _temp_f = (_temp_f * 10) / 10
 
-    _wosensorth_data["temp"] = {}
-    _wosensorth_data["temp"]["c"] = _temp_c
-    _wosensorth_data["temp"]["f"] = _temp_f
-
-    _wosensorth_data["fahrenheit"] = bool(data[5] & 0b10000000)
-    _wosensorth_data["humidity"] = data[5] & 0b01111111
-    _wosensorth_data["battery"] = data[2] & 0b01111111
+    _wosensorth_data = {
+        "temp": {"c": _temp_c, "f": _temp_f},
+        "fahrenheit": bool(data[5] & 0b10000000),
+        "humidity": data[5] & 0b01111111,
+        "battery": data[2] & 0b01111111,
+    }
 
     return _wosensorth_data
 
@@ -107,7 +107,7 @@ class GetSwitchbotDevices:
     def __init__(self, interface: int = 0) -> None:
         """Get switchbot devices class constructor."""
         self._interface = f"hci{interface}"
-        self._data: dict[str, Any] = {}
+        self._adv_data: dict[str, Any] = {}
 
     def detection_callback(
         self,
@@ -119,25 +119,31 @@ class GetSwitchbotDevices:
         _service_data = list(advertisement_data.service_data.values())[0]
         _model = chr(_service_data[0] & 0b01111111)
 
-        self._data[_device] = {
+        supported_types: dict[str, dict[str, Any]] = {
+            "H": {"modelName": "WoHand", "func": _process_wohand},
+            "c": {"modelName": "WoCurtain", "func": _process_wocurtain},
+            "T": {"modelName": "WoSensorTH", "func": _process_wosensorth},
+        }
+
+        self._adv_data[_device] = {
             "mac_address": device.address.lower(),
-            "service_data": list(advertisement_data.service_data.values())[0],
-            "isEncrypted": bool(_service_data[0] & 0b10000000),
-            "model": _model,
+            "rawAdvData": list(advertisement_data.service_data.values())[0],
             "data": {
                 "rssi": device.rssi,
             },
         }
 
-        if _model == "H":
-            self._data[_device]["modelName"] = "WoHand"
-            self._data[_device]["data"] = _process_wohand(_service_data)
-        elif _model == "c":
-            self._data[_device]["modelName"] = "WoCurtain"
-            self._data[_device]["data"] = _process_wocurtain(_service_data)
-        elif _model == "T":
-            self._data[_device]["modelName"] = "WoSensorTH"
-            self._data[_device]["data"] = _process_wosensorth(_service_data)
+        if _model in supported_types:
+
+            self._adv_data.update(
+                {
+                    _device: {
+                        "isEncrypted": bool(_service_data[0] & 0b10000000),
+                        "modelName": supported_types[_model]["modelName"],
+                        "data": supported_types[_model]["func"](_service_data),
+                    }
+                }
+            )
 
     async def discover(
         self, retry: int = DEFAULT_RETRY_COUNT, scan_timeout: int = DEFAULT_SCAN_TIMEOUT
@@ -147,7 +153,7 @@ class GetSwitchbotDevices:
         devices = None
 
         devices = bleak.BleakScanner(
-            filters={"UUIDs": [str(UUID_SERVICE)]},
+            filters={"UUIDs": [str(_sb_uuid())]},
             adapter=self._interface,
         )
         devices.register_detection_callback(self.detection_callback)
@@ -171,16 +177,16 @@ class GetSwitchbotDevices:
             time.sleep(DEFAULT_RETRY_TIMEOUT)
             return await self.discover(retry - 1, scan_timeout)
 
-        return self._data
+        return self._adv_data
 
     async def get_curtains(self) -> dict:
         """Return all WoCurtain/Curtains devices with services data."""
-        if not self._data:
+        if not self._adv_data:
             await self.discover()
 
         _curtain_devices = {}
 
-        for device, data in self._data.items():
+        for device, data in self._adv_data.items():
             if data.get("model") == "c":
                 _curtain_devices[device] = data
 
@@ -188,12 +194,12 @@ class GetSwitchbotDevices:
 
     async def get_bots(self) -> dict[str, Any] | None:
         """Return all WoHand/Bot devices with services data."""
-        if not self._data:
+        if not self._adv_data:
             await self.discover()
 
         _bot_devices = {}
 
-        for device, data in self._data.items():
+        for device, data in self._adv_data.items():
             if data.get("model") == "H":
                 _bot_devices[device] = data
 
@@ -201,12 +207,12 @@ class GetSwitchbotDevices:
 
     async def get_tempsensors(self) -> dict[str, Any] | None:
         """Return all WoSensorTH/Temp sensor devices with services data."""
-        if not self._data:
+        if not self._adv_data:
             await self.discover()
 
         _bot_temp = {}
 
-        for device, data in self._data.items():
+        for device, data in self._adv_data.items():
             if data.get("model") == "T":
                 _bot_temp[device] = data
 
@@ -214,12 +220,12 @@ class GetSwitchbotDevices:
 
     async def get_device_data(self, mac: str) -> dict[str, Any] | None:
         """Return data for specific device."""
-        if not self._data:
+        if not self._adv_data:
             await self.discover()
 
         _switchbot_data = {}
 
-        for device in self._data.values():
+        for device in self._adv_data.values():
             if device["mac_address"] == mac.lower():
                 _switchbot_data = device
 
@@ -240,7 +246,7 @@ class SwitchbotDevice:
         self._interface = f"hci{interface}"
         self._mac = mac.lower()
         self._device = bleak.BleakClient(mac)
-        self._switchbot_device_data: dict[str, Any] | None = {}
+        self._sb_adv_data: dict[str, Any] | None = {}
         self._scan_timeout: int = kwargs.pop("scan_timeout", DEFAULT_SCAN_TIMEOUT)
         self._retry_count: int = kwargs.pop("retry_count", DEFAULT_RETRY_COUNT)
         if password is None or password == "":
@@ -280,21 +286,23 @@ class SwitchbotDevice:
 
     async def _writekey(self, key: str) -> Any:
         _LOGGER.debug("Sending command, %s", key)
-        return await self._device.write_gatt_char(HANDLE, bytearray.fromhex(key), False)
+        return await self._device.write_gatt_char(
+            _sb_uuid(comms_type="tx"), bytearray.fromhex(key), False
+        )
 
     async def _subscribe(self) -> Any:
         _LOGGER.debug("Subscribe to notifications")
         return await self._device.start_notify(
-            NOTIFICATION_HANDLE, self._notification_handler
+            _sb_uuid(comms_type="rx"), self._notification_handler
         )
 
     async def _unsubscribe(self) -> Any:
         _LOGGER.debug("Subscribe to notifications")
-        return await self._device.stop_notify(NOTIFICATION_HANDLE)
+        return await self._device.stop_notify(_sb_uuid(comms_type="rx"))
 
     async def _readkey(self) -> Any:
         _LOGGER.debug("Prepare to read")
-        return await self._device.read_gatt_char(NOTIFICATION_HANDLE)
+        return await self._device.read_gatt_char(_sb_uuid(comms_type="rx"))
 
     async def _sendcommand(self, key: str, retry: int) -> bytearray:
         command = self._commandkey(key)
@@ -333,9 +341,9 @@ class SwitchbotDevice:
 
     def get_battery_percent(self) -> Any:
         """Return device battery level in percent."""
-        if not self._switchbot_device_data:
+        if not self._sb_adv_data:
             return None
-        return self._switchbot_device_data["data"]["battery"]
+        return self._sb_adv_data["data"]["battery"]
 
     async def get_device_data(
         self, retry: int = DEFAULT_RETRY_COUNT, interface: int | None = None
@@ -346,11 +354,11 @@ class SwitchbotDevice:
         else:
             _interface = int(self._interface.replace("hci", ""))
 
-        self._switchbot_device_data = await GetSwitchbotDevices(
+        self._sb_adv_data = await GetSwitchbotDevices(
             interface=_interface
         ).get_device_data(mac=self._mac)
 
-        if self._switchbot_device_data is None:
+        if self._sb_adv_data is None:
             if retry < 1:
                 _LOGGER.error(
                     "Scanning for Switchbot devices failed. Stop trying", exc_info=True
@@ -364,7 +372,7 @@ class SwitchbotDevice:
             time.sleep(DEFAULT_RETRY_TIMEOUT)
             return await self.get_device_data(retry=retry - 1, interface=_interface)
 
-        return self._switchbot_device_data
+        return self._sb_adv_data
 
 
 class Switchbot(SwitchbotDevice):
@@ -396,6 +404,30 @@ class Switchbot(SwitchbotDevice):
     async def turn_off(self) -> bool:
         """Turn device off."""
         result = await self._sendcommand(OFF_KEY, self._retry_count)
+        if result[0] == 1:
+            return True
+
+        if result[0] == 5:
+            _LOGGER.debug("Bot is in press mode and doesn't have off state")
+            return True
+
+        return False
+
+    async def hand_up(self) -> bool:
+        """Raise device arm."""
+        result = await self._sendcommand(UP_KEY, self._retry_count)
+        if result[0] == 1:
+            return True
+
+        if result[0] == 5:
+            _LOGGER.debug("Bot is in press mode and doesn't have off state")
+            return True
+
+        return False
+
+    async def hand_down(self) -> bool:
+        """Lower device arm."""
+        result = await self._sendcommand(DOWN_KEY, self._retry_count)
         if result[0] == 1:
             return True
 
@@ -448,45 +480,46 @@ class Switchbot(SwitchbotDevice):
 
     async def get_basic_info(self) -> dict[str, Any] | None:
         """Get device basic settings."""
-        settings_data = await self._sendcommand(
+        _data = await self._sendcommand(
             key=DEVICE_GET_BASIC_SETTINGS_KEY, retry=self._retry_count
         )
 
-        if not settings_data:
+        if not _data:
             _LOGGER.warning("Unsuccessfull, please try again")
             return None
 
-        if settings_data in (b"\x07", b"\x00"):
+        if _data in (b"\x07", b"\x00"):
             return None
 
-        self._settings["battery"] = settings_data[1]
-        self._settings["firmware"] = settings_data[2] / 10.0
-        self._settings["strength"] = settings_data[3]
-
-        self._settings["timers"] = settings_data[8]
-        self._settings["switchMode"] = bool(settings_data[9] & 16)
-        self._settings["inverseDirection"] = bool(settings_data[9] & 1)
-        self._settings["holdSeconds"] = settings_data[10]
+        self._settings = {
+            "battery": _data[1],
+            "firmware": _data[2] / 10.0,
+            "strength": _data[3],
+            "timers": _data[8],
+            "switchMode": bool(_data[9] & 16),
+            "inverseDirection": bool(_data[9] & 1),
+            "holdSeconds": _data[10],
+        }
 
         return self._settings
 
     def switch_mode(self) -> Any:
         """Return true or false from cache."""
         # To get actual position call update() first.
-        if not self._switchbot_device_data:
+        if not self._sb_adv_data:
             return None
-        return self._switchbot_device_data["data"]["switchMode"]
+        return self._sb_adv_data["data"]["switchMode"]
 
     def is_on(self) -> Any:
         """Return switch state from cache."""
         # To get actual position call update() first.
-        if not self._switchbot_device_data:
+        if not self._sb_adv_data:
             return None
 
         if self._inverse:
-            return not self._switchbot_device_data["data"]["isOn"]
+            return not self._sb_adv_data["data"]["isOn"]
 
-        return self._switchbot_device_data["data"]["isOn"]
+        return self._sb_adv_data["data"]["isOn"]
 
 
 class SwitchbotCurtain(SwitchbotDevice):
@@ -550,129 +583,115 @@ class SwitchbotCurtain(SwitchbotDevice):
     def get_position(self) -> Any:
         """Return cached position (0-100) of Curtain."""
         # To get actual position call update() first.
-        if not self._switchbot_device_data:
+        if not self._sb_adv_data:
             return None
-        return self._switchbot_device_data["data"]["position"]
+        return self._sb_adv_data["data"]["position"]
 
     async def get_basic_info(self) -> dict[str, Any] | None:
         """Get device basic settings."""
-        settings_data = await self._sendcommand(
+        _data = await self._sendcommand(
             key=DEVICE_GET_BASIC_SETTINGS_KEY, retry=self._retry_count
         )
 
-        if not settings_data:
-            _LOGGER.warning("Unsuccessfull, please try again")
+        if _data in (b"\x07", b"\x00"):
+            _LOGGER.error("Unsuccessfull, please try again")
             return None
 
-        if settings_data in (b"\x07", b"\x00"):
-            return None
+        _position = max(min(_data[6], 100), 0)
 
-        self._settings["battery"] = settings_data[1]
-        self._settings["firmware"] = settings_data[2] / 10.0
-
-        self._settings["chainLength"] = settings_data[3]
-
-        self._settings["openDirection"] = (
-            "right_to_left" if settings_data[4] & 0b10000000 == 128 else "left_to_right"
-        )
-
-        self._settings["touchToOpen"] = bool(settings_data[4] & 0b01000000)
-        self._settings["light"] = bool(settings_data[4] & 0b00100000)
-        self._settings["fault"] = bool(settings_data[4] & 0b00001000)
-
-        self._settings["solarPanel"] = bool(settings_data[5] & 0b00001000)
-        self._settings["calibrated"] = bool(settings_data[5] & 0b00000100)
-        self._settings["inMotion"] = bool(settings_data[5] & 0b01000011)
-
-        _position = max(min(settings_data[6], 100), 0)
-        self._settings["position"] = (100 - _position) if self._reverse else _position
-
-        self._settings["timers"] = settings_data[7]
+        self._settings = {
+            "battery": _data[1],
+            "firmware": _data[2] / 10.0,
+            "chainLength": _data[3],
+            "openDirection": (
+                "right_to_left" if _data[4] & 0b10000000 == 128 else "left_to_right"
+            ),
+            "touchToOpen": bool(_data[4] & 0b01000000),
+            "light": bool(_data[4] & 0b00100000),
+            "fault": bool(_data[4] & 0b00001000),
+            "solarPanel": bool(_data[5] & 0b00001000),
+            "calibrated": bool(_data[5] & 0b00000100),
+            "inMotion": bool(_data[5] & 0b01000011),
+            "position": (100 - _position) if self._reverse else _position,
+            "timers": _data[7],
+        }
 
         return self._settings
 
     async def get_extended_info_summary(self) -> dict[str, Any] | None:
         """Get basic info for all devices in chain."""
-        data = await self._sendcommand(key=CURTAIN_EXT_SUM_KEY, retry=self._retry_count)
-        if not data or data[0] != 1:
-            _LOGGER.warning("Unsuccessfull, please try again")
+        _data = await self._sendcommand(
+            key=CURTAIN_EXT_SUM_KEY, retry=self._retry_count
+        )
+
+        if _data in (b"\x07", b"\x00"):
+            _LOGGER.error("Unsuccessfull, please try again")
             return None
 
-        self.ext_info_sum["device0"] = {}
-        self.ext_info_sum["device0"]["openDirectionDefault"] = not bool(
-            data[1] & 0b10000000
-        )
-        self.ext_info_sum["device0"]["touchToOpen"] = bool(data[1] & 0b01000000)
-        self.ext_info_sum["device0"]["light"] = bool(data[1] & 0b00100000)
-        self.ext_info_sum["device0"]["openDirection"] = (
-            "left_to_right" if data[1] & 0b00010000 == 1 else "right_to_left"
-        )
+        self.ext_info_sum["device0"] = {
+            "openDirectionDefault": not bool(_data[1] & 0b10000000),
+            "touchToOpen": bool(_data[1] & 0b01000000),
+            "light": bool(_data[1] & 0b00100000),
+            "openDirection": (
+                "left_to_right" if _data[1] & 0b00010000 == 1 else "right_to_left"
+            ),
+        }
 
-        if data[2] != 0:
-            self.ext_info_sum["device1"] = {}
-            self.ext_info_sum["device1"]["openDirectionDefault"] = not bool(
-                data[1] & 0b10000000
-            )
-            self.ext_info_sum["device1"]["touchToOpen"] = bool(data[1] & 0b01000000)
-            self.ext_info_sum["device1"]["light"] = bool(data[1] & 0b00100000)
-            self.ext_info_sum["device1"]["openDirection"] = (
-                "left_to_right" if data[1] & 0b00010000 else "right_to_left"
-            )
+        # if grouped curtain device present.
+        if _data[2] != 0:
+            self.ext_info_sum["device1"] = {
+                "openDirectionDefault": not bool(_data[1] & 0b10000000),
+                "touchToOpen": bool(_data[1] & 0b01000000),
+                "light": bool(_data[1] & 0b00100000),
+                "openDirection": (
+                    "left_to_right" if _data[1] & 0b00010000 else "right_to_left"
+                ),
+            }
 
         return self.ext_info_sum
 
     async def get_extended_info_adv(self) -> dict[str, Any] | None:
         """Get advance page info for device chain."""
 
-        data = await self._sendcommand(key=CURTAIN_EXT_ADV_KEY, retry=self._retry_count)
+        _data = await self._sendcommand(
+            key=CURTAIN_EXT_ADV_KEY, retry=self._retry_count
+        )
 
-        if not data or data[0] != 1:
-            _LOGGER.warning("Unsuccessfull, please try again")
+        if _data in (b"\x07", b"\x00"):
+            _LOGGER.error("Unsuccessfull, please try again")
             return None
 
-        self.ext_info_adv["device0"] = {}
-        self.ext_info_adv["device0"]["battery"] = data[1]
-        self.ext_info_adv["device0"]["firmware"] = data[2] / 10.0
+        _state_of_charge = [
+            "not_charging",
+            "charging_by_adapter",
+            "charging_by_solar",
+            "fully_charged",
+            "solar_not_charging",
+            "charging_error",
+        ]
 
-        if data[3] == 0:
-            self.ext_info_adv["device0"]["stateOfCharge"] = "not_charging"
-        elif data[3] == 1:
-            self.ext_info_adv["device0"]["stateOfCharge"] = "charging_by_adapter"
-        elif data[3] == 2:
-            self.ext_info_adv["device0"]["stateOfCharge"] = "charging_by_solar"
-        elif data[3] == 3 or data[3] == 4:
-            self.ext_info_adv["device0"]["stateOfCharge"] = "fully_charged"
-        elif data[3] == 5:
-            self.ext_info_adv["device0"]["stateOfCharge"] = "solar_not_charging"
-        elif data[3] == 6:
-            self.ext_info_adv["device0"]["stateOfCharge"] = "charging_error"
+        self.ext_info_adv["device0"] = {
+            "battery": _data[1],
+            "firmware": _data[2] / 10.0,
+            "stateOfCharge": _state_of_charge[_data[3]],
+        }
 
-        if data[4]:
-            self.ext_info_adv["device1"] = {}
-            self.ext_info_adv["device1"]["battery"] = data[4]
-            self.ext_info_adv["device1"]["firmware"] = data[5] / 10.0
-
-            if data[6] == 0:
-                self.ext_info_adv["device0"]["stateOfCharge"] = "not_charging"
-            elif data[6] == 1:
-                self.ext_info_adv["device0"]["stateOfCharge"] = "charging_by_adapter"
-            elif data[6] == 2:
-                self.ext_info_adv["device0"]["stateOfCharge"] = "charging_by_solar"
-            elif data[6] == 3 or data[6] == 4:
-                self.ext_info_adv["device0"]["stateOfCharge"] = "fully_charged"
-            elif data[6] == 5:
-                self.ext_info_adv["device0"]["stateOfCharge"] = "solar_not_charging"
-            elif data[6] == 6:
-                self.ext_info_adv["device0"]["stateOfCharge"] = "charging_error"
+        # If grouped curtain device present.
+        if _data[4]:
+            self.ext_info_adv["device1"] = {
+                "battery": _data[4],
+                "firmware": _data[5] / 10.0,
+                "stateOfCharge": _state_of_charge[_data[6]],
+            }
 
         return self.ext_info_adv
 
     def get_light_level(self) -> Any:
         """Return cached light level."""
         # To get actual light level call update() first.
-        if not self._switchbot_device_data:
+        if not self._sb_adv_data:
             return None
-        return self._switchbot_device_data["data"]["lightLevel"]
+        return self._sb_adv_data["data"]["lightLevel"]
 
     def is_reversed(self) -> bool:
         """Return True if curtain position is opposite from SB data."""
@@ -681,6 +700,6 @@ class SwitchbotCurtain(SwitchbotDevice):
     def is_calibrated(self) -> Any:
         """Return True curtain is calibrated."""
         # To get actual light level call update() first.
-        if not self._switchbot_device_data:
+        if not self._sb_adv_data:
             return None
-        return self._switchbot_device_data["data"]["calibration"]
+        return self._sb_adv_data["data"]["calibration"]
