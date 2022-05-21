@@ -148,7 +148,7 @@ class GetSwitchbotDevices:
 
     async def discover(
         self, retry: int = DEFAULT_RETRY_COUNT, scan_timeout: int = DEFAULT_SCAN_TIMEOUT
-    ) -> dict | None:
+    ) -> dict:
         """Find switchbot devices and their advertisement data."""
 
         devices = None
@@ -169,7 +169,7 @@ class GetSwitchbotDevices:
                 _LOGGER.error(
                     "Scanning for Switchbot devices failed. Stop trying", exc_info=True
                 )
-                return None
+                return self._adv_data
 
             _LOGGER.warning(
                 "Error scanning for Switchbot devices. Retrying (remaining: %d)",
@@ -245,9 +245,9 @@ class SwitchbotDevice:
     ) -> None:
         """Switchbot base class constructor."""
         self._interface = f"hci{interface}"
-        self._mac = mac.lower()
+        self._mac = mac.replace("-", ":").lower()
         self._device = bleak.BleakClient(mac)
-        self._sb_adv_data: dict[str, Any] | None = {}
+        self._sb_adv_data: dict[str, Any] = {}
         self._scan_timeout: int = kwargs.pop("scan_timeout", DEFAULT_SCAN_TIMEOUT)
         self._retry_count: int = kwargs.pop("retry_count", DEFAULT_RETRY_COUNT)
         if password is None or password == "":
@@ -262,10 +262,10 @@ class SwitchbotDevice:
         """Handle notification responses."""
         self._last_notification = data
 
-    async def _connect(self) -> None:
+    async def _connect(self, timeout: float = 10.00) -> None:
         try:
             _LOGGER.debug("Connecting to Switchbot")
-            await self._device.connect()
+            await self._device.connect(timeout=timeout)
             _LOGGER.debug("Connected to Switchbot")
         except bleak.BleakError:
             _LOGGER.debug("Failed connecting to Switchbot", exc_info=True)
@@ -305,36 +305,52 @@ class SwitchbotDevice:
         _LOGGER.debug("Prepare to read")
         return await self._device.read_gatt_char(_sb_uuid(comms_type="rx"))
 
-    async def _sendcommand(self, key: str, retry: int) -> bytearray:
+    ###############
+
+    async def _sendcommand(self, key: str, retry: int, timeout: float = 10.00) -> bytes:
         command = self._commandkey(key)
+        send_success = False
         _LOGGER.debug("Sending command to switchbot %s", command)
 
-        try:
-            async with CONNECT_LOCK:
-                await self._connect()
-                await self._subscribe()
-                await self._writekey(command)
-                await self._readkey()
-                await self._unsubscribe()
-        except bleak.BleakError:
-            _LOGGER.warning("Error talking to Switchbot", exc_info=True)
-        finally:
-            await self._disconnect()
-        if self._last_notification:
+        if len(self._mac.split(":")) != 6:
+            raise ValueError("Expected MAC address, got %s" % repr(self._mac))
+
+        async with CONNECT_LOCK:
+            try:
+                await self._connect(timeout)
+                send_success = await self._subscribe()
+            except bleak.BleakError:
+                _LOGGER.warning("Error connecting to Switchbot", exc_info=True)
+            else:
+                try:
+                    send_success = await self._writekey(command)
+                except bleak.BleakError:
+                    _LOGGER.warning(
+                        "Error sending commands to Switchbot", exc_info=True
+                    )
+                else:
+                    await self._readkey()
+                    await self._unsubscribe()
+            finally:
+                await self._disconnect()
+
+        if self._last_notification and send_success:
             if self._last_notification == b"\x07":
                 _LOGGER.error("Password required")
             elif self._last_notification == b"\t":
                 _LOGGER.error("Password incorrect")
-
             return self._last_notification
+
         if retry < 1:
             _LOGGER.error(
                 "Switchbot communication failed. Stopping trying", exc_info=True
             )
-            return self._last_notification
+            return b"\x00"
         _LOGGER.warning("Cannot connect to Switchbot. Retrying (remaining: %d)", retry)
         time.sleep(DEFAULT_RETRY_TIMEOUT)
         return await self._sendcommand(key, retry - 1)
+
+    #################
 
     def get_mac(self) -> str:
         """Return mac address of device."""
@@ -355,23 +371,14 @@ class SwitchbotDevice:
         else:
             _interface = int(self._interface.replace("hci", ""))
 
-        self._sb_adv_data = await GetSwitchbotDevices(
-            interface=_interface
-        ).get_device_data(mac=self._mac)
+        dev_id = self._mac.replace(":", "")
 
-        if self._sb_adv_data is None:
-            if retry < 1:
-                _LOGGER.error(
-                    "Scanning for Switchbot devices failed. Stop trying", exc_info=True
-                )
-                return None
+        _data = await GetSwitchbotDevices(interface=_interface).discover(
+            retry=retry, scan_timeout=self._scan_timeout
+        )
 
-            _LOGGER.warning(
-                "Error scanning for Switchbot devices. Retrying (remaining: %d)",
-                retry,
-            )
-            time.sleep(DEFAULT_RETRY_TIMEOUT)
-            return await self.get_device_data(retry=retry - 1, interface=_interface)
+        if _data.get(dev_id):
+            self._sb_adv_data = _data[dev_id]
 
         return self._sb_adv_data
 
