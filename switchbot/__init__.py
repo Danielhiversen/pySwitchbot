@@ -273,6 +273,7 @@ class SwitchbotDevice:
         self, key: str, retry: int, timeout: float | None = None
     ) -> bytes:
         command = bytearray.fromhex(self._commandkey(key))
+        self._last_notification = bytearray()
         _LOGGER.debug("Sending command to switchbot %s", command)
 
         if len(self._mac.split(":")) != 6:
@@ -281,26 +282,22 @@ class SwitchbotDevice:
         async with bleak.BleakClient(
             address_or_ble_device=self._mac, timeout=timeout
         ) as client:
-            _LOGGER.debug("Connnected to switchbot: %s", client.is_connected)
-            try:
-                _LOGGER.debug("Subscribe to notifications")
-                await client.start_notify(
-                    _sb_uuid(comms_type="rx"), self._notification_handler
-                )
+            _LOGGER.info("Connnected to switchbot: %s", client.is_connected)
 
-                _LOGGER.debug("Sending command, %s", key)
-                await client.write_gatt_char(_sb_uuid(comms_type="tx"), command, False)
+            _LOGGER.info("Subscribe to notifications")
+            await client.start_notify(
+                _sb_uuid(comms_type="rx"), self._notification_handler
+            )
 
-                _LOGGER.debug("Prepare to read")
-                await client.read_gatt_char(_sb_uuid(comms_type="rx"))
+            _LOGGER.info("Sending command, %s", key)
+            await client.write_gatt_char(_sb_uuid(comms_type="tx"), command, False)
 
-                _LOGGER.debug("Subscribe to notifications")
-                await client.stop_notify(_sb_uuid(comms_type="rx"))
+            _LOGGER.info("Prepare to read")
+            test = await client.read_gatt_char(_sb_uuid(comms_type="rx"))
+            print("read data:", test)
 
-            except bleak.BleakError:
-                _LOGGER.warning("Error sending commands to Switchbot", exc_info=True)
-            finally:
-                await client.disconnect()
+            _LOGGER.info("Subscribe to notifications")
+            await client.stop_notify(_sb_uuid(comms_type="rx"))
 
         if self._last_notification:
             if self._last_notification == b"\x07":
