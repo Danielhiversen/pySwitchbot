@@ -263,6 +263,7 @@ class SwitchbotDevice:
         self._last_notification = data
 
     def _commandkey(self, key: str) -> str:
+        """Add password to key if set."""
         if self._password_encoded is None:
             return key
         key_action = key[3]
@@ -270,6 +271,7 @@ class SwitchbotDevice:
         return KEY_PASSWORD_PREFIX + key_action + self._password_encoded + key_suffix
 
     async def _sendcommand(self, key: str, retry: int, timeout: float = 15.0) -> bytes:
+        """Send command to device and read response."""
         command = bytearray.fromhex(self._commandkey(key))
         notify_msg = b""
         _LOGGER.debug("Sending command to switchbot %s", command)
@@ -281,30 +283,32 @@ class SwitchbotDevice:
             async with bleak.BleakClient(
                 address_or_ble_device=self._mac, timeout=timeout
             ) as client:
-                _LOGGER.info("Connnected to switchbot: %s", client.is_connected)
+                _LOGGER.debug("Connnected to switchbot: %s", client.is_connected)
 
-                _LOGGER.info("Subscribe to notifications")
+                _LOGGER.debug("Subscribe to notifications")
                 await client.start_notify(
                     _sb_uuid(comms_type="rx"), self._notification_handler
                 )
 
-                _LOGGER.info("Sending command, %s", key)
+                _LOGGER.debug("Sending command, %s", key)
                 await client.write_gatt_char(_sb_uuid(comms_type="tx"), command, False)
 
-                _LOGGER.info("Prepare to read")
+                _LOGGER.debug("Prepare to read")
                 notify_msg = await client.read_gatt_char(_sb_uuid(comms_type="rx"))
-                print("Notify Message:", notify_msg)
+                _LOGGER.debug("Notification received: %s", notify_msg)
 
-                _LOGGER.info("Subscribe to notifications")
+                _LOGGER.debug("Subscribe to notifications")
                 await client.stop_notify(_sb_uuid(comms_type="rx"))
 
-        except bleak.BleakError:
+        except (bleak.BleakError, asyncio.exceptions.TimeoutError):
 
             if retry < 1:
                 _LOGGER.error(
                     "Switchbot communication failed. Stopping trying", exc_info=True
                 )
                 return b"\x00"
+
+            _LOGGER.debug("Switchbot communication failed with:", exc_info=True)
 
         if notify_msg:
             if notify_msg == b"\x07":
@@ -315,10 +319,11 @@ class SwitchbotDevice:
 
         _LOGGER.warning("Cannot connect to Switchbot. Retrying (remaining: %d)", retry)
 
+        if retry < 1:  # failsafe
+            return b"\x00"
+
         time.sleep(DEFAULT_RETRY_TIMEOUT)
         return await self._sendcommand(key, retry - 1)
-
-    #################
 
     def get_mac(self) -> str:
         """Return mac address of device."""
