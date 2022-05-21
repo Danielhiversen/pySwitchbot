@@ -135,16 +135,16 @@ class GetSwitchbotDevices:
 
         if _model in supported_types:
 
-            self._adv_data.update(
+            self._adv_data[_device].update(
                 {
-                    _device: {
-                        "isEncrypted": bool(_service_data[0] & 0b10000000),
-                        "model": _model,
-                        "modelName": supported_types[_model]["modelName"],
-                        "data": supported_types[_model]["func"](_service_data),
-                    }
+                    "isEncrypted": bool(_service_data[0] & 0b10000000),
+                    "model": _model,
+                    "modelName": supported_types[_model]["modelName"],
+                    "data": supported_types[_model]["func"](_service_data),
                 }
             )
+
+            self._adv_data[_device]["data"]["rssi"] = device.rssi
 
     async def discover(
         self, retry: int = DEFAULT_RETRY_COUNT, scan_timeout: int = DEFAULT_SCAN_TIMEOUT
