@@ -4,7 +4,6 @@ from __future__ import annotations
 import asyncio
 import binascii
 import logging
-import time
 from typing import Any
 from uuid import UUID
 
@@ -175,7 +174,7 @@ class GetSwitchbotDevices:
                 "Error scanning for Switchbot devices. Retrying (remaining: %d)",
                 retry,
             )
-            time.sleep(DEFAULT_RETRY_TIMEOUT)
+            asyncio.sleep(DEFAULT_RETRY_TIMEOUT)
             return await self.discover(retry - 1, scan_timeout)
 
         return self._adv_data
@@ -292,7 +291,7 @@ class SwitchbotDevice:
                 _LOGGER.debug("Sending command, %s", key)
                 await client.write_gatt_char(_sb_uuid(comms_type="tx"), command, False)
 
-                time.sleep(1)  # Bot needs pause. Otherwise old msg is returned.
+                asyncio.sleep(1.0)  # Bot needs pause. Otherwise old msg is returned.
 
                 _LOGGER.debug("Prepare to read")
                 notify_msg = await client.read_gatt_char(_sb_uuid(comms_type="rx"))
@@ -323,7 +322,7 @@ class SwitchbotDevice:
         if retry < 1:  # failsafe
             return b"\x00"
 
-        time.sleep(DEFAULT_RETRY_TIMEOUT)
+        asyncio.sleep(DEFAULT_RETRY_TIMEOUT)
         return await self._sendcommand(key, retry - 1)
 
     def get_mac(self) -> str:
