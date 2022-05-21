@@ -269,7 +269,7 @@ class SwitchbotDevice:
         key_suffix = key[4:]
         return KEY_PASSWORD_PREFIX + key_action + self._password_encoded + key_suffix
 
-    async def _sendcommand(self, key: str, retry: int, timeout: float = 10.0) -> bytes:
+    async def _sendcommand(self, key: str, retry: int, timeout: float = 15.0) -> bytes:
         command = bytearray.fromhex(self._commandkey(key))
         notify_msg = b""
         _LOGGER.debug("Sending command to switchbot %s", command)
@@ -277,25 +277,29 @@ class SwitchbotDevice:
         if len(self._mac.split(":")) != 6:
             raise ValueError("Expected MAC address, got %s" % repr(self._mac))
 
-        async with bleak.BleakClient(
-            address_or_ble_device=self._mac, timeout=timeout
-        ) as client:
-            _LOGGER.info("Connnected to switchbot: %s", client.is_connected)
+        try:
+            async with bleak.BleakClient(
+                address_or_ble_device=self._mac, timeout=timeout
+            ) as client:
+                _LOGGER.info("Connnected to switchbot: %s", client.is_connected)
 
-            _LOGGER.info("Subscribe to notifications")
-            await client.start_notify(
-                _sb_uuid(comms_type="rx"), self._notification_handler
-            )
+                _LOGGER.info("Subscribe to notifications")
+                await client.start_notify(
+                    _sb_uuid(comms_type="rx"), self._notification_handler
+                )
 
-            _LOGGER.info("Sending command, %s", key)
-            await client.write_gatt_char(_sb_uuid(comms_type="tx"), command, False)
+                _LOGGER.info("Sending command, %s", key)
+                await client.write_gatt_char(_sb_uuid(comms_type="tx"), command, False)
 
-            _LOGGER.info("Prepare to read")
-            notify_msg = await client.read_gatt_char(_sb_uuid(comms_type="rx"))
-            print("Notify Message:", notify_msg)
+                _LOGGER.info("Prepare to read")
+                notify_msg = await client.read_gatt_char(_sb_uuid(comms_type="rx"))
+                print("Notify Message:", notify_msg)
 
-            _LOGGER.info("Subscribe to notifications")
-            await client.stop_notify(_sb_uuid(comms_type="rx"))
+                _LOGGER.info("Subscribe to notifications")
+                await client.stop_notify(_sb_uuid(comms_type="rx"))
+
+        except bleak.BleakError:
+            _LOGGER.warning("Error connecting to Switchbot", exc_info=True)
 
         if notify_msg:
             if notify_msg == b"\x07":
