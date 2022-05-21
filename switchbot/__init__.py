@@ -269,11 +269,9 @@ class SwitchbotDevice:
         key_suffix = key[4:]
         return KEY_PASSWORD_PREFIX + key_action + self._password_encoded + key_suffix
 
-    async def _sendcommand(
-        self, key: str, retry: int, timeout: float | None = None
-    ) -> bytes:
+    async def _sendcommand(self, key: str, retry: int, timeout: float = 10.0) -> bytes:
         command = bytearray.fromhex(self._commandkey(key))
-        self._last_notification = bytearray()
+        notify_msg = b""
         _LOGGER.debug("Sending command to switchbot %s", command)
 
         if len(self._mac.split(":")) != 6:
@@ -293,18 +291,18 @@ class SwitchbotDevice:
             await client.write_gatt_char(_sb_uuid(comms_type="tx"), command, False)
 
             _LOGGER.info("Prepare to read")
-            test = await client.read_gatt_char(_sb_uuid(comms_type="rx"))
-            print("read data:", test)
+            notify_msg = await client.read_gatt_char(_sb_uuid(comms_type="rx"))
+            print("Notify Message:", notify_msg)
 
             _LOGGER.info("Subscribe to notifications")
             await client.stop_notify(_sb_uuid(comms_type="rx"))
 
-        if self._last_notification:
-            if self._last_notification == b"\x07":
+        if notify_msg:
+            if notify_msg == b"\x07":
                 _LOGGER.error("Password required")
-            elif self._last_notification == b"\t":
+            elif notify_msg == b"\t":
                 _LOGGER.error("Password incorrect")
-            return self._last_notification
+            return notify_msg
 
         if retry < 1:
             _LOGGER.error(
@@ -312,6 +310,7 @@ class SwitchbotDevice:
             )
             return b"\x00"
         _LOGGER.warning("Cannot connect to Switchbot. Retrying (remaining: %d)", retry)
+
         time.sleep(DEFAULT_RETRY_TIMEOUT)
         return await self._sendcommand(key, retry - 1)
 
