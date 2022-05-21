@@ -262,7 +262,7 @@ class SwitchbotDevice:
         """Handle notification responses."""
         self._last_notification = data
 
-    async def _connect(self, timeout: float = 10.0) -> None:
+    async def _connect(self, timeout: float | None = None) -> None:
         try:
             _LOGGER.debug("Connecting to Switchbot")
             await self._device.connect(timeout=timeout)
@@ -307,7 +307,9 @@ class SwitchbotDevice:
 
     ###############
 
-    async def _sendcommand(self, key: str, retry: int, timeout: float = 10.0) -> bytes:
+    async def _sendcommand(
+        self, key: str, retry: int, timeout: float | None = None
+    ) -> bytes:
         command = self._commandkey(key)
         send_success = False
         _LOGGER.debug("Sending command to switchbot %s", command)
