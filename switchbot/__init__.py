@@ -269,7 +269,7 @@ class SwitchbotDevice:
         key_suffix = key[4:]
         return KEY_PASSWORD_PREFIX + key_action + self._password_encoded + key_suffix
 
-    async def _sendcommand(self, key: str, retry: int, timeout: float = 15.0) -> bytes:
+    async def _sendcommand(self, key: str, retry: int, timeout: float = 20.0) -> bytes:
         """Send command to device and read response."""
         command = bytearray.fromhex(self._commandkey(key))
         notify_msg = b""
@@ -292,7 +292,7 @@ class SwitchbotDevice:
                 _LOGGER.debug("Sending command, %s", key)
                 await client.write_gatt_char(_sb_uuid(comms_type="tx"), command, False)
 
-                time.sleep(1)
+                time.sleep(1)  # Bot needs pause. Otherwise old msg is returned.
 
                 _LOGGER.debug("Prepare to read")
                 notify_msg = await client.read_gatt_char(_sb_uuid(comms_type="rx"))
