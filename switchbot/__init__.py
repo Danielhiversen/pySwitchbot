@@ -139,6 +139,7 @@ class GetSwitchbotDevices:
                 {
                     _device: {
                         "isEncrypted": bool(_service_data[0] & 0b10000000),
+                        "model": _model,
                         "modelName": supported_types[_model]["modelName"],
                         "data": supported_types[_model]["func"](_service_data),
                     }
