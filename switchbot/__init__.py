@@ -262,22 +262,6 @@ class SwitchbotDevice:
         """Handle notification responses."""
         self._last_notification = data
 
-    async def _connect(self, timeout: float | None = None) -> None:
-        try:
-            _LOGGER.debug("Connecting to Switchbot")
-            await self._device.connect(timeout=timeout)
-            _LOGGER.debug("Connected to Switchbot")
-        except bleak.BleakError:
-            _LOGGER.debug("Failed connecting to Switchbot", exc_info=True)
-            raise
-
-    async def _disconnect(self) -> None:
-        _LOGGER.debug("Disconnecting")
-        try:
-            await self._device.disconnect()
-        except bleak.BleakError:
-            _LOGGER.warning("Error disconnecting from Switchbot", exc_info=True)
-
     def _commandkey(self, key: str) -> str:
         if self._password_encoded is None:
             return key
@@ -285,48 +269,38 @@ class SwitchbotDevice:
         key_suffix = key[4:]
         return KEY_PASSWORD_PREFIX + key_action + self._password_encoded + key_suffix
 
-    async def _writekey(self, key: str) -> Any:
-        _LOGGER.debug("Sending command, %s", key)
-        return await self._device.write_gatt_char(
-            _sb_uuid(comms_type="tx"), bytearray.fromhex(key), False
-        )
-
-    async def _subscribe(self) -> Any:
-        _LOGGER.debug("Subscribe to notifications")
-        return await self._device.start_notify(
-            _sb_uuid(comms_type="rx"), self._notification_handler
-        )
-
-    async def _unsubscribe(self) -> Any:
-        _LOGGER.debug("Subscribe to notifications")
-        return await self._device.stop_notify(_sb_uuid(comms_type="rx"))
-
-    async def _readkey(self) -> Any:
-        _LOGGER.debug("Prepare to read")
-        return await self._device.read_gatt_char(_sb_uuid(comms_type="rx"))
-
-    ###############
-
     async def _sendcommand(
         self, key: str, retry: int, timeout: float | None = None
     ) -> bytes:
-        command = self._commandkey(key)
+        command = bytearray.fromhex(self._commandkey(key))
         _LOGGER.debug("Sending command to switchbot %s", command)
 
         if len(self._mac.split(":")) != 6:
             raise ValueError("Expected MAC address, got %s" % repr(self._mac))
 
-        async with CONNECT_LOCK:
+        async with bleak.BleakClient(
+            address_or_ble_device=self._mac, timeout=timeout
+        ) as client:
+            _LOGGER.debug("Connnected to switchbot: %s", client.is_connected)
             try:
-                await self._connect(timeout)
-                await self._subscribe()
-                await self._writekey(command)
-                await self._readkey()
-                await self._unsubscribe()
+                _LOGGER.debug("Subscribe to notifications")
+                await client.start_notify(
+                    _sb_uuid(comms_type="rx"), self._notification_handler
+                )
+
+                _LOGGER.debug("Sending command, %s", key)
+                await client.write_gatt_char(_sb_uuid(comms_type="tx"), command, False)
+
+                _LOGGER.debug("Prepare to read")
+                await client.read_gatt_char(_sb_uuid(comms_type="rx"))
+
+                _LOGGER.debug("Subscribe to notifications")
+                await client.stop_notify(_sb_uuid(comms_type="rx"))
+
             except bleak.BleakError:
                 _LOGGER.warning("Error sending commands to Switchbot", exc_info=True)
             finally:
-                await self._disconnect()
+                await client.disconnect()
 
         if self._last_notification:
             if self._last_notification == b"\x07":
