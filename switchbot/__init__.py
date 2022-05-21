@@ -319,19 +319,12 @@ class SwitchbotDevice:
         async with CONNECT_LOCK:
             try:
                 await self._connect(timeout)
+                await self._subscribe()
+                await self._writekey(command)
+                await self._readkey()
+                await self._unsubscribe()
             except bleak.BleakError:
-                _LOGGER.warning("Error connecting to Switchbot", exc_info=True)
-            else:
-                try:
-                    await self._subscribe()
-                    await self._writekey(command)
-                except bleak.BleakError:
-                    _LOGGER.warning(
-                        "Error sending commands to Switchbot", exc_info=True
-                    )
-                else:
-                    await self._readkey()
-                    await self._unsubscribe()
+                _LOGGER.warning("Error sending commands to Switchbot", exc_info=True)
             finally:
                 await self._disconnect()
 
