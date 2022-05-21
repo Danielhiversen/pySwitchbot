@@ -299,7 +299,12 @@ class SwitchbotDevice:
                 await client.stop_notify(_sb_uuid(comms_type="rx"))
 
         except bleak.BleakError:
-            _LOGGER.warning("Error connecting to Switchbot", exc_info=True)
+
+            if retry < 1:
+                _LOGGER.error(
+                    "Switchbot communication failed. Stopping trying", exc_info=True
+                )
+                return b"\x00"
 
         if notify_msg:
             if notify_msg == b"\x07":
@@ -308,11 +313,6 @@ class SwitchbotDevice:
                 _LOGGER.error("Password incorrect")
             return notify_msg
 
-        if retry < 1:
-            _LOGGER.error(
-                "Switchbot communication failed. Stopping trying", exc_info=True
-            )
-            return b"\x00"
         _LOGGER.warning("Cannot connect to Switchbot. Retrying (remaining: %d)", retry)
 
         time.sleep(DEFAULT_RETRY_TIMEOUT)
