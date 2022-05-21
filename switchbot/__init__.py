@@ -246,7 +246,6 @@ class SwitchbotDevice:
         """Switchbot base class constructor."""
         self._interface = f"hci{interface}"
         self._mac = mac.replace("-", ":").lower()
-        self._device = bleak.BleakClient(mac)
         self._sb_adv_data: dict[str, Any] = {}
         self._scan_timeout: int = kwargs.pop("scan_timeout", DEFAULT_SCAN_TIMEOUT)
         self._retry_count: int = kwargs.pop("retry_count", DEFAULT_RETRY_COUNT)
@@ -293,11 +292,13 @@ class SwitchbotDevice:
                 _LOGGER.debug("Sending command, %s", key)
                 await client.write_gatt_char(_sb_uuid(comms_type="tx"), command, False)
 
+                time.sleep(1)
+
                 _LOGGER.debug("Prepare to read")
                 notify_msg = await client.read_gatt_char(_sb_uuid(comms_type="rx"))
                 _LOGGER.debug("Notification received: %s", notify_msg)
 
-                _LOGGER.debug("Subscribe to notifications")
+                _LOGGER.debug("UnSubscribe to notifications")
                 await client.stop_notify(_sb_uuid(comms_type="rx"))
 
         except (bleak.BleakError, asyncio.exceptions.TimeoutError):
