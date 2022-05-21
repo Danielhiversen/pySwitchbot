@@ -311,7 +311,6 @@ class SwitchbotDevice:
         self, key: str, retry: int, timeout: float | None = None
     ) -> bytes:
         command = self._commandkey(key)
-        send_success = False
         _LOGGER.debug("Sending command to switchbot %s", command)
 
         if len(self._mac.split(":")) != 6:
@@ -320,12 +319,12 @@ class SwitchbotDevice:
         async with CONNECT_LOCK:
             try:
                 await self._connect(timeout)
-                send_success = await self._subscribe()
             except bleak.BleakError:
                 _LOGGER.warning("Error connecting to Switchbot", exc_info=True)
             else:
                 try:
-                    send_success = await self._writekey(command)
+                    await self._subscribe()
+                    await self._writekey(command)
                 except bleak.BleakError:
                     _LOGGER.warning(
                         "Error sending commands to Switchbot", exc_info=True
@@ -336,7 +335,7 @@ class SwitchbotDevice:
             finally:
                 await self._disconnect()
 
-        if self._last_notification and send_success:
+        if self._last_notification:
             if self._last_notification == b"\x07":
                 _LOGGER.error("Password required")
             elif self._last_notification == b"\t":
