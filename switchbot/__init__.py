@@ -277,40 +277,43 @@ class SwitchbotDevice:
         if len(self._mac.split(":")) != 6:
             raise ValueError("Expected MAC address, got %s" % repr(self._mac))
 
-        try:
-            async with bleak.BleakClient(
-                address_or_ble_device=self._mac, timeout=timeout
-            ) as client:
-                _LOGGER.debug("Connnected to switchbot: %s", client.is_connected)
+        async with CONNECT_LOCK:
+            try:
+                async with bleak.BleakClient(
+                    address_or_ble_device=self._mac, timeout=timeout
+                ) as client:
+                    _LOGGER.debug("Connnected to switchbot: %s", client.is_connected)
 
-                _LOGGER.debug("Subscribe to notifications")
-                await client.start_notify(
-                    _sb_uuid(comms_type="rx"), self._notification_handler
-                )
+                    _LOGGER.debug("Subscribe to notifications")
+                    await client.start_notify(
+                        _sb_uuid(comms_type="rx"), self._notification_handler
+                    )
 
-                _LOGGER.debug("Sending command, %s", key)
-                await client.write_gatt_char(_sb_uuid(comms_type="tx"), command, False)
+                    _LOGGER.debug("Sending command, %s", key)
+                    await client.write_gatt_char(
+                        _sb_uuid(comms_type="tx"), command, False
+                    )
 
-                await asyncio.sleep(
-                    1.0
-                )  # Bot needs pause. Otherwise old msg is returned.
+                    await asyncio.sleep(
+                        1.0
+                    )  # Bot needs pause. Otherwise old msg is returned.
 
-                _LOGGER.debug("Prepare to read")
-                notify_msg = await client.read_gatt_char(_sb_uuid(comms_type="rx"))
-                _LOGGER.debug("Notification received: %s", notify_msg)
+                    _LOGGER.debug("Prepare to read")
+                    notify_msg = await client.read_gatt_char(_sb_uuid(comms_type="rx"))
+                    _LOGGER.debug("Notification received: %s", notify_msg)
 
-                _LOGGER.debug("UnSubscribe to notifications")
-                await client.stop_notify(_sb_uuid(comms_type="rx"))
+                    _LOGGER.debug("UnSubscribe to notifications")
+                    await client.stop_notify(_sb_uuid(comms_type="rx"))
 
-        except (bleak.BleakError, asyncio.exceptions.TimeoutError):
+            except (bleak.BleakError, asyncio.exceptions.TimeoutError):
 
-            if retry < 1:
-                _LOGGER.error(
-                    "Switchbot communication failed. Stopping trying", exc_info=True
-                )
-                return b"\x00"
+                if retry < 1:
+                    _LOGGER.error(
+                        "Switchbot communication failed. Stopping trying", exc_info=True
+                    )
+                    return b"\x00"
 
-            _LOGGER.debug("Switchbot communication failed with:", exc_info=True)
+                _LOGGER.debug("Switchbot communication failed with:", exc_info=True)
 
         if notify_msg:
             if notify_msg == b"\x07":
