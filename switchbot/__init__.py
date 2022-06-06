@@ -372,25 +372,32 @@ class SwitchbotDevice(bluepy.btle.Peripheral):
         return True
 
     def _readkey(self) -> bytes:
+        """Reads Bytes from BLE device.
+        
+        Returns:
+            bytes: Response from BLE device or b'\00' otherwise.
+        """
         _LOGGER.debug("Prepare to read notification from switchbot")
+        read_result: bytes = b'\x00'
         if self._helper is None:
             return b"\x00"
         try:
-            receive_handle = self.getCharacteristics(uuid=_sb_uuid("rx"))
-        except bluepy.btle.BTLEException:
+            deviceCharacteristics = self.getCharacteristics(uuid=_sb_uuid("rx"))
+            for characteristic in deviceCharacteristics:
+                if characteristic.supportsRead():
+                    # Only read if the BLE device characteristic supports reading.
+                    read_result = characteristic.read()
+            
+        except bluepy.btle.BTLEGattError:
             _LOGGER.warning(
                 "Error while reading notifications from Switchbot", exc_info=True
             )
-        else:
-            for char in receive_handle:
-                read_result: bytes = char.read()
-            return read_result
-
+        
         # Could disconnect before reading response. Assume it worked as this is executed after issueing command.
         if self._helper and self.getState() == "disc":
             return b"\x01"
 
-        return b"\x00"
+        return read_result
 
     def _sendcommand(self, key: str, retry: int, timeout: int | None = 40) -> bytes:
         command = self._commandkey(key)
