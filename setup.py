@@ -1,12 +1,13 @@
 from setuptools import setup
 
 setup(
-    name = 'PySwitchbot-read-patched',
-    packages = ['switchbot-read-patched'],
+    name = 'switchbotPatched',
+    packages = ['switchbotPatched'],
     install_requires=['bluepy'],
-    version = '0.13.4',
+    version = '0.13.6',
     description = 'A Unofficial library to communicate with Switchbot',
-    author='Daniel Hjelseth Hoyer',
+    author='Ninad',
+    author_email='ninadpchaudhari@gmail.com',
     url='https://github.com/Switchbot-Python/pySwitchbot-patched',
     license='MIT',
     classifiers=[
