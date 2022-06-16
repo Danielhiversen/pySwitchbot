@@ -268,7 +268,7 @@ class SwitchbotDevice:
         key_suffix = key[4:]
         return KEY_PASSWORD_PREFIX + key_action + self._password_encoded + key_suffix
 
-    async def _sendcommand(self, key: str, retry: int, timeout: float = 20.0) -> bytes:
+    async def _sendcommand(self, key: str, retry: int) -> bytes:
         """Send command to device and read response."""
         command = bytearray.fromhex(self._commandkey(key))
         notify_msg = b""
@@ -280,7 +280,7 @@ class SwitchbotDevice:
         async with CONNECT_LOCK:
             try:
                 async with bleak.BleakClient(
-                    address_or_ble_device=self._mac, timeout=timeout
+                    address_or_ble_device=self._mac, timeout=float(self._scan_timeout)
                 ) as client:
                     _LOGGER.debug("Connnected to switchbot: %s", client.is_connected)
 
@@ -296,11 +296,10 @@ class SwitchbotDevice:
 
                     await asyncio.sleep(
                         1.0
-                    )  # Bot needs pause. Otherwise old msg is returned.
+                    )  # Bot needs pause. Otherwise notification could be missed.
 
-                    _LOGGER.debug("Prepare to read")
-                    notify_msg = await client.read_gatt_char(_sb_uuid(comms_type="rx"))
-                    _LOGGER.debug("Notification received: %s", notify_msg)
+                    notify_msg = self._last_notification
+                    _LOGGER.info("Notification received: %s", notify_msg)
 
                     _LOGGER.debug("UnSubscribe to notifications")
                     await client.stop_notify(_sb_uuid(comms_type="rx"))
