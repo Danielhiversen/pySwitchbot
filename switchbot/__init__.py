@@ -114,8 +114,12 @@ class GetSwitchbotDevices:
         advertisement_data: bleak.backends.scanner.AdvertisementData,
     ) -> None:
         """BTLE adv scan callback."""
+        _services = list(advertisement_data.service_data.values())
+        if not _services:
+            return
+        _service_data = _services[0]
+
         _device = device.address.replace(":", "").lower()
-        _service_data = list(advertisement_data.service_data.values())[0]
         _model = chr(_service_data[0] & 0b01111111)
 
         supported_types: dict[str, dict[str, Any]] = {
@@ -153,7 +157,8 @@ class GetSwitchbotDevices:
         devices = None
 
         devices = bleak.BleakScanner(
-            filters={"UUIDs": [str(_sb_uuid())]},
+            # TODO: Find new UUIDs to filter on. For example, see
+            # https://github.com/OpenWonderLabs/SwitchBotAPI-BLE/blob/4ad138bb09f0fbbfa41b152ca327a78c1d0b6ba9/devicetypes/meter.md
             adapter=self._interface,
         )
         devices.register_detection_callback(self.detection_callback)
