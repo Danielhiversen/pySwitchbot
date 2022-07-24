@@ -4,7 +4,7 @@ setup(
     name = 'PySwitchbot',
     packages = ['switchbot'],
     install_requires=['bleak', 'bleak-retry-connector'],
-    version = '0.15.0',
+    version = '0.15.1',
     description = 'A library to communicate with Switchbot',
     author='Daniel Hjelseth Hoyer',
     url='https://github.com/Danielhiversen/pySwitchbot/',
