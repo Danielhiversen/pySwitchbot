@@ -11,6 +11,7 @@ from uuid import UUID
 import bleak
 from bleak.backends.device import BLEDevice
 from bleak.backends.scanner import AdvertisementData
+from bleak_retry_connector import BleakClient, establish_connection
 
 DEFAULT_RETRY_COUNT = 3
 DEFAULT_RETRY_TIMEOUT = 1
@@ -285,61 +286,62 @@ class SwitchbotDevice:
     async def _sendcommand(self, key: str, retry: int) -> bytes:
         """Send command to device and read response."""
         command = bytearray.fromhex(self._commandkey(key))
-        notify_msg = b""
         _LOGGER.debug("Sending command to switchbot %s", command)
-
+        max_attempts = retry + 1
         async with CONNECT_LOCK:
-            try:
-                async with bleak.BleakClient(
-                    address_or_ble_device=self._device,
-                    timeout=float(self._scan_timeout),
-                ) as client:
-                    _LOGGER.debug("Connnected to switchbot: %s", client.is_connected)
+            for attempt in range(max_attempts):
+                try:
+                    return await self._send_command_locked(key, command)
+                except (bleak.BleakError, asyncio.exceptions.TimeoutError):
+                    if attempt == retry:
+                        _LOGGER.error(
+                            "Switchbot communication failed. Stopping trying",
+                            exc_info=True,
+                        )
+                        return b"\x00"
 
-                    _LOGGER.debug("Subscribe to notifications")
-                    await client.start_notify(
-                        _sb_uuid(comms_type="rx"), self._notification_handler
-                    )
+                    _LOGGER.debug("Switchbot communication failed with:", exc_info=True)
 
-                    _LOGGER.debug("Sending command, %s", key)
-                    await client.write_gatt_char(
-                        _sb_uuid(comms_type="tx"), command, False
-                    )
+        raise RuntimeError("Unreachable")
 
-                    await asyncio.sleep(
-                        1.0
-                    )  # Bot needs pause. Otherwise notification could be missed.
+    async def _send_command_locked(self, key: str, command: bytes) -> bytes:
+        """Send command to device and read response."""
+        client: BleakClient | None = None
+        try:
+            _LOGGER.debug("Connnecting to switchbot: %s", self._device.address)
 
-                    notify_msg = self._last_notification
-                    _LOGGER.info("Notification received: %s", notify_msg)
+            client = await establish_connection(
+                BleakClient, self._device.address, self._device, max_attempts=1
+            )
+            _LOGGER.debug("Connnected to switchbot: %s", client.is_connected)
 
-                    _LOGGER.debug("UnSubscribe to notifications")
-                    await client.stop_notify(_sb_uuid(comms_type="rx"))
+            _LOGGER.debug("Subscribe to notifications")
+            await client.start_notify(
+                _sb_uuid(comms_type="rx"), self._notification_handler
+            )
 
-            except (bleak.BleakError, asyncio.exceptions.TimeoutError):
+            _LOGGER.debug("Sending command, %s", key)
+            await client.write_gatt_char(_sb_uuid(comms_type="tx"), command, False)
 
-                if retry < 1:
-                    _LOGGER.error(
-                        "Switchbot communication failed. Stopping trying", exc_info=True
-                    )
-                    return b"\x00"
+            await asyncio.sleep(
+                1.0
+            )  # Bot needs pause. Otherwise notification could be missed.
 
-                _LOGGER.debug("Switchbot communication failed with:", exc_info=True)
+            notify_msg = self._last_notification
+            _LOGGER.info("Notification received: %s", notify_msg)
 
-        if notify_msg:
-            if notify_msg == b"\x07":
-                _LOGGER.error("Password required")
-            elif notify_msg == b"\t":
-                _LOGGER.error("Password incorrect")
-            return notify_msg
+            _LOGGER.debug("UnSubscribe to notifications")
+            await client.stop_notify(_sb_uuid(comms_type="rx"))
 
-        _LOGGER.warning("Cannot connect to Switchbot. Retrying (remaining: %d)", retry)
+        finally:
+            if client:
+                await client.disconnect()
 
-        if retry < 1:  # failsafe
-            return b"\x00"
-
-        await asyncio.sleep(DEFAULT_RETRY_TIMEOUT)
-        return await self._sendcommand(key, retry - 1)
+        if notify_msg == b"\x07":
+            _LOGGER.error("Password required")
+        elif notify_msg == b"\t":
+            _LOGGER.error("Password incorrect")
+        return notify_msg
 
     def get_address(self) -> str:
         """Return address of device."""
