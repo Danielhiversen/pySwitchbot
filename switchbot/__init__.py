@@ -141,6 +141,7 @@ def parse_advertisement_data(
         "H": {"modelName": "WoHand", "func": _process_wohand},
         "c": {"modelName": "WoCurtain", "func": _process_wocurtain},
         "T": {"modelName": "WoSensorTH", "func": _process_wosensorth},
+        "i": {"modelName": "WoSensorTH", "func": _process_wosensorth},
     }
 
     data = {
