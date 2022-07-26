@@ -340,9 +340,7 @@ class SwitchbotDevice:
                 future.set_result(data)
 
             _LOGGER.debug("Subscribe to notifications")
-            await client.start_notify(
-                _sb_uuid(comms_type="rx"), self._notification_handler
-            )
+            await client.start_notify(_sb_uuid(comms_type="rx"), _notification_handler)
 
             _LOGGER.debug("Sending command, %s", key)
             await client.write_gatt_char(_sb_uuid(comms_type="tx"), command, False)
