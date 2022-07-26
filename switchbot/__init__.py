@@ -290,11 +290,6 @@ class SwitchbotDevice:
             self._password_encoded = "%x" % (
                 binascii.crc32(password.encode("ascii")) & 0xFFFFFFFF
             )
-        self._last_notification = bytearray()
-
-    async def _notification_handler(self, sender: int, data: bytearray) -> None:
-        """Handle notification responses."""
-        self._last_notification = data
 
     def _commandkey(self, key: str) -> str:
         """Add password to key if set."""
@@ -335,6 +330,14 @@ class SwitchbotDevice:
                 BleakClient, self._device.address, self._device, max_attempts=1
             )
             _LOGGER.debug("Connnected to switchbot: %s", client.is_connected)
+            future: asyncio.Future[bytearray] = asyncio.Future()
+
+            def _notification_handler(sender: int, data: bytearray) -> None:
+                """Handle notification responses."""
+                if future.done():
+                    _LOGGER.debug("Notification handler already done")
+                    return
+                future.set_result(data)
 
             _LOGGER.debug("Subscribe to notifications")
             await client.start_notify(
@@ -344,11 +347,7 @@ class SwitchbotDevice:
             _LOGGER.debug("Sending command, %s", key)
             await client.write_gatt_char(_sb_uuid(comms_type="tx"), command, False)
 
-            await asyncio.sleep(
-                1.0
-            )  # Bot needs pause. Otherwise notification could be missed.
-
-            notify_msg = self._last_notification
+            notify_msg = await asyncio.wait_for(future, timeout=5)
             _LOGGER.info("Notification received: %s", notify_msg)
 
             _LOGGER.debug("UnSubscribe to notifications")
