@@ -133,6 +133,7 @@ def _process_womotion(data: bytes, mfr_data: bytes | None) -> dict[str, bool | i
         "iot": (data[5] & 0b00010000) >> 4,
         "sense_distance": (data[5] & 0b00001100) >> 2,
         "light_intensity": data[5] & 0b00000011,
+        "is_light": bool(data[5] & 0b00000010),
     }
 
 
