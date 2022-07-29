@@ -170,7 +170,7 @@ def parse_advertisement_data(
     supported_types: dict[str, dict[str, Any]] = {
         "d": {"modelName": "WoContact", "func": _process_wocontact},
         "H": {"modelName": "WoHand", "func": _process_wohand},
-        "s": {"modelName": "woMotion", "func": _process_womotion},
+        "s": {"modelName": "WoMotion", "func": _process_womotion},
         "c": {"modelName": "WoCurtain", "func": _process_wocurtain},
         "T": {"modelName": "WoSensorTH", "func": _process_wosensorth},
         "i": {"modelName": "WoSensorTH", "func": _process_wosensorth},
