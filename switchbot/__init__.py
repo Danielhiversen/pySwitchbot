@@ -290,11 +290,6 @@ class SwitchbotDevice:
             self._password_encoded = "%x" % (
                 binascii.crc32(password.encode("ascii")) & 0xFFFFFFFF
             )
-        self._last_notification = bytearray()
-
-    async def _notification_handler(self, sender: int, data: bytearray) -> None:
-        """Handle notification responses."""
-        self._last_notification = data
 
     def _commandkey(self, key: str) -> str:
         """Add password to key if set."""
@@ -325,33 +320,41 @@ class SwitchbotDevice:
 
         raise RuntimeError("Unreachable")
 
+    @property
+    def name(self) -> str:
+        """Return device name."""
+        return f"{self._device.name} ({self._device.address})"
+
     async def _send_command_locked(self, key: str, command: bytes) -> bytes:
         """Send command to device and read response."""
         client: BleakClient | None = None
         try:
-            _LOGGER.debug("Connnecting to switchbot: %s", self._device.address)
-
+            _LOGGER.debug("%s: Connnecting to switchbot", self.name)
             client = await establish_connection(
-                BleakClient, self._device.address, self._device, max_attempts=1
+                BleakClient, self._device, self.name, max_attempts=1
             )
-            _LOGGER.debug("Connnected to switchbot: %s", client.is_connected)
-
-            _LOGGER.debug("Subscribe to notifications")
-            await client.start_notify(
-                _sb_uuid(comms_type="rx"), self._notification_handler
+            _LOGGER.debug(
+                "%s: Connnected to switchbot: %s", self.name, client.is_connected
             )
+            future: asyncio.Future[bytearray] = asyncio.Future()
 
-            _LOGGER.debug("Sending command, %s", key)
+            def _notification_handler(sender: int, data: bytearray) -> None:
+                """Handle notification responses."""
+                if future.done():
+                    _LOGGER.debug("%s: Notification handler already done", self.name)
+                    return
+                future.set_result(data)
+
+            _LOGGER.debug("%s: Subscribe to notifications", self.name)
+            await client.start_notify(_sb_uuid(comms_type="rx"), _notification_handler)
+
+            _LOGGER.debug("%s: Sending command, %s", self.name, key)
             await client.write_gatt_char(_sb_uuid(comms_type="tx"), command, False)
 
-            await asyncio.sleep(
-                1.0
-            )  # Bot needs pause. Otherwise notification could be missed.
+            notify_msg = await asyncio.wait_for(future, timeout=5)
+            _LOGGER.info("%s: Notification received: %s", self.name, notify_msg)
 
-            notify_msg = self._last_notification
-            _LOGGER.info("Notification received: %s", notify_msg)
-
-            _LOGGER.debug("UnSubscribe to notifications")
+            _LOGGER.debug("%s: UnSubscribe to notifications", self.name)
             await client.stop_notify(_sb_uuid(comms_type="rx"))
 
         finally:
