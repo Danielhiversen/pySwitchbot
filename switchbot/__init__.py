@@ -8,6 +8,7 @@ from dataclasses import dataclass
 from typing import Any
 from uuid import UUID
 
+import async_timeout
 import bleak
 from bleak.backends.device import BLEDevice
 from bleak.backends.scanner import AdvertisementData
@@ -400,7 +401,8 @@ class SwitchbotDevice:
             _LOGGER.debug("%s: Sending command, %s", self.name, key)
             await client.write_gatt_char(_sb_uuid(comms_type="tx"), command, False)
 
-            notify_msg = await asyncio.wait_for(future, timeout=5)
+            async with async_timeout.timeout(5):
+                notify_msg = await future
             _LOGGER.info("%s: Notification received: %s", self.name, notify_msg)
 
             _LOGGER.debug("%s: UnSubscribe to notifications", self.name)
