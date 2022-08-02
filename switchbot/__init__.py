@@ -123,8 +123,8 @@ def _process_wocontact(data: bytes, mfr_data: bytes | None) -> dict[str, bool | 
     }
 
 
-def _process_womotion(data: bytes, mfr_data: bytes | None) -> dict[str, bool | int]:
-    """Process woMotion Sensor services data."""
+def _process_wopresence(data: bytes, mfr_data: bytes | None) -> dict[str, bool | int]:
+    """Process WoPresence Sensor services data."""
     return {
         "tested": bool(data[1] & 0b10000000),
         "motion_detected": bool(data[1] & 0b01000000),
@@ -171,7 +171,7 @@ def parse_advertisement_data(
     supported_types: dict[str, dict[str, Any]] = {
         "d": {"modelName": "WoContact", "func": _process_wocontact},
         "H": {"modelName": "WoHand", "func": _process_wohand},
-        "s": {"modelName": "WoMotion", "func": _process_womotion},
+        "s": {"modelName": "WoPresence", "func": _process_wopresence},
         "c": {"modelName": "WoCurtain", "func": _process_wocurtain},
         "T": {"modelName": "WoSensorTH", "func": _process_wosensorth},
         "i": {"modelName": "WoSensorTH", "func": _process_wosensorth},
