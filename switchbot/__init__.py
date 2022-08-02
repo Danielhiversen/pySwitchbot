@@ -142,7 +142,7 @@ def _process_woplugmini(data: bytes, mfr_data: bytes | None) -> dict[str, bool |
     return {
         "switchMode": True,
         "isOn": mfr_data[7] == 0x80,
-        "wifi_rssi": mfr_data[9],
+        "wifi_rssi": -mfr_data[9],
     }
 
 
