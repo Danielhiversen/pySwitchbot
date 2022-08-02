@@ -146,6 +146,20 @@ def _process_woplugmini(data: bytes, mfr_data: bytes | None) -> dict[str, bool |
     }
 
 
+def _process_color_bulb(data: bytes, mfr_data: bytes | None) -> dict[str, bool | int]:
+    """Process WoBulb services data."""
+    return {
+        "sequence_number": mfr_data[6],
+        "isOn": bool(mfr_data[7] & 0b10000000),
+        "brightness": mfr_data[7] & 0b01111111,
+        "delay": bool(mfr_data[8] & 0b10000000),
+        "preset": bool(mfr_data[8] & 0b00001000),
+        "light_state": mfr_data[8] & 0b00000111,
+        "speed": mfr_data[9] & 0b01111111,
+        "loop_index": mfr_data[10] & 0b11111110,
+    }
+
+
 @dataclass
 class SwitchBotAdvertisement:
     """Switchbot advertisement."""
@@ -176,6 +190,7 @@ def parse_advertisement_data(
         "T": {"modelName": "WoSensorTH", "func": _process_wosensorth},
         "i": {"modelName": "WoSensorTH", "func": _process_wosensorth},
         "g": {"modelName": "WoPlug", "func": _process_woplugmini},
+        "u": {"modelName": "WoBulb", "func": _process_color_bulb},
     }
 
     data = {
