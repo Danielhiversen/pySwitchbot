@@ -1,4 +1,5 @@
 """Contact sensor parser."""
+from __future__ import annotations
 
 
 def process_wocontact(data: bytes, mfr_data: bytes | None) -> dict[str, bool | int]:
