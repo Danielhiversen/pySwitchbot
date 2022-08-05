@@ -107,6 +107,8 @@ class SwitchbotDevice:
             _LOGGER.debug(
                 "%s: Connnected to switchbot: %s", self.name, client.is_connected
             )
+            read_char = client.services.get_characteristic(_sb_uuid(comms_type="rx"))
+            write_char = client.services.get_characteristic(_sb_uuid(comms_type="tx"))
             future: asyncio.Future[bytearray] = asyncio.Future()
 
             def _notification_handler(_sender: int, data: bytearray) -> None:
@@ -117,17 +119,17 @@ class SwitchbotDevice:
                 future.set_result(data)
 
             _LOGGER.debug("%s: Subscribe to notifications", self.name)
-            await client.start_notify(_sb_uuid(comms_type="rx"), _notification_handler)
+            await client.start_notify(read_char, _notification_handler)
 
             _LOGGER.debug("%s: Sending command, %s", self.name, key)
-            await client.write_gatt_char(_sb_uuid(comms_type="tx"), command, False)
+            await client.write_gatt_char(write_char, command, False)
 
             async with async_timeout.timeout(5):
                 notify_msg = await future
             _LOGGER.info("%s: Notification received: %s", self.name, notify_msg)
 
             _LOGGER.debug("%s: UnSubscribe to notifications", self.name)
-            await client.stop_notify(_sb_uuid(comms_type="rx"))
+            await client.stop_notify(read_char)
 
         finally:
             if client:
