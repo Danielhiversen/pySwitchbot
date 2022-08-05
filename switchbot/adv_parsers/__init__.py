@@ -1,0 +1,1 @@
+"""Switchbot Advertisement Parser Library."""
