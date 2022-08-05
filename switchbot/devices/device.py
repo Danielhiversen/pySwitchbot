@@ -58,7 +58,7 @@ class SwitchbotDevice:
         if password is None or password == "":
             self._password_encoded = None
         else:
-            self._password_encoded = "%x" % (
+            self._password_encoded = "%08x" % (
                 binascii.crc32(password.encode("ascii")) & 0xFFFFFFFF
             )
 
