@@ -1,4 +1,5 @@
 """Motion sensor parser."""
+from __future__ import annotations
 
 
 def process_wopresence(data: bytes, mfr_data: bytes | None) -> dict[str, bool | int]:

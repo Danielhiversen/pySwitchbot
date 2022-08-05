@@ -1,4 +1,5 @@
 """Bulb parser."""
+from __future__ import annotations
 
 
 def process_color_bulb(data: bytes, mfr_data: bytes | None) -> dict[str, bool | int]:

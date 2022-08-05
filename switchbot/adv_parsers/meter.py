@@ -1,4 +1,5 @@
 """Meter parser."""
+from __future__ import annotations
 
 
 def process_wosensorth(data: bytes, mfr_data: bytes | None) -> dict[str, object]:
