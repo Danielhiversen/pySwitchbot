@@ -14,51 +14,56 @@ from .adv_parsers.curtain import process_wocurtain
 from .adv_parsers.meter import process_wosensorth
 from .adv_parsers.motion import process_wopresence
 from .adv_parsers.plug import process_woplugmini
+from .const import SwitchbotModel
 from .models import SwitchBotAdvertisement
 
 
 class SwitchbotSupportedType(TypedDict):
     """Supported type of Switchbot."""
 
-    modelName: str
+    modelName: SwitchbotModel
     modelFriendlyName: str
     func: Callable[[bytes, bytes | None], dict[str, bool | int]]
 
 
 SUPPORTED_TYPES: dict[str, SwitchbotSupportedType] = {
     "d": {
-        "modelName": "WoContact",
+        "modelName": SwitchbotModel.CONTACT_SENSOR,
         "modelFriendlyName": "Contact Sensor",
         "func": process_wocontact,
     },
-    "H": {"modelName": "WoHand", "modelFriendlyName": "Bot", "func": process_wohand},
+    "H": {
+        "modelName": SwitchbotModel.BOT,
+        "modelFriendlyName": "Bot",
+        "func": process_wohand,
+    },
     "s": {
-        "modelName": "WoPresence",
+        "modelName": SwitchbotModel.MOTION_SENSOR,
         "modelFriendlyName": "Motion Sensor",
         "func": process_wopresence,
     },
     "c": {
-        "modelName": "WoCurtain",
+        "modelName": SwitchbotModel.CURTAIN,
         "modelFriendlyName": "Curtain",
         "func": process_wocurtain,
     },
     "T": {
-        "modelName": "WoSensorTH",
+        "modelName": SwitchbotModel.METER,
         "modelFriendlyName": "Meter",
         "func": process_wosensorth,
     },
     "i": {
-        "modelName": "WoSensorTH",
+        "modelName": SwitchbotModel.METER,
         "modelFriendlyName": "Meter Plus",
         "func": process_wosensorth,
     },
     "g": {
-        "modelName": "WoPlug",
+        "modelName": SwitchbotModel.PLUG_MINI,
         "modelFriendlyName": "Plug Mini",
         "func": process_woplugmini,
     },
     "u": {
-        "modelName": "WoBulb",
+        "modelName": SwitchbotModel.COLOR_BULB,
         "modelFriendlyName": "Color Bulb",
         "func": process_color_bulb,
     },

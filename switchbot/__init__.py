@@ -1,7 +1,8 @@
 """Library to handle connection with Switchbot."""
 from __future__ import annotations
 
-from .adv_parser import parse_advertisement_data
+from .adv_parser import SwitchbotSupportedType, parse_advertisement_data
+from .const import SwitchbotModel
 from .devices.bot import Switchbot
 from .devices.curtain import SwitchbotCurtain
 from .devices.device import SwitchbotDevice
@@ -17,4 +18,6 @@ __all__ = [
     "SwitchbotCurtain",
     "Switchbot",
     "SwitchbotPlugMini",
+    "SwitchbotSupportedType",
+    "SwitchbotModel",
 ]
