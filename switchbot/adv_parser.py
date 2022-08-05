@@ -95,7 +95,7 @@ def parse_advertisement_data(
             {
                 "isEncrypted": bool(_service_data[0] & 0b10000000),
                 "model": _model,
-                "model_friendly_name": type_data["modelFriendlyName"],
+                "modelFriendlyName": type_data["modelFriendlyName"],
                 "modelName": type_data["modelName"],
                 "data": type_data["func"](_service_data, _mfr_data),
             }
