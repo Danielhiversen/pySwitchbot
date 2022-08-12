@@ -3,7 +3,7 @@ from setuptools import setup
 setup(
     name="PySwitchbot",
     packages=["switchbot", "switchbot.devices", "switchbot.adv_parsers"],
-    install_requires=["async_timeout>=4.0.1", "bleak", "bleak-retry-connector>=1.7.1"],
+    install_requires=["async_timeout>=4.0.1", "bleak", "bleak-retry-connector>=1.7.2"],
     version="0.18.6",
     description="A library to communicate with Switchbot",
     author="Daniel Hjelseth Hoyer",
