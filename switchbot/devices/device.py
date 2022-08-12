@@ -66,7 +66,7 @@ class SwitchbotDevice:
             self._password_encoded = "%08x" % (
                 binascii.crc32(password.encode("ascii")) & 0xFFFFFFFF
             )
-        self._cached_services: BleakGATTServiceCollection | None
+        self._cached_services: BleakGATTServiceCollection | None = None
 
     def _commandkey(self, key: str) -> str:
         """Add password to key if set."""
