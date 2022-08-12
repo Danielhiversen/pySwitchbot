@@ -29,8 +29,19 @@ def test_parse_advertisement_data_curtain():
             },
             "isEncrypted": False,
             "model": "c",
-            "model_friendly_name": "Curtain",
+            "modelFriendlyName": "Curtain",
             "modelName": "WoCurtain",
         },
         device=ble_device,
     )
+
+
+def test_parse_advertisement_data_empty():
+    """Test parse_advertisement_data with empty data does not blow up."""
+    ble_device = BLEDevice("aa:bb:cc:dd:ee:ff", "any")
+    adv_data = AdvertisementData(
+        manufacturer_data={2409: b"\xe7\xabF\xac\x8f\x92|\x0f\x00\x11\x04"},
+        service_data={"0000fd3d-0000-1000-8000-00805f9b34fb": b""},
+    )
+    result = parse_advertisement_data(ble_device, adv_data)
+    assert result is None

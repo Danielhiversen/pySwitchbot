@@ -80,6 +80,8 @@ def parse_advertisement_data(
     if not _services:
         return None
     _service_data = _services[0]
+    if not _service_data:
+        return None
     _mfr_data = _mgr_datas[0] if _mgr_datas else None
     _model = chr(_service_data[0] & 0b01111111)
 
