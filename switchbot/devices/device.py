@@ -10,7 +10,12 @@ from uuid import UUID
 import async_timeout
 import bleak
 from bleak.backends.device import BLEDevice
-from bleak_retry_connector import BleakClient, establish_connection
+from bleak.backends.service import BleakGATTServiceCollection
+from bleak_retry_connector import (
+    BleakClientWithServiceCache,
+    ble_device_has_changed,
+    establish_connection,
+)
 
 from ..const import DEFAULT_RETRY_COUNT, DEFAULT_SCAN_TIMEOUT
 from ..discovery import GetSwitchbotDevices
@@ -61,6 +66,7 @@ class SwitchbotDevice:
             self._password_encoded = "%08x" % (
                 binascii.crc32(password.encode("ascii")) & 0xFFFFFFFF
             )
+        self._cached_services: BleakGATTServiceCollection | None
 
     def _commandkey(self, key: str) -> str:
         """Add password to key if set."""
@@ -98,12 +104,17 @@ class SwitchbotDevice:
 
     async def _send_command_locked(self, key: str, command: bytes) -> bytes:
         """Send command to device and read response."""
-        client: BleakClient | None = None
+        client: BleakClientWithServiceCache | None = None
         try:
             _LOGGER.debug("%s: Connnecting to switchbot", self.name)
             client = await establish_connection(
-                BleakClient, self._device, self.name, max_attempts=1
+                BleakClientWithServiceCache,
+                self._device,
+                self.name,
+                max_attempts=1,
+                cached_services=self._cached_services,
             )
+            self._cached_services = client.services
             _LOGGER.debug(
                 "%s: Connnected to switchbot: %s", self.name, client.is_connected
             )
@@ -158,6 +169,8 @@ class SwitchbotDevice:
     def update_from_advertisement(self, advertisement: SwitchBotAdvertisement) -> None:
         """Update device data from advertisement."""
         self._sb_adv_data = advertisement
+        if self._device and ble_device_has_changed(self._device, advertisement.device):
+            self._cached_services = None
         self._device = advertisement.device
 
     async def get_device_data(
