@@ -32,10 +32,6 @@ class SwitchbotPlugMini(SwitchbotDevice):
         result = await self._sendcommand(PLUG_OFF_KEY, self._retry_count)
         return result[1] == 0x00
 
-    def is_on(self) -> Any:
+    def is_on(self) -> bool | None:
         """Return switch state from cache."""
-        # To get actual position call update() first.
-        value = self._get_adv_value("isOn")
-        if value is None:
-            return None
-        return value
+        return self._get_adv_value("isOn")
