@@ -38,7 +38,7 @@ BLEAK_EXCEPTIONS = (AttributeError, BleakError, asyncio.exceptions.TimeoutError)
 # How long to hold the connection
 # to wait for additional commands for
 # disconnecting the device.
-DISCONNECT_DELAY = 59
+DISCONNECT_DELAY = 49
 
 
 def _sb_uuid(comms_type: str = "service") -> UUID | str:
@@ -81,6 +81,7 @@ class SwitchbotDevice:
         self._read_char: BleakGATTCharacteristic | None = None
         self._write_char: BleakGATTCharacteristic | None = None
         self._disconnect_timer: asyncio.TimerHandle | None = None
+        self._expected_disconnect = False
         self.loop = asyncio.get_event_loop()
 
     def _commandkey(self, key: str) -> str:
@@ -97,8 +98,9 @@ class SwitchbotDevice:
         _LOGGER.debug("%s: Sending command %s", self.name, command)
         if self._operation_lock.locked():
             _LOGGER.debug(
-                "%s: Operation already in progress, waiting for it to complete.",
+                "%s: Operation already in progress, waiting for it to complete; RSSI: %s",
                 self.name,
+                self.rssi,
             )
 
         max_attempts = retry + 1
@@ -116,8 +118,9 @@ class SwitchbotDevice:
                 except BLEAK_EXCEPTIONS:
                     if attempt == retry:
                         _LOGGER.error(
-                            "%s: communication failed; Stopping trying",
+                            "%s: communication failed; Stopping trying; RSSI: %s",
                             self.name,
+                            self.rssi,
                             exc_info=True,
                         )
                         return b"\x00"
@@ -133,12 +136,18 @@ class SwitchbotDevice:
         """Return device name."""
         return f"{self._device.name} ({self._device.address})"
 
+    @property
+    def rssi(self) -> int:
+        """Return RSSI of device."""
+        return self._get_adv_value("rssi")
+
     async def _ensure_connected(self):
         """Ensure connection to device is established."""
         if self._connect_lock.locked():
             _LOGGER.debug(
-                "%s: Connection already in progress, waiting for it to complete.",
+                "%s: Connection already in progress, waiting for it to complete; RSSI: %s",
                 self.name,
+                self.rssi,
             )
         if self._client and self._client.is_connected:
             self._reset_disconnect_timer()
@@ -148,14 +157,16 @@ class SwitchbotDevice:
             if self._client and self._client.is_connected:
                 self._reset_disconnect_timer()
                 return
+            _LOGGER.debug("%s: Connecting; RSSI: %s", self.name, self.rssi)
             client = await establish_connection(
                 BleakClientWithServiceCache,
                 self._device,
                 self.name,
+                self._disconnected,
                 cached_services=self._cached_services,
             )
             self._cached_services = client.services
-            _LOGGER.debug("%s: Connected", self.name)
+            _LOGGER.debug("%s: Connected; RSSI: %s", self.name, self.rssi)
             services = client.services
             self._read_char = services.get_characteristic(_sb_uuid(comms_type="rx"))
             self._write_char = services.get_characteristic(_sb_uuid(comms_type="tx"))
@@ -166,8 +177,22 @@ class SwitchbotDevice:
         """Reset disconnect timer."""
         if self._disconnect_timer:
             self._disconnect_timer.cancel()
+        self._expected_disconnect = False
         self._disconnect_timer = self.loop.call_later(
             DISCONNECT_DELAY, self._disconnect
+        )
+
+    def _disconnected(self, client: BleakClientWithServiceCache) -> None:
+        """Disconnected callback."""
+        if self._expected_disconnect:
+            _LOGGER.debug(
+                "%s: Disconnected from device; RSSI: %s", self.name, self.rssi
+            )
+            return
+        _LOGGER.warning(
+            "%s: Device unexpectedly disconnected; RSSI: %s",
+            self.name,
+            self.rssi,
         )
 
     def _disconnect(self):
@@ -185,6 +210,7 @@ class SwitchbotDevice:
         async with self._connect_lock:
             if not self._client or not self._client.is_connected:
                 return
+            self._expected_disconnect = True
             await self._client.disconnect()
             self._client = None
             self._read_char = None
@@ -206,7 +232,7 @@ class SwitchbotDevice:
                 return
             future.set_result(data)
 
-        _LOGGER.debug("%s: Subscribe to notifications", self.name)
+        _LOGGER.debug("%s: Subscribe to notifications; RSSI: %s", self.name, self.rssi)
         await client.start_notify(self._read_char, _notification_handler)
 
         _LOGGER.debug("%s: Sending command: %s", self.name, key)
