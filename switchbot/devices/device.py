@@ -185,10 +185,12 @@ class SwitchbotDevice:
 
     async def _send_command_locked(self, key: str, command: bytes) -> bytes:
         """Send command to device and read response."""
-        client: BleakClientWithServiceCache | None = None
         await self._ensure_connected()
-        client = self._client
+        assert self._client is not None
+        assert self._read_char is not None
+        assert self._write_char is not None
         future: asyncio.Future[bytearray] = asyncio.Future()
+        client = self._client
 
         def _notification_handler(_sender: int, data: bytearray) -> None:
             """Handle notification responses."""
@@ -239,7 +241,7 @@ class SwitchbotDevice:
 
     async def get_device_data(
         self, retry: int = DEFAULT_RETRY_COUNT, interface: int | None = None
-    ) -> dict | None:
+    ) -> SwitchBotAdvertisement | None:
         """Find switchbot devices and their advertisement data."""
         if interface:
             _interface: int = interface
@@ -255,7 +257,7 @@ class SwitchbotDevice:
 
         return self._sb_adv_data
 
-    async def _get_basic_info(self) -> dict | None:
+    async def _get_basic_info(self) -> bytes | None:
         """Return basic info of device."""
         _data = await self._sendcommand(
             key=DEVICE_GET_BASIC_SETTINGS_KEY, retry=self._retry_count

@@ -4,6 +4,7 @@ from __future__ import annotations
 
 def process_color_bulb(data: bytes, mfr_data: bytes | None) -> dict[str, bool | int]:
     """Process WoBulb services data."""
+    assert mfr_data is not None
     return {
         "sequence_number": mfr_data[6],
         "isOn": bool(mfr_data[7] & 0b10000000),
