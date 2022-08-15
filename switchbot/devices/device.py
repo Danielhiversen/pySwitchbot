@@ -147,7 +147,7 @@ class SwitchbotDevice:
                 cached_services=self._cached_services,
             )
             self._cached_services = client.services
-            _LOGGER.debug("%s: Connected to SwitchBot Device", self.name)
+            _LOGGER.debug("%s: Connected", self.name)
             services = client.services
             self._read_char = services.get_characteristic(_sb_uuid(comms_type="rx"))
             self._write_char = services.get_characteristic(_sb_uuid(comms_type="tx"))
@@ -170,7 +170,7 @@ class SwitchbotDevice:
     async def _execute_disconnect(self):
         """Execute disconnection."""
         _LOGGER.debug(
-            "%s: Disconnecting from SwitchBot Device after timeout of %s",
+            "%s: Disconnecting after timeout of %s",
             self.name,
             DISCONNECT_DELAY,
         )
