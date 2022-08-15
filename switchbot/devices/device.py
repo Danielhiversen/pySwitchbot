@@ -4,17 +4,17 @@ from __future__ import annotations
 import asyncio
 import binascii
 import logging
-from ctypes import cast
-from typing import Any, Callable, TypeVar
+from typing import Any
 from uuid import UUID
 
 import async_timeout
-import bleak
+
 from bleak import BleakError
 from bleak.backends.device import BLEDevice
 from bleak.backends.service import BleakGATTCharacteristic, BleakGATTServiceCollection
 from bleak_retry_connector import (
     BleakClientWithServiceCache,
+    BleakNotFoundError,
     ble_device_has_changed,
     establish_connection,
 )
@@ -106,10 +106,17 @@ class SwitchbotDevice:
             for attempt in range(max_attempts):
                 try:
                     return await self._send_command_locked(key, command)
+                except BleakNotFoundError:
+                    _LOGGER.error(
+                        "%s: device not found or no longer in range; Try restarting Bluetooth",
+                        self.name,
+                        exc_info=True,
+                    )
+                    return b"\x00"
                 except BLEAK_EXCEPTIONS:
                     if attempt == retry:
                         _LOGGER.error(
-                            "%s: communication failed. Stopping trying",
+                            "%s: communication failed; Stopping trying",
                             self.name,
                             exc_info=True,
                         )
