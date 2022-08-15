@@ -158,9 +158,9 @@ class SwitchbotDevice:
         """Reset disconnect timer."""
         if self._disconnect_timer:
             self._disconnect_timer.cancel()
-            self._disconnect_timer = self.loop.call_later(
-                DISCONNECT_DELAY, self._disconnect
-            )
+        self._disconnect_timer = self.loop.call_later(
+            DISCONNECT_DELAY, self._disconnect
+        )
 
     def _disconnect(self):
         """Disconnect from device."""
