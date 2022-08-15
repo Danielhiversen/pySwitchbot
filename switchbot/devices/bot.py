@@ -38,7 +38,9 @@ class Switchbot(SwitchbotDevice):
             return True
 
         if result[0] == 5:
-            _LOGGER.debug("Bot is in press mode and doesn't have on state")
+            _LOGGER.debug(
+                "%s: Bot is in press mode and doesn't have on state", self.name
+            )
             return True
 
         return False
@@ -50,7 +52,9 @@ class Switchbot(SwitchbotDevice):
             return True
 
         if result[0] == 5:
-            _LOGGER.debug("Bot is in press mode and doesn't have off state")
+            _LOGGER.debug(
+                "%s: Bot is in press mode and doesn't have off state", self.name
+            )
             return True
 
         return False
@@ -62,7 +66,7 @@ class Switchbot(SwitchbotDevice):
             return True
 
         if result[0] == 5:
-            _LOGGER.debug("Bot is in press mode")
+            _LOGGER.debug("%s: Bot is in press mode", self.name)
             return True
 
         return False
@@ -74,7 +78,7 @@ class Switchbot(SwitchbotDevice):
             return True
 
         if result[0] == 5:
-            _LOGGER.debug("Bot is in press mode")
+            _LOGGER.debug("%s: Bot is in press mode", self.name)
             return True
 
         return False
@@ -86,7 +90,7 @@ class Switchbot(SwitchbotDevice):
             return True
 
         if result[0] == 5:
-            _LOGGER.debug("Bot is in switch mode")
+            _LOGGER.debug("%s: Bot is in switch mode", self.name)
             return True
 
         return False

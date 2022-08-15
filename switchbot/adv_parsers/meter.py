@@ -1,8 +1,10 @@
 """Meter parser."""
 from __future__ import annotations
 
+from typing import Any
 
-def process_wosensorth(data: bytes, mfr_data: bytes | None) -> dict[str, object]:
+
+def process_wosensorth(data: bytes, mfr_data: bytes | None) -> dict[str, Any]:
     """Process woSensorTH/Temp sensor services data."""
 
     _temp_sign = 1 if data[4] & 0b10000000 else -1

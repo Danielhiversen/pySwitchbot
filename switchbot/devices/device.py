@@ -8,11 +8,13 @@ from typing import Any
 from uuid import UUID
 
 import async_timeout
-import bleak
+
+from bleak import BleakError
 from bleak.backends.device import BLEDevice
-from bleak.backends.service import BleakGATTServiceCollection
+from bleak.backends.service import BleakGATTCharacteristic, BleakGATTServiceCollection
 from bleak_retry_connector import (
     BleakClientWithServiceCache,
+    BleakNotFoundError,
     ble_device_has_changed,
     establish_connection,
 )
@@ -30,6 +32,13 @@ DEVICE_SET_EXTENDED_KEY = "570f"
 
 # Base key when encryption is set
 KEY_PASSWORD_PREFIX = "571"
+
+BLEAK_EXCEPTIONS = (AttributeError, BleakError, asyncio.exceptions.TimeoutError)
+
+# How long to hold the connection
+# to wait for additional commands for
+# disconnecting the device.
+DISCONNECT_DELAY = 49
 
 
 def _sb_uuid(comms_type: str = "service") -> UUID | str:
@@ -60,13 +69,20 @@ class SwitchbotDevice:
         self._scan_timeout: int = kwargs.pop("scan_timeout", DEFAULT_SCAN_TIMEOUT)
         self._retry_count: int = kwargs.pop("retry_count", DEFAULT_RETRY_COUNT)
         self._connect_lock = asyncio.Lock()
+        self._operation_lock = asyncio.Lock()
         if password is None or password == "":
             self._password_encoded = None
         else:
             self._password_encoded = "%08x" % (
                 binascii.crc32(password.encode("ascii")) & 0xFFFFFFFF
             )
+        self._client: BleakClientWithServiceCache | None = None
         self._cached_services: BleakGATTServiceCollection | None = None
+        self._read_char: BleakGATTCharacteristic | None = None
+        self._write_char: BleakGATTCharacteristic | None = None
+        self._disconnect_timer: asyncio.TimerHandle | None = None
+        self._expected_disconnect = False
+        self.loop = asyncio.get_event_loop()
 
     def _commandkey(self, key: str) -> str:
         """Add password to key if set."""
@@ -79,21 +95,39 @@ class SwitchbotDevice:
     async def _sendcommand(self, key: str, retry: int) -> bytes:
         """Send command to device and read response."""
         command = bytearray.fromhex(self._commandkey(key))
-        _LOGGER.debug("Sending command to switchbot %s", command)
+        _LOGGER.debug("%s: Sending command %s", self.name, command)
+        if self._operation_lock.locked():
+            _LOGGER.debug(
+                "%s: Operation already in progress, waiting for it to complete; RSSI: %s",
+                self.name,
+                self.rssi,
+            )
+
         max_attempts = retry + 1
-        async with self._connect_lock:
+        async with self._operation_lock:
             for attempt in range(max_attempts):
                 try:
                     return await self._send_command_locked(key, command)
-                except (bleak.BleakError, asyncio.exceptions.TimeoutError):
+                except BleakNotFoundError:
+                    _LOGGER.error(
+                        "%s: device not found or no longer in range; Try restarting Bluetooth",
+                        self.name,
+                        exc_info=True,
+                    )
+                    return b"\x00"
+                except BLEAK_EXCEPTIONS:
                     if attempt == retry:
                         _LOGGER.error(
-                            "Switchbot communication failed. Stopping trying",
+                            "%s: communication failed; Stopping trying; RSSI: %s",
+                            self.name,
+                            self.rssi,
                             exc_info=True,
                         )
                         return b"\x00"
 
-                    _LOGGER.debug("Switchbot communication failed with:", exc_info=True)
+                    _LOGGER.debug(
+                        "%s: communication failed with:", self.name, exc_info=True
+                    )
 
         raise RuntimeError("Unreachable")
 
@@ -102,49 +136,114 @@ class SwitchbotDevice:
         """Return device name."""
         return f"{self._device.name} ({self._device.address})"
 
-    async def _send_command_locked(self, key: str, command: bytes) -> bytes:
-        """Send command to device and read response."""
-        client: BleakClientWithServiceCache | None = None
-        try:
-            _LOGGER.debug("%s: Connnecting to switchbot", self.name)
+    @property
+    def rssi(self) -> int:
+        """Return RSSI of device."""
+        return self._get_adv_value("rssi")
+
+    async def _ensure_connected(self):
+        """Ensure connection to device is established."""
+        if self._connect_lock.locked():
+            _LOGGER.debug(
+                "%s: Connection already in progress, waiting for it to complete; RSSI: %s",
+                self.name,
+                self.rssi,
+            )
+        if self._client and self._client.is_connected:
+            self._reset_disconnect_timer()
+            return
+        async with self._connect_lock:
+            # Check again while holding the lock
+            if self._client and self._client.is_connected:
+                self._reset_disconnect_timer()
+                return
+            _LOGGER.debug("%s: Connecting; RSSI: %s", self.name, self.rssi)
             client = await establish_connection(
                 BleakClientWithServiceCache,
                 self._device,
                 self.name,
-                max_attempts=1,
+                self._disconnected,
                 cached_services=self._cached_services,
             )
             self._cached_services = client.services
+            _LOGGER.debug("%s: Connected; RSSI: %s", self.name, self.rssi)
+            services = client.services
+            self._read_char = services.get_characteristic(_sb_uuid(comms_type="rx"))
+            self._write_char = services.get_characteristic(_sb_uuid(comms_type="tx"))
+            self._client = client
+            self._reset_disconnect_timer()
+
+    def _reset_disconnect_timer(self):
+        """Reset disconnect timer."""
+        if self._disconnect_timer:
+            self._disconnect_timer.cancel()
+        self._expected_disconnect = False
+        self._disconnect_timer = self.loop.call_later(
+            DISCONNECT_DELAY, self._disconnect
+        )
+
+    def _disconnected(self, client: BleakClientWithServiceCache) -> None:
+        """Disconnected callback."""
+        if self._expected_disconnect:
             _LOGGER.debug(
-                "%s: Connnected to switchbot: %s", self.name, client.is_connected
+                "%s: Disconnected from device; RSSI: %s", self.name, self.rssi
             )
-            read_char = client.services.get_characteristic(_sb_uuid(comms_type="rx"))
-            write_char = client.services.get_characteristic(_sb_uuid(comms_type="tx"))
-            future: asyncio.Future[bytearray] = asyncio.Future()
+            return
+        _LOGGER.warning(
+            "%s: Device unexpectedly disconnected; RSSI: %s",
+            self.name,
+            self.rssi,
+        )
 
-            def _notification_handler(_sender: int, data: bytearray) -> None:
-                """Handle notification responses."""
-                if future.done():
-                    _LOGGER.debug("%s: Notification handler already done", self.name)
-                    return
-                future.set_result(data)
+    def _disconnect(self):
+        """Disconnect from device."""
+        self._disconnect_timer = None
+        asyncio.create_task(self._execute_disconnect())
 
-            _LOGGER.debug("%s: Subscribe to notifications", self.name)
-            await client.start_notify(read_char, _notification_handler)
+    async def _execute_disconnect(self):
+        """Execute disconnection."""
+        _LOGGER.debug(
+            "%s: Disconnecting after timeout of %s",
+            self.name,
+            DISCONNECT_DELAY,
+        )
+        async with self._connect_lock:
+            if not self._client or not self._client.is_connected:
+                return
+            self._expected_disconnect = True
+            await self._client.disconnect()
+            self._client = None
+            self._read_char = None
+            self._write_char = None
 
-            _LOGGER.debug("%s: Sending command, %s", self.name, key)
-            await client.write_gatt_char(write_char, command, False)
+    async def _send_command_locked(self, key: str, command: bytes) -> bytes:
+        """Send command to device and read response."""
+        await self._ensure_connected()
+        assert self._client is not None
+        assert self._read_char is not None
+        assert self._write_char is not None
+        future: asyncio.Future[bytearray] = asyncio.Future()
+        client = self._client
 
-            async with async_timeout.timeout(5):
-                notify_msg = await future
-            _LOGGER.info("%s: Notification received: %s", self.name, notify_msg)
+        def _notification_handler(_sender: int, data: bytearray) -> None:
+            """Handle notification responses."""
+            if future.done():
+                _LOGGER.debug("%s: Notification handler already done", self.name)
+                return
+            future.set_result(data)
 
-            _LOGGER.debug("%s: UnSubscribe to notifications", self.name)
-            await client.stop_notify(read_char)
+        _LOGGER.debug("%s: Subscribe to notifications; RSSI: %s", self.name, self.rssi)
+        await client.start_notify(self._read_char, _notification_handler)
 
-        finally:
-            if client:
-                await client.disconnect()
+        _LOGGER.debug("%s: Sending command: %s", self.name, key)
+        await client.write_gatt_char(self._write_char, command, False)
+
+        async with async_timeout.timeout(5):
+            notify_msg = await future
+        _LOGGER.debug("%s: Notification received: %s", self.name, notify_msg)
+
+        _LOGGER.debug("%s: UnSubscribe to notifications", self.name)
+        await client.stop_notify(self._read_char)
 
         if notify_msg == b"\x07":
             _LOGGER.error("Password required")
@@ -175,7 +274,7 @@ class SwitchbotDevice:
 
     async def get_device_data(
         self, retry: int = DEFAULT_RETRY_COUNT, interface: int | None = None
-    ) -> dict | None:
+    ) -> SwitchBotAdvertisement | None:
         """Find switchbot devices and their advertisement data."""
         if interface:
             _interface: int = interface
@@ -191,7 +290,7 @@ class SwitchbotDevice:
 
         return self._sb_adv_data
 
-    async def _get_basic_info(self) -> dict | None:
+    async def _get_basic_info(self) -> bytes | None:
         """Return basic info of device."""
         _data = await self._sendcommand(
             key=DEVICE_GET_BASIC_SETTINGS_KEY, retry=self._retry_count

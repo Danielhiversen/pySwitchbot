@@ -109,8 +109,8 @@ class GetSwitchbotDevices:
             await self.discover()
 
         return {
-            device: data
-            for device, data in self._adv_data.items()
+            device: adv
+            for device, adv in self._adv_data.items()
             # MacOS uses UUIDs instead of MAC addresses
-            if data.get("address") == address
+            if adv.data.get("address") == address
         }
