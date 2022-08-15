@@ -38,7 +38,7 @@ BLEAK_EXCEPTIONS = (AttributeError, BleakError, asyncio.exceptions.TimeoutError)
 # How long to hold the connection
 # to wait for additional commands for
 # disconnecting the device.
-DISCONNECT_DELAY = 90
+DISCONNECT_DELAY = 59
 
 
 def _sb_uuid(comms_type: str = "service") -> UUID | str:
