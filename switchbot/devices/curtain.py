@@ -112,7 +112,7 @@ class SwitchbotCurtain(SwitchbotDevice):
         )
 
         if _data in (b"\x07", b"\x00"):
-            _LOGGER.error("Unsuccessfull, please try again")
+            _LOGGER.error("Unsuccessful, please try again")
             return None
 
         self.ext_info_sum["device0"] = {
@@ -145,7 +145,7 @@ class SwitchbotCurtain(SwitchbotDevice):
         )
 
         if _data in (b"\x07", b"\x00"):
-            _LOGGER.error("Unsuccessfull, please try again")
+            _LOGGER.error("Unsuccessful, please try again")
             return None
 
         _state_of_charge = [

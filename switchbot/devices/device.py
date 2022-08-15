@@ -162,6 +162,11 @@ class SwitchbotDevice:
         async with self._connect_lock:
             if not self._client:
                 return
+            _LOGGER.debug(
+                "%s: Disconnecting from SwitchBot Device after timeout of %s",
+                self.name,
+                DISCONNECT_DELAY,
+            )
             await self._client.disconnect()
             self._client = None
             self._read_char = None
