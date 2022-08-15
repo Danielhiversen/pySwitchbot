@@ -35,6 +35,11 @@ KEY_PASSWORD_PREFIX = "571"
 
 BLEAK_EXCEPTIONS = (AttributeError, BleakError, asyncio.exceptions.TimeoutError)
 
+# How long to hold the connection
+# to wait for additional commands for
+# disconnecting the device.
+DISCONNECT_DELAY = 90
+
 
 def _sb_uuid(comms_type: str = "service") -> UUID | str:
     """Return Switchbot UUID."""
@@ -75,6 +80,8 @@ class SwitchbotDevice:
         self._cached_services: BleakGATTServiceCollection | None = None
         self._read_char: BleakGATTCharacteristic | None = None
         self._write_char: BleakGATTCharacteristic | None = None
+        self._disconnect_timer: asyncio.TimerHandle | None = None
+        self.loop = asyncio.get_event_loop()
 
     def _commandkey(self, key: str) -> str:
         """Add password to key if set."""
@@ -114,11 +121,14 @@ class SwitchbotDevice:
         return f"{self._device.name} ({self._device.address})"
 
     async def _ensure_connected(self):
+        """Ensure connection to device is established."""
         if self._client and self._client.is_connected:
+            self._reset_disconnect_timer()
             return
         async with self._connect_lock:
             # Check again while holding the lock
             if self._client and self._client.is_connected:
+                self._reset_disconnect_timer()
                 return
             client = await establish_connection(
                 BleakClientWithServiceCache,
@@ -132,6 +142,30 @@ class SwitchbotDevice:
             self._read_char = services.get_characteristic(_sb_uuid(comms_type="rx"))
             self._write_char = services.get_characteristic(_sb_uuid(comms_type="tx"))
             self._client = client
+            self._reset_disconnect_timer()
+
+    def _reset_disconnect_timer(self):
+        """Reset disconnect timer."""
+        if self._disconnect_timer:
+            self._disconnect_timer.cancel()
+            self._disconnect_timer = self.loop.call_later(
+                DISCONNECT_DELAY, self._disconnect
+            )
+
+    def _disconnect(self):
+        """Disconnect from device."""
+        self._disconnect_timer = None
+        asyncio.create_task(self._execute_disconnect())
+
+    async def _execute_disconnect(self):
+        """Execute disconnection."""
+        async with self._connect_lock:
+            if not self._client:
+                return
+            await self._client.disconnect()
+            self._client = None
+            self._read_char = None
+            self._write_char = None
 
     async def _send_command_locked(self, key: str, command: bytes) -> bytes:
         """Send command to device and read response."""
