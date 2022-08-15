@@ -94,7 +94,7 @@ class SwitchbotDevice:
     async def _sendcommand(self, key: str, retry: int) -> bytes:
         """Send command to device and read response."""
         command = bytearray.fromhex(self._commandkey(key))
-        _LOGGER.debug("Sending command to switchbot %s", command)
+        _LOGGER.debug("%s: Sending command %s", self.name, command)
         if self._operation_lock.locked():
             _LOGGER.debug(
                 "%s: Operation already in progress, waiting for it to complete.",
@@ -106,17 +106,18 @@ class SwitchbotDevice:
             for attempt in range(max_attempts):
                 try:
                     return await self._send_command_locked(key, command)
-                except BLEAK_EXCEPTIONS(
-                    bleak.BleakError, asyncio.exceptions.TimeoutError
-                ):
+                except BLEAK_EXCEPTIONS:
                     if attempt == retry:
                         _LOGGER.error(
-                            "Switchbot communication failed. Stopping trying",
+                            "%s: communication failed. Stopping trying",
+                            self.name,
                             exc_info=True,
                         )
                         return b"\x00"
 
-                    _LOGGER.debug("Switchbot communication failed with:", exc_info=True)
+                    _LOGGER.debug(
+                        "%s: communication failed with:", self.name, exc_info=True
+                    )
 
         raise RuntimeError("Unreachable")
 
@@ -199,12 +200,12 @@ class SwitchbotDevice:
         _LOGGER.debug("%s: Subscribe to notifications", self.name)
         await client.start_notify(self._read_char, _notification_handler)
 
-        _LOGGER.debug("%s: Sending command, %s", self.name, key)
+        _LOGGER.debug("%s: Sending command: %s", self.name, key)
         await client.write_gatt_char(self._write_char, command, False)
 
         async with async_timeout.timeout(5):
             notify_msg = await future
-        _LOGGER.info("%s: Notification received: %s", self.name, notify_msg)
+        _LOGGER.debug("%s: Notification received: %s", self.name, notify_msg)
 
         _LOGGER.debug("%s: UnSubscribe to notifications", self.name)
         await client.stop_notify(self._read_char)
