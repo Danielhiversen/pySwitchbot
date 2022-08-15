@@ -95,6 +95,11 @@ class SwitchbotDevice:
         """Send command to device and read response."""
         command = bytearray.fromhex(self._commandkey(key))
         _LOGGER.debug("Sending command to switchbot %s", command)
+        if self._operation_lock.locked():
+            _LOGGER.debug(
+                "%s: Operation already in progress, waiting for it to complete.",
+                self.name,
+            )
 
         max_attempts = retry + 1
         async with self._operation_lock:
@@ -122,6 +127,11 @@ class SwitchbotDevice:
 
     async def _ensure_connected(self):
         """Ensure connection to device is established."""
+        if self._connect_lock.locked():
+            _LOGGER.debug(
+                "%s: Connection already in progress, waiting for it to complete.",
+                self.name,
+            )
         if self._client and self._client.is_connected:
             self._reset_disconnect_timer()
             return
