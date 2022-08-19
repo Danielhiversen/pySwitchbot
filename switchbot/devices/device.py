@@ -208,6 +208,7 @@ class SwitchbotDevice:
             self.name,
             DISCONNECT_DELAY,
         )
+        await self._execute_disconnect()
 
     async def _execute_disconnect(self):
         """Execute disconnection."""
