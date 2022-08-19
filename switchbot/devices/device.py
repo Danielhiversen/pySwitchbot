@@ -224,7 +224,7 @@ class SwitchbotDevice:
         """Send command to device and read response."""
         await self._ensure_connected()
         try:
-            return self._execute_command_locked(key, command)
+            return await self._execute_command_locked(key, command)
         except BleakError:
             # Disconnect so we can reset state and try again
             _LOGGER.debug(
