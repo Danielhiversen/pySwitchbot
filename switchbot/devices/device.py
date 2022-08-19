@@ -164,6 +164,7 @@ class SwitchbotDevice:
                 self.name,
                 self._disconnected,
                 cached_services=self._cached_services,
+                ble_device_callback=lambda: self._device
             )
             self._cached_services = client.services
             _LOGGER.debug("%s: Connected; RSSI: %s", self.name, self.rssi)
