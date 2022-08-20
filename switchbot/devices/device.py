@@ -10,6 +10,7 @@ from uuid import UUID
 import async_timeout
 
 from bleak import BleakError
+from bleak.exc import BleakDBusError
 from bleak.backends.device import BLEDevice
 from bleak.backends.service import BleakGATTCharacteristic, BleakGATTServiceCollection
 from bleak_retry_connector import (
@@ -164,7 +165,7 @@ class SwitchbotDevice:
                 self.name,
                 self._disconnected,
                 cached_services=self._cached_services,
-                ble_device_callback=lambda: self._device
+                ble_device_callback=lambda: self._device,
             )
             self._cached_services = client.services
             _LOGGER.debug("%s: Connected; RSSI: %s", self.name, self.rssi)
@@ -199,15 +200,19 @@ class SwitchbotDevice:
     def _disconnect(self):
         """Disconnect from device."""
         self._disconnect_timer = None
-        asyncio.create_task(self._execute_disconnect())
+        asyncio.create_task(self._execute_timed_disconnect())
 
-    async def _execute_disconnect(self):
-        """Execute disconnection."""
+    async def _execute_timed_disconnect(self):
+        """Execute timed disconnection."""
         _LOGGER.debug(
             "%s: Disconnecting after timeout of %s",
             self.name,
             DISCONNECT_DELAY,
         )
+        await self._execute_disconnect()
+
+    async def _execute_disconnect(self):
+        """Execute disconnection."""
         async with self._connect_lock:
             if not self._client or not self._client.is_connected:
                 return
@@ -220,6 +225,29 @@ class SwitchbotDevice:
     async def _send_command_locked(self, key: str, command: bytes) -> bytes:
         """Send command to device and read response."""
         await self._ensure_connected()
+        try:
+            return await self._execute_command_locked(key, command)
+        except BleakDBusError as ex:
+            # Disconnect so we can reset state and try again
+            await asyncio.sleep(0.25)
+            _LOGGER.debug(
+                "%s: RSSI: %s; Backing off %ss; Disconnecting due to error: %s",
+                self.name,
+                self.rssi,
+                0.25,
+                ex,
+            )
+            await self._execute_disconnect()
+        except BleakError as ex:
+            # Disconnect so we can reset state and try again
+            _LOGGER.debug(
+                "%s: RSSI: %s; Disconnecting due to error: %s", self.name, self.rssi, ex
+            )
+            await self._execute_disconnect()
+            raise
+
+    async def _execute_command_locked(self, key: str, command: bytes) -> bytes:
+        """Execute command and read response."""
         assert self._client is not None
         assert self._read_char is not None
         assert self._write_char is not None
