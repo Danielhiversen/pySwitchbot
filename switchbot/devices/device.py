@@ -10,6 +10,7 @@ from uuid import UUID
 import async_timeout
 
 from bleak import BleakError
+from bleak.exc import BleakDBusError
 from bleak.backends.device import BLEDevice
 from bleak.backends.service import BleakGATTCharacteristic, BleakGATTServiceCollection
 from bleak_retry_connector import (
@@ -226,6 +227,17 @@ class SwitchbotDevice:
         await self._ensure_connected()
         try:
             return await self._execute_command_locked(key, command)
+        except BleakDBusError as ex:
+            # Disconnect so we can reset state and try again
+            await asyncio.sleep(0.25)
+            _LOGGER.debug(
+                "%s: RSSI: %s; Backing off %ss; Disconnecting due to error: %s",
+                self.name,
+                self.rssi,
+                0.25,
+                ex,
+            )
+            await self._execute_disconnect()
         except BleakError as ex:
             # Disconnect so we can reset state and try again
             _LOGGER.debug(
