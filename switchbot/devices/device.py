@@ -226,10 +226,10 @@ class SwitchbotDevice:
         await self._ensure_connected()
         try:
             return await self._execute_command_locked(key, command)
-        except BleakError:
+        except BleakError as ex:
             # Disconnect so we can reset state and try again
             _LOGGER.debug(
-                "%s: Disconnecting due to error; RSSI: %s", self.name, self.rssi
+                "%s: RSSI: %s; Disconnecting due to error: %s", self.name, self.rssi, ex
             )
             await self._execute_disconnect()
             raise
