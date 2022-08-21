@@ -42,6 +42,10 @@ BLEAK_EXCEPTIONS = (AttributeError, BleakError, asyncio.exceptions.TimeoutError)
 DISCONNECT_DELAY = 49
 
 
+class CharacteristicMissingError(Exception):
+    """Raised when a characteristic is missing."""
+
+
 def _sb_uuid(comms_type: str = "service") -> UUID | str:
     """Return Switchbot UUID."""
 
@@ -51,6 +55,10 @@ def _sb_uuid(comms_type: str = "service") -> UUID | str:
         return UUID(f"cba20{_uuid[comms_type]}-224d-11e6-9fb8-0002a5d5c51b")
 
     return "Incorrect type, choose between: tx, rx or service"
+
+
+READ_CHAR_UUID = _sb_uuid(comms_type="rx")
+WRITE_CHAR_UUID = _sb_uuid(comms_type="tx")
 
 
 class SwitchbotDevice:
@@ -105,6 +113,12 @@ class SwitchbotDevice:
             )
 
         max_attempts = retry + 1
+        if self._operation_lock.locked():
+            _LOGGER.debug(
+                "%s: Operation already in progress, waiting for it to complete; RSSI: %s",
+                self.name,
+                self.rssi,
+            )
         async with self._operation_lock:
             for attempt in range(max_attempts):
                 try:
@@ -116,6 +130,24 @@ class SwitchbotDevice:
                         exc_info=True,
                     )
                     return b"\x00"
+                except CharacteristicMissingError as ex:
+                    if attempt == retry:
+                        _LOGGER.error(
+                            "%s: characteristic missing: %s; Stopping trying; RSSI: %s",
+                            self.name,
+                            ex,
+                            self.rssi,
+                            exc_info=True,
+                        )
+                        return b"\x00"
+
+                    _LOGGER.debug(
+                        "%s: characteristic missing: %s; RSSI: %s",
+                        self.name,
+                        ex,
+                        self.rssi,
+                        exc_info=True,
+                    )
                 except BLEAK_EXCEPTIONS:
                     if attempt == retry:
                         _LOGGER.error(
@@ -167,13 +199,20 @@ class SwitchbotDevice:
                 cached_services=self._cached_services,
                 ble_device_callback=lambda: self._device,
             )
-            self._cached_services = client.services
             _LOGGER.debug("%s: Connected; RSSI: %s", self.name, self.rssi)
-            services = client.services
-            self._read_char = services.get_characteristic(_sb_uuid(comms_type="rx"))
-            self._write_char = services.get_characteristic(_sb_uuid(comms_type="tx"))
+            resolved = self._resolve_characteristics(client.services)
+            if not resolved:
+                # Try to handle services failing to load
+                resolved = self._resolve_characteristics(await client.get_services())
+            self._cached_services = client.services if resolved else None
             self._client = client
             self._reset_disconnect_timer()
+
+    def _resolve_characteristics(self, services: BleakGATTServiceCollection) -> bool:
+        """Resolve characteristics."""
+        self._read_char = services.get_characteristic(READ_CHAR_UUID)
+        self._write_char = services.get_characteristic(WRITE_CHAR_UUID)
+        return bool(self._read_char and self._write_char)
 
     def _reset_disconnect_timer(self):
         """Reset disconnect timer."""
@@ -214,13 +253,13 @@ class SwitchbotDevice:
     async def _execute_disconnect(self):
         """Execute disconnection."""
         async with self._connect_lock:
-            if not self._client or not self._client.is_connected:
-                return
+            client = self._client
             self._expected_disconnect = True
-            await self._client.disconnect()
             self._client = None
             self._read_char = None
             self._write_char = None
+            if client and client.is_connected:
+                await client.disconnect()
 
     async def _send_command_locked(self, key: str, command: bytes) -> bytes:
         """Send command to device and read response."""
@@ -250,8 +289,10 @@ class SwitchbotDevice:
     async def _execute_command_locked(self, key: str, command: bytes) -> bytes:
         """Execute command and read response."""
         assert self._client is not None
-        assert self._read_char is not None
-        assert self._write_char is not None
+        if not self._read_char:
+            raise CharacteristicMissingError(READ_CHAR_UUID)
+        if not self._write_char:
+            raise CharacteristicMissingError(WRITE_CHAR_UUID)
         future: asyncio.Future[bytearray] = asyncio.Future()
         client = self._client
 
