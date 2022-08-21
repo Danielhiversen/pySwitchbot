@@ -200,17 +200,19 @@ class SwitchbotDevice:
                 ble_device_callback=lambda: self._device,
             )
             _LOGGER.debug("%s: Connected; RSSI: %s", self.name, self.rssi)
-            services = client.services
-            self._read_char = services.get_characteristic(READ_CHAR_UUID)
-            self._write_char = services.get_characteristic(WRITE_CHAR_UUID)
-            if self._read_char is None or self._write_char is None:
+            resolved = self._resolve_characteristics(client.services)
+            if not resolved:
                 # Try to handle services failing to load
-                services = await client.get_services()
-                self._read_char = services.get_characteristic(READ_CHAR_UUID)
-                self._write_char = services.get_characteristic(WRITE_CHAR_UUID)
-            self._cached_services = client.services
+                resolved = self._resolve_characteristics(await client.get_services())
+            self._cached_services = client.services if resolved else None
             self._client = client
             self._reset_disconnect_timer()
+
+    def _resolve_characteristics(self, services: BleakGATTServiceCollection) -> bool:
+        """Resolve characteristics."""
+        self._read_char = services.get_characteristic(READ_CHAR_UUID)
+        self._write_char = services.get_characteristic(WRITE_CHAR_UUID)
+        return bool(self._read_char and self._write_char)
 
     def _reset_disconnect_timer(self):
         """Reset disconnect timer."""
