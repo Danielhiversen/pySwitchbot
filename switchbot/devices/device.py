@@ -238,6 +238,7 @@ class SwitchbotDevice:
                 ex,
             )
             await self._execute_disconnect()
+            raise
         except BleakError as ex:
             # Disconnect so we can reset state and try again
             _LOGGER.debug(
