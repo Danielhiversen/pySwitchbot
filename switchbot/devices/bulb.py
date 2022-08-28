@@ -100,7 +100,5 @@ class SwitchbotBulb(SwitchbotBaseLight):
             "isOn": result[1] == 0x80,
             "color_mode": result[10],
         }
-        _LOGGER.debug(
-            "%s: Bulb update state: %s = %s", self.name, result.hex(), self._state
-        )
+        _LOGGER.debug("%s: update state: %s = %s", self.name, result.hex(), self._state)
         self._fire_callbacks()
