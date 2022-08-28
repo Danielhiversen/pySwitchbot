@@ -357,7 +357,10 @@ class SwitchbotDevice:
 
     def update_from_advertisement(self, advertisement: SwitchBotAdvertisement) -> None:
         """Update device data from advertisement."""
-        self._sb_adv_data = advertisement
+        # Only accept advertisements if the data is not missing
+        # if we already have an advertisement with data
+        if advertisement.data.get("data") or not self._sb_adv_data.data.get("data"):
+            self._sb_adv_data = advertisement
         self._override_adv_data = None
         if self._device and ble_device_has_changed(self._device, advertisement.device):
             self._cached_services = None
