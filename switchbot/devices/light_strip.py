@@ -51,6 +51,21 @@ class SwitchbotLightStrip(SwitchbotSequenceDevice):
         return self._get_adv_value("brightness") or 0
 
     @property
+    def color_modes(self) -> set[ColorMode]:
+        """Return the supported color modes."""
+        return {ColorMode.RGB}
+
+    @property
+    def min_temp(self) -> int:
+        """Return minimum color temp."""
+        return 0
+
+    @property
+    def max_temp(self) -> int:
+        """Return maximum color temp."""
+        return 0
+
+    @property
     def color_mode(self) -> ColorMode:
         """Return the current color mode."""
         return ColorMode(self._get_adv_value("color_mode") or 0)

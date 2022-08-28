@@ -64,6 +64,11 @@ class SwitchbotBulb(SwitchbotSequenceDevice):
         return ColorMode(self._get_adv_value("color_mode") or 0)
 
     @property
+    def color_modes(self) -> set[ColorMode]:
+        """Return the supported color modes."""
+        return {ColorMode.RGB, ColorMode.COLOR_TEMP}
+
+    @property
     def min_temp(self) -> int:
         """Return minimum color temp."""
         return 2700
