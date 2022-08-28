@@ -92,7 +92,7 @@ class SwitchbotBulb(SwitchbotDevice):
         return result[1] == 0x00
 
     def is_on(self) -> bool | None:
-        """Return blub state from cache."""
+        """Return bulb state from cache."""
         return self._get_adv_value("isOn")
 
     @property
@@ -110,9 +110,7 @@ class SwitchbotBulb(SwitchbotDevice):
     @property
     def color_temp(self) -> int | None:
         """Return the current color temp value."""
-        if "cw" not in self._state:
-            return None
-        return self._state["cw"]
+        return self._state.get("cw")
 
     @property
     def brightness(self) -> int | None:
