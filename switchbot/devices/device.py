@@ -4,7 +4,7 @@ from __future__ import annotations
 import asyncio
 import binascii
 import logging
-from typing import Any
+from typing import Any, Callable
 from uuid import UUID
 
 import async_timeout
@@ -91,6 +91,7 @@ class SwitchbotDevice:
         self._disconnect_timer: asyncio.TimerHandle | None = None
         self._expected_disconnect = False
         self.loop = asyncio.get_event_loop()
+        self._callbacks = list[Callable[[], None]] = []
 
     def _commandkey(self, key: str) -> str:
         """Add password to key if set."""
@@ -376,3 +377,18 @@ class SwitchbotDevice:
             return None
 
         return _data
+
+    def _fire_callbacks(self) -> None:
+        """Fire callbacks."""
+        for callback in self._callbacks:
+            callback()
+
+    def subscribe(self, callback: Callable[[], None]) -> Callable[[], None]:
+        """Subscribe to device notifications."""
+        self._callbacks.append(callback)
+
+        def _unsub() -> None:
+            """Unsubscribe from device notifications."""
+            self._callbacks.remove(callback)
+
+        return _unsub
