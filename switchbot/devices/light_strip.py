@@ -58,6 +58,10 @@ class SwitchbotLightStrip(SwitchbotBaseLight):
         self._update_state(result)
         return result[1] == 0x80
 
+    async def set_color_temp(self, brightness: int, color_temp: int) -> bool:
+        """Set color temp."""
+        # not supported on this device
+
     async def set_rgb(self, brightness: int, r: int, g: int, b: int) -> bool:
         """Set rgb."""
         assert 0 <= brightness <= 100, "Brightness must be between 0 and 100"

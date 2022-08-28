@@ -55,3 +55,23 @@ class SwitchbotBaseLight(SwitchbotSequenceDevice):
     def is_on(self) -> bool | None:
         """Return bulb state from cache."""
         return self._get_adv_value("isOn")
+
+    @abstractmethod
+    async def turn_on(self) -> bool:
+        """Turn device on."""
+
+    @abstractmethod
+    async def turn_off(self) -> bool:
+        """Turn device off."""
+
+    @abstractmethod
+    async def set_brightness(self, brightness: int) -> bool:
+        """Set brightness."""
+
+    @abstractmethod
+    async def set_color_temp(self, brightness: int, color_temp: int) -> bool:
+        """Set color temp."""
+
+    @abstractmethod
+    async def set_rgb(self, brightness: int, r: int, g: int, b: int) -> bool:
+        """Set rgb."""
