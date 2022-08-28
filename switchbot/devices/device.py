@@ -430,7 +430,7 @@ class SwitchbotSequenceDevice(SwitchbotDevice):
         super().update_from_advertisement(advertisement)
         new_state = self._get_adv_value("sequence_number")
         _LOGGER.debug(
-            "%s: Strip update advertisement: %s (seq before: %s) (seq after: %s)",
+            "%s: update advertisement: %s (seq before: %s) (seq after: %s)",
             self.name,
             advertisement,
             current_state,
