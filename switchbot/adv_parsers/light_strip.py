@@ -2,7 +2,7 @@
 from __future__ import annotations
 
 
-def process_color_bulb(data: bytes, mfr_data: bytes | None) -> dict[str, bool | int]:
+def process_wostrip(data: bytes, mfr_data: bytes | None) -> dict[str, bool | int]:
     """Process WoStrip services data."""
     assert mfr_data is not None
     return {

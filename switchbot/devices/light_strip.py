@@ -6,7 +6,7 @@ from typing import Any
 
 from switchbot.models import SwitchBotAdvertisement
 
-from .device import SwitchbotDevice
+from .device import SwitchbotDevice, SwitchbotSequenceDevice
 
 REQ_HEADER = "570f"
 STRIP_COMMMAND_HEADER = "4901"
@@ -25,7 +25,7 @@ _LOGGER = logging.getLogger(__name__)
 from .device import ColorMode
 
 
-class SwitchbotLightStrip(SwitchbotDevice):
+class SwitchbotLightStrip(SwitchbotSequenceDevice):
     """Representation of a Switchbot light strip."""
 
     def __init__(self, *args: Any, **kwargs: Any) -> None:
@@ -106,18 +106,3 @@ class SwitchbotLightStrip(SwitchbotDevice):
             "%s: Bulb update state: %s = %s", self.name, result.hex(), self._state
         )
         self._fire_callbacks()
-
-    def update_from_advertisement(self, advertisement: SwitchBotAdvertisement) -> None:
-        """Update device data from advertisement."""
-        current_state = self._get_adv_value("sequence_number")
-        super().update_from_advertisement(advertisement)
-        new_state = self._get_adv_value("sequence_number")
-        _LOGGER.debug(
-            "%s: Strip update advertisement: %s (seq before: %s) (seq after: %s)",
-            self.name,
-            advertisement,
-            current_state,
-            new_state,
-        )
-        if current_state != new_state:
-            asyncio.ensure_future(self.update())
