@@ -43,7 +43,7 @@ class SwitchbotBulb(SwitchbotDevice):
         self._state: dict[str, Any] = {}
 
     @property
-    def on(self) -> bool:
+    def on(self) -> bool | None:
         """Return if bulb is on."""
         return self.is_on()
 
@@ -124,12 +124,6 @@ class SwitchbotBulb(SwitchbotDevice):
         )
         self._update_state(result)
         return result[1] == 0x80
-
-    async def turn_off(self) -> bool:
-        """Turn device off."""
-        result = await self._sendcommand(BULB_OFF_KEY)
-        self._update_state(result)
-        return result[1] == 0x00
 
     def is_on(self) -> bool | None:
         """Return bulb state from cache."""
