@@ -54,6 +54,10 @@ class CharacteristicMissingError(Exception):
     """Raised when a characteristic is missing."""
 
 
+class SwitchbotOperationError(Exception):
+    """Raised when an operation fails."""
+
+
 def _sb_uuid(comms_type: str = "service") -> UUID | str:
     """Return Switchbot UUID."""
 
@@ -406,8 +410,20 @@ class SwitchbotDevice:
     async def update(self) -> None:
         """Update state of device."""
 
+    def _check_command_result(
+        self, result: bytes, index: int, values: set[int]
+    ) -> bool:
+        """Check command result."""
+        if not result:
+            raise SwitchbotOperationError(
+                f"{self.name}: Sending command failed (rssi={self.rssi})"
+            )
+        return result[index] in values
+
 
 class SwitchbotSequenceDevice(SwitchbotDevice):
+    """A Switchbot sequence device."""
+
     def update_from_advertisement(self, advertisement: SwitchBotAdvertisement) -> None:
         """Update device data from advertisement."""
         current_state = self._get_adv_value("sequence_number")

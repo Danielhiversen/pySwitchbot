@@ -42,24 +42,24 @@ class SwitchbotCurtain(SwitchbotDevice):
     async def open(self) -> bool:
         """Send open command."""
         result = await self._sendcommand(OPEN_KEY)
-        return result[0] == 1
+        return self._check_command_result(result, 0, {1})
 
     async def close(self) -> bool:
         """Send close command."""
         result = await self._sendcommand(CLOSE_KEY)
-        return result[0] == 1
+        return self._check_command_result(result, 0, {1})
 
     async def stop(self) -> bool:
         """Send stop command to device."""
         result = await self._sendcommand(STOP_KEY)
-        return result[0] == 1
+        return self._check_command_result(result, 0, {1})
 
     async def set_position(self, position: int) -> bool:
         """Send position command (0-100) to device."""
         position = (100 - position) if self._reverse else position
         hex_position = "%0.2X" % position
         result = await self._sendcommand(POSITION_KEY + hex_position)
-        return result[0] == 1
+        return self._check_command_result(result, 0, {1})
 
     async def update(self, interface: int | None = None) -> None:
         """Update position, battery percent and light level of device."""

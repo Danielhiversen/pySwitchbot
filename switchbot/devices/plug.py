@@ -20,12 +20,12 @@ class SwitchbotPlugMini(SwitchbotDevice):
     async def turn_on(self) -> bool:
         """Turn device on."""
         result = await self._sendcommand(PLUG_ON_KEY)
-        return result[1] == 0x80
+        return self._check_command_result(result, 1, {0x80})
 
     async def turn_off(self) -> bool:
         """Turn device off."""
         result = await self._sendcommand(PLUG_OFF_KEY)
-        return result[1] == 0x00
+        return self._check_command_result(result, 1, {0x00})
 
     def is_on(self) -> bool | None:
         """Return switch state from cache."""
