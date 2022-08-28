@@ -332,7 +332,7 @@ class SwitchbotDevice:
         """Return value from advertisement data."""
         if not self._sb_adv_data:
             return None
-        return self._sb_adv_data.data["data"][key]
+        return self._sb_adv_data.data["data"].get(key)
 
     def get_battery_percent(self) -> Any:
         """Return device battery level in percent."""
