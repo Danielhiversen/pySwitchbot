@@ -141,7 +141,7 @@ class SwitchbotBulb(SwitchbotDevice):
         self._state["g"] = result[4]
         self._state["b"] = result[5]
         self._state["cw"] = int(result[6:7].hex(), 16)
-        _LOGGER.debug("%s: Bulb update state: %s = %s", self.name, result, self._state)
+        _LOGGER.debug("%s: Bulb update state: %s = %s", self.name, result.hex(), self._state)
         self._fire_callbacks()
 
     def update_from_advertisement(self, advertisement: SwitchBotAdvertisement) -> None:
