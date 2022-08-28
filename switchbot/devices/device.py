@@ -4,6 +4,7 @@ from __future__ import annotations
 import asyncio
 import binascii
 import logging
+from enum import Enum
 from typing import Any, Callable
 from uuid import UUID
 
@@ -39,6 +40,14 @@ BLEAK_EXCEPTIONS = (AttributeError, BleakError, asyncio.exceptions.TimeoutError)
 # to wait for additional commands for
 # disconnecting the device.
 DISCONNECT_DELAY = 49
+
+
+class ColorMode(Enum):
+
+    OFF = 0
+    COLOR_TEMP = 1
+    RGB = 2
+    EFFECT = 3
 
 
 class CharacteristicMissingError(Exception):
@@ -396,3 +405,20 @@ class SwitchbotDevice:
 
     async def update(self) -> None:
         """Update state of device."""
+
+
+class SwitchbotSequenceDevice(SwitchbotDevice):
+    def update_from_advertisement(self, advertisement: SwitchBotAdvertisement) -> None:
+        """Update device data from advertisement."""
+        current_state = self._get_adv_value("sequence_number")
+        super().update_from_advertisement(advertisement)
+        new_state = self._get_adv_value("sequence_number")
+        _LOGGER.debug(
+            "%s: Strip update advertisement: %s (seq before: %s) (seq after: %s)",
+            self.name,
+            advertisement,
+            current_state,
+            new_state,
+        )
+        if current_state != new_state:
+            asyncio.ensure_future(self.update())

@@ -1,0 +1,17 @@
+"""Light strip adv parser."""
+from __future__ import annotations
+
+
+def process_wostrip(data: bytes, mfr_data: bytes | None) -> dict[str, bool | int]:
+    """Process WoStrip services data."""
+    assert mfr_data is not None
+    return {
+        "sequence_number": mfr_data[6],
+        "isOn": bool(mfr_data[7] & 0b10000000),
+        "brightness": mfr_data[7] & 0b01111111,
+        "delay": bool(mfr_data[8] & 0b10000000),
+        "preset": bool(mfr_data[8] & 0b00001000),
+        "color_mode": mfr_data[8] & 0b00000111,
+        "speed": mfr_data[9] & 0b01111111,
+        "loop_index": mfr_data[10] & 0b11111110,
+    }

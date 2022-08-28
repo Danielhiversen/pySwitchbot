@@ -11,6 +11,7 @@ from .adv_parsers.bot import process_wohand
 from .adv_parsers.bulb import process_color_bulb
 from .adv_parsers.contact import process_wocontact
 from .adv_parsers.curtain import process_wocurtain
+from .adv_parsers.light_strip import process_wostrip
 from .adv_parsers.meter import process_wosensorth
 from .adv_parsers.motion import process_wopresence
 from .adv_parsers.plug import process_woplugmini
@@ -41,6 +42,11 @@ SUPPORTED_TYPES: dict[str, SwitchbotSupportedType] = {
         "modelName": SwitchbotModel.MOTION_SENSOR,
         "modelFriendlyName": "Motion Sensor",
         "func": process_wopresence,
+    },
+    "r": {
+        "modelName": SwitchbotModel.LIGHT_STRIP,
+        "modelFriendlyName": "Light Strip",
+        "func": process_wostrip,
     },
     "c": {
         "modelName": SwitchbotModel.CURTAIN,

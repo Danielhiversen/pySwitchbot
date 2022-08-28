@@ -14,6 +14,7 @@ class SwitchbotModel(StrEnum):
     CURTAIN = "WoCurtain"
     PLUG_MINI = "WoPlug"
     CONTACT_SENSOR = "WoContact"
+    LIGHT_STRIP = "WoStrip"
     METER = "WoSensorTH"
     MOTION_SENSOR = "WoPresence"
     COLOR_BULB = "WoBulb"

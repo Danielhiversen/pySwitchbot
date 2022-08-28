@@ -7,7 +7,7 @@ from typing import Any
 
 from switchbot.models import SwitchBotAdvertisement
 
-from .device import SwitchbotDevice
+from .device import SwitchbotDevice, SwitchbotSequenceDevice
 
 REQ_HEADER = "570f"
 BULB_COMMMAND_HEADER = "4701"
@@ -25,16 +25,10 @@ CW_KEY = f"{BULB_COMMAND}17"
 
 _LOGGER = logging.getLogger(__name__)
 
-
-class ColorMode(Enum):
-
-    OFF = 0
-    COLOR_TEMP = 1
-    RGB = 2
-    EFFECT = 3
+from .device import ColorMode
 
 
-class SwitchbotBulb(SwitchbotDevice):
+class SwitchbotBulb(SwitchbotSequenceDevice):
     """Representation of a Switchbot bulb."""
 
     def __init__(self, *args: Any, **kwargs: Any) -> None:
@@ -68,6 +62,11 @@ class SwitchbotBulb(SwitchbotDevice):
     def color_mode(self) -> ColorMode:
         """Return the current color mode."""
         return ColorMode(self._get_adv_value("color_mode") or 0)
+
+    @property
+    def color_modes(self) -> set[ColorMode]:
+        """Return the supported color modes."""
+        return {ColorMode.RGB, ColorMode.COLOR_TEMP}
 
     @property
     def min_temp(self) -> int:
@@ -141,18 +140,3 @@ class SwitchbotBulb(SwitchbotDevice):
             "%s: Bulb update state: %s = %s", self.name, result.hex(), self._state
         )
         self._fire_callbacks()
-
-    def update_from_advertisement(self, advertisement: SwitchBotAdvertisement) -> None:
-        """Update device data from advertisement."""
-        current_state = self._get_adv_value("sequence_number")
-        super().update_from_advertisement(advertisement)
-        new_state = self._get_adv_value("sequence_number")
-        _LOGGER.debug(
-            "%s: Bulb update advertisement: %s (seq before: %s) (seq after: %s)",
-            self.name,
-            advertisement,
-            current_state,
-            new_state,
-        )
-        if current_state != new_state:
-            asyncio.ensure_future(self.update())
