@@ -66,6 +66,16 @@ class SwitchbotBulb(SwitchbotDevice):
         """Return the current color mode."""
         return ColorMode(self._get_adv_value("color_mode") or 0)
 
+    @property
+    def min_temp(self) -> int:
+        """Return minimum color temp."""
+        return 2700
+
+    @property
+    def max_temp(self) -> int:
+        """Return maximum color temp."""
+        return 6500
+
     async def update(self, interface: int | None = None) -> None:
         """Update state of device."""
         result = await self._sendcommand(BULB_REQUEST)

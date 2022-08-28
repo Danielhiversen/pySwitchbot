@@ -4,8 +4,7 @@ from __future__ import annotations
 import logging
 from typing import Any
 
-from .device import (DEVICE_SET_EXTENDED_KEY, DEVICE_SET_MODE_KEY,
-                     SwitchbotDevice)
+from .device import DEVICE_SET_EXTENDED_KEY, DEVICE_SET_MODE_KEY, SwitchbotDevice
 
 # Bot keys
 PRESS_KEY = "570100"
