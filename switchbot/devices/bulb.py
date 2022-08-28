@@ -1,9 +1,10 @@
 from __future__ import annotations
 
 import asyncio
+import logging
 from enum import Enum
 from typing import Any
-import logging
+
 from switchbot.models import SwitchBotAdvertisement
 
 from .device import SwitchbotDevice
@@ -141,7 +142,9 @@ class SwitchbotBulb(SwitchbotDevice):
         self._state["g"] = result[4]
         self._state["b"] = result[5]
         self._state["cw"] = int(result[6:8].hex(), 16)
-        _LOGGER.debug("%s: Bulb update state: %s = %s", self.name, result.hex(), self._state)
+        _LOGGER.debug(
+            "%s: Bulb update state: %s = %s", self.name, result.hex(), self._state
+        )
         self._fire_callbacks()
 
     def update_from_advertisement(self, advertisement: SwitchBotAdvertisement) -> None:
