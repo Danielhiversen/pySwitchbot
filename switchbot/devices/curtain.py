@@ -97,6 +97,10 @@ class SwitchbotCurtain(SwitchbotDevice):
         """Get basic info for all devices in chain."""
         _data = await self._sendcommand(key=CURTAIN_EXT_SUM_KEY)
 
+        if not _data:
+            _LOGGER.error("%s: Unsuccessful, no result from device", self.name)
+            return None
+
         if _data in (b"\x07", b"\x00"):
             _LOGGER.error("%s: Unsuccessful, please try again", self.name)
             return None
@@ -127,6 +131,9 @@ class SwitchbotCurtain(SwitchbotDevice):
         """Get advance page info for device chain."""
 
         _data = await self._sendcommand(key=CURTAIN_EXT_ADV_KEY)
+        if not _data:
+            _LOGGER.error("%s: Unsuccessful, no result from device", self.name)
+            return None
 
         if _data in (b"\x07", b"\x00"):
             _LOGGER.error("%s: Unsuccessful, please try again", self.name)

@@ -114,7 +114,7 @@ class SwitchbotDevice:
         key_suffix = key[4:]
         return KEY_PASSWORD_PREFIX + key_action + self._password_encoded + key_suffix
 
-    async def _sendcommand(self, key: str, retry: int | None = None) -> bytes:
+    async def _sendcommand(self, key: str, retry: int | None = None) -> bytes | None:
         """Send command to device and read response."""
         if retry is None:
             retry = self._retry_count
@@ -145,7 +145,7 @@ class SwitchbotDevice:
                         self.rssi,
                         exc_info=True,
                     )
-                    return b"\x00"
+                    return None
                 except CharacteristicMissingError as ex:
                     if attempt == retry:
                         _LOGGER.error(
@@ -155,7 +155,7 @@ class SwitchbotDevice:
                             self.rssi,
                             exc_info=True,
                         )
-                        return b"\x00"
+                        return None
 
                     _LOGGER.debug(
                         "%s: characteristic missing: %s; RSSI: %s",
@@ -172,7 +172,7 @@ class SwitchbotDevice:
                             self.rssi,
                             exc_info=True,
                         )
-                        return b"\x00"
+                        return None
 
                     _LOGGER.debug(
                         "%s: communication failed with:", self.name, exc_info=True
@@ -411,10 +411,10 @@ class SwitchbotDevice:
         """Update state of device."""
 
     def _check_command_result(
-        self, result: bytes, index: int, values: set[int]
+        self, result: bytes | None, index: int, values: set[int]
     ) -> bool:
         """Check command result."""
-        if not result:
+        if not result or len(result) - 1 < index:
             raise SwitchbotOperationError(
                 f"{self.name}: Sending command failed (rssi={self.rssi})"
             )

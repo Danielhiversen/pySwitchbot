@@ -74,9 +74,9 @@ class SwitchbotLightStrip(SwitchbotBaseLight):
         self._update_state(result)
         return self._check_command_result(result, 1, {0x80})
 
-    def _update_state(self, result: bytes) -> None:
+    def _update_state(self, result: bytes | None) -> None:
         """Update device state."""
-        if len(result) < 10:
+        if not result or len(result) < 10:
             return
         self._state["r"] = result[3]
         self._state["g"] = result[4]
