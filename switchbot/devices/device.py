@@ -41,6 +41,14 @@ BLEAK_EXCEPTIONS = (AttributeError, BleakError, asyncio.exceptions.TimeoutError)
 DISCONNECT_DELAY = 49
 
 
+class ColorMode(Enum):
+
+    OFF = 0
+    COLOR_TEMP = 1
+    RGB = 2
+    EFFECT = 3
+
+
 class CharacteristicMissingError(Exception):
     """Raised when a characteristic is missing."""
 
