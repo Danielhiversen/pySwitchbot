@@ -4,15 +4,14 @@ from __future__ import annotations
 import asyncio
 import binascii
 import logging
-from typing import Any
+from typing import Any, Callable
 from uuid import UUID
 
 import async_timeout
-
 from bleak import BleakError
-from bleak.exc import BleakDBusError
 from bleak.backends.device import BLEDevice
 from bleak.backends.service import BleakGATTCharacteristic, BleakGATTServiceCollection
+from bleak.exc import BleakDBusError
 from bleak_retry_connector import (
     BleakClientWithServiceCache,
     BleakNotFoundError,
@@ -92,6 +91,7 @@ class SwitchbotDevice:
         self._disconnect_timer: asyncio.TimerHandle | None = None
         self._expected_disconnect = False
         self.loop = asyncio.get_event_loop()
+        self._callbacks: list[Callable[[], None]] = []
 
     def _commandkey(self, key: str) -> str:
         """Add password to key if set."""
@@ -101,8 +101,10 @@ class SwitchbotDevice:
         key_suffix = key[4:]
         return KEY_PASSWORD_PREFIX + key_action + self._password_encoded + key_suffix
 
-    async def _sendcommand(self, key: str, retry: int) -> bytes:
+    async def _sendcommand(self, key: str, retry: int | None = None) -> bytes:
         """Send command to device and read response."""
+        if retry is None:
+            retry = self._retry_count
         command = bytearray.fromhex(self._commandkey(key))
         _LOGGER.debug("%s: Sending command %s", self.name, command)
         if self._operation_lock.locked():
@@ -330,7 +332,7 @@ class SwitchbotDevice:
         """Return value from advertisement data."""
         if not self._sb_adv_data:
             return None
-        return self._sb_adv_data.data["data"][key]
+        return self._sb_adv_data.data["data"].get(key)
 
     def get_battery_percent(self) -> Any:
         """Return device battery level in percent."""
@@ -344,9 +346,12 @@ class SwitchbotDevice:
         self._device = advertisement.device
 
     async def get_device_data(
-        self, retry: int = DEFAULT_RETRY_COUNT, interface: int | None = None
+        self, retry: int | None = None, interface: int | None = None
     ) -> SwitchBotAdvertisement | None:
         """Find switchbot devices and their advertisement data."""
+        if retry is None:
+            retry = self._retry_count
+
         if interface:
             _interface: int = interface
         else:
@@ -372,3 +377,21 @@ class SwitchbotDevice:
             return None
 
         return _data
+
+    def _fire_callbacks(self) -> None:
+        """Fire callbacks."""
+        for callback in self._callbacks:
+            callback()
+
+    def subscribe(self, callback: Callable[[], None]) -> Callable[[], None]:
+        """Subscribe to device notifications."""
+        self._callbacks.append(callback)
+
+        def _unsub() -> None:
+            """Unsubscribe from device notifications."""
+            self._callbacks.remove(callback)
+
+        return _unsub
+
+    async def update(self) -> None:
+        """Update state of device."""
