@@ -91,7 +91,7 @@ class SwitchbotDevice:
         self._disconnect_timer: asyncio.TimerHandle | None = None
         self._expected_disconnect = False
         self.loop = asyncio.get_event_loop()
-        self._callbacks = list[Callable[[], None]] = []
+        self._callbacks: list[Callable[[], None]] = []
 
     def _commandkey(self, key: str) -> str:
         """Add password to key if set."""
