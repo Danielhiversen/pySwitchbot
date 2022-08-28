@@ -10,7 +10,8 @@ from bleak.backends.device import BLEDevice
 from bleak.backends.scanner import AdvertisementData
 
 from .adv_parser import parse_advertisement_data
-from .const import DEFAULT_RETRY_COUNT, DEFAULT_RETRY_TIMEOUT, DEFAULT_SCAN_TIMEOUT
+from .const import (DEFAULT_RETRY_COUNT, DEFAULT_RETRY_TIMEOUT,
+                    DEFAULT_SCAN_TIMEOUT)
 from .models import SwitchBotAdvertisement
 
 _LOGGER = logging.getLogger(__name__)

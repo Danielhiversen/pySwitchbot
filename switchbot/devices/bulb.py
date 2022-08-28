@@ -39,6 +39,33 @@ class SwitchbotBulb(SwitchbotDevice):
         super().__init__(*args, **kwargs)
         self._state: dict[str, Any] = {}
 
+    @property
+    def on(self) -> bool:
+        """Return if bulb is on."""
+        return self.is_on()
+
+    @property
+    def rgb(self) -> tuple[int, int, int] | None:
+        """Return the current rgb value."""
+        if "r" not in self._state or "g" not in self._state or "b" not in self._state:
+            return None
+        return self._state["r"], self._state["g"], self._state["b"]
+
+    @property
+    def color_temp(self) -> int | None:
+        """Return the current color temp value."""
+        return self._state.get("cw")
+
+    @property
+    def brightness(self) -> int | None:
+        """Return the current brightness value."""
+        return self._get_adv_value("brightness")
+
+    @property
+    def color_mode(self) -> ColorMode:
+        """Return the current color mode."""
+        return ColorMode(self._get_adv_value("color_mode") or 0)
+
     async def update(self, interface: int | None = None) -> None:
         """Update state of device."""
         result = await self._sendcommand(BULB_REQUEST)
@@ -94,33 +121,6 @@ class SwitchbotBulb(SwitchbotDevice):
     def is_on(self) -> bool | None:
         """Return bulb state from cache."""
         return self._get_adv_value("isOn")
-
-    @property
-    def on(self) -> bool:
-        """Return if bulb is on."""
-        return self.is_on()
-
-    @property
-    def rgb(self) -> tuple[int, int, int] | None:
-        """Return the current rgb value."""
-        if "r" not in self._state or "g" not in self._state or "b" not in self._state:
-            return None
-        return self._state["r"], self._state["g"], self._state["b"]
-
-    @property
-    def color_temp(self) -> int | None:
-        """Return the current color temp value."""
-        return self._state.get("cw")
-
-    @property
-    def brightness(self) -> int | None:
-        """Return the current brightness value."""
-        return self._get_adv_value("brightness")
-
-    @property
-    def color_mode(self) -> ColorMode:
-        """Return the current color mode."""
-        return ColorMode(self._get_adv_value("color_mode") or 0)
 
     def _update_state(self, result: bytes) -> None:
         """Update device state."""
