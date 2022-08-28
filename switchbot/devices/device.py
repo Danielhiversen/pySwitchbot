@@ -127,8 +127,9 @@ class SwitchbotDevice:
                     return await self._send_command_locked(key, command)
                 except BleakNotFoundError:
                     _LOGGER.error(
-                        "%s: device not found or no longer in range; Try restarting Bluetooth",
+                        "%s: device not found, no longer in range, or poor RSSI: %s",
                         self.name,
+                        self.rssi,
                         exc_info=True,
                     )
                     return b"\x00"
