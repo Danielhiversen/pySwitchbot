@@ -54,12 +54,12 @@ class SwitchbotBulb(SwitchbotDevice):
     @property
     def color_temp(self) -> int | None:
         """Return the current color temp value."""
-        return self._state.get("cw")
+        return self._state.get("cw") or self.min_temp
 
     @property
     def brightness(self) -> int | None:
         """Return the current brightness value."""
-        return self._get_adv_value("brightness")
+        return self._get_adv_value("brightness") or 0
 
     @property
     def color_mode(self) -> ColorMode:
@@ -143,6 +143,6 @@ class SwitchbotBulb(SwitchbotDevice):
     def update_from_advertisement(self, advertisement: SwitchBotAdvertisement) -> None:
         """Update device data from advertisement."""
         current_state = self._get_adv_value("sequence_number")
-        super().update_from_advertisement()
+        super().update_from_advertisement(advertisement)
         if current_state != self._get_adv_value("sequence_number"):
             asyncio.ensure_future(self.update())
