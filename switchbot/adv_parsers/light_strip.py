@@ -1,4 +1,4 @@
-"""Bulb parser."""
+"""Light strip adv parser."""
 from __future__ import annotations
 
 
