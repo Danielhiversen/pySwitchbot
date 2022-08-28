@@ -7,6 +7,7 @@ from .devices.bot import Switchbot
 from .devices.curtain import SwitchbotCurtain
 from .devices.device import SwitchbotDevice
 from .devices.plug import SwitchbotPlugMini
+from .devices.bulb import SwitchbotBulb, ColorMode
 from .discovery import GetSwitchbotDevices
 from .models import SwitchBotAdvertisement
 
@@ -14,6 +15,8 @@ __all__ = [
     "parse_advertisement_data",
     "GetSwitchbotDevices",
     "SwitchBotAdvertisement",
+    "ColorMode",
+    "SwitchbotBulb",
     "SwitchbotDevice",
     "SwitchbotCurtain",
     "Switchbot",
