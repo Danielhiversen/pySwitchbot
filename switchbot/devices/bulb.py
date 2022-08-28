@@ -38,7 +38,6 @@ class SwitchbotBulb(SwitchbotDevice):
         """Switchbot bulb constructor."""
         super().__init__(*args, **kwargs)
         self._state: dict[str, Any] = {}
-        self._update_task: asyncio.Task = None
 
     async def update(self, interface: int | None = None) -> None:
         """Update state of device."""
