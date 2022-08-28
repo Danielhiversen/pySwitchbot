@@ -31,27 +31,27 @@ class Switchbot(SwitchbotDevice):
 
     async def turn_on(self) -> bool:
         """Turn device on."""
-        result = await self._sendcommand(ON_KEY)
+        result = await self._send_command(ON_KEY)
         return self._check_command_result(result, 0, {1, 5})
 
     async def turn_off(self) -> bool:
         """Turn device off."""
-        result = await self._sendcommand(OFF_KEY)
+        result = await self._send_command(OFF_KEY)
         return self._check_command_result(result, 0, {1, 5})
 
     async def hand_up(self) -> bool:
         """Raise device arm."""
-        result = await self._sendcommand(UP_KEY)
+        result = await self._send_command(UP_KEY)
         return self._check_command_result(result, 0, {1, 5})
 
     async def hand_down(self) -> bool:
         """Lower device arm."""
-        result = await self._sendcommand(DOWN_KEY)
+        result = await self._send_command(DOWN_KEY)
         return self._check_command_result(result, 0, {1, 5})
 
     async def press(self) -> bool:
         """Press command to device."""
-        result = await self._sendcommand(PRESS_KEY)
+        result = await self._send_command(PRESS_KEY)
         return self._check_command_result(result, 0, {1, 5})
 
     async def set_switch_mode(
@@ -60,13 +60,13 @@ class Switchbot(SwitchbotDevice):
         """Change bot mode."""
         mode_key = format(switch_mode, "b") + format(inverse, "b")
         strength_key = f"{strength:0{2}x}"  # to hex with padding to double digit
-        result = await self._sendcommand(DEVICE_SET_MODE_KEY + strength_key + mode_key)
+        result = await self._send_command(DEVICE_SET_MODE_KEY + strength_key + mode_key)
         return self._check_command_result(result, 0, {1})
 
     async def set_long_press(self, duration: int = 0) -> bool:
         """Set bot long press duration."""
         duration_key = f"{duration:0{2}x}"  # to hex with padding to double digit
-        result = await self._sendcommand(DEVICE_SET_EXTENDED_KEY + "08" + duration_key)
+        result = await self._send_command(DEVICE_SET_EXTENDED_KEY + "08" + duration_key)
         return self._check_command_result(result, 0, {1})
 
     async def get_basic_info(self) -> dict[str, Any] | None:

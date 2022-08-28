@@ -41,24 +41,24 @@ class SwitchbotCurtain(SwitchbotDevice):
 
     async def open(self) -> bool:
         """Send open command."""
-        result = await self._sendcommand(OPEN_KEY)
+        result = await self._send_command(OPEN_KEY)
         return self._check_command_result(result, 0, {1})
 
     async def close(self) -> bool:
         """Send close command."""
-        result = await self._sendcommand(CLOSE_KEY)
+        result = await self._send_command(CLOSE_KEY)
         return self._check_command_result(result, 0, {1})
 
     async def stop(self) -> bool:
         """Send stop command to device."""
-        result = await self._sendcommand(STOP_KEY)
+        result = await self._send_command(STOP_KEY)
         return self._check_command_result(result, 0, {1})
 
     async def set_position(self, position: int) -> bool:
         """Send position command (0-100) to device."""
         position = (100 - position) if self._reverse else position
         hex_position = "%0.2X" % position
-        result = await self._sendcommand(POSITION_KEY + hex_position)
+        result = await self._send_command(POSITION_KEY + hex_position)
         return self._check_command_result(result, 0, {1})
 
     async def update(self, interface: int | None = None) -> None:
@@ -95,7 +95,7 @@ class SwitchbotCurtain(SwitchbotDevice):
 
     async def get_extended_info_summary(self) -> dict[str, Any] | None:
         """Get basic info for all devices in chain."""
-        _data = await self._sendcommand(key=CURTAIN_EXT_SUM_KEY)
+        _data = await self._send_command(key=CURTAIN_EXT_SUM_KEY)
 
         if not _data:
             _LOGGER.error("%s: Unsuccessful, no result from device", self.name)
@@ -130,7 +130,7 @@ class SwitchbotCurtain(SwitchbotDevice):
     async def get_extended_info_adv(self) -> dict[str, Any] | None:
         """Get advance page info for device chain."""
 
-        _data = await self._sendcommand(key=CURTAIN_EXT_ADV_KEY)
+        _data = await self._send_command(key=CURTAIN_EXT_ADV_KEY)
         if not _data:
             _LOGGER.error("%s: Unsuccessful, no result from device", self.name)
             return None
