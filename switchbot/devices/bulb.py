@@ -3,7 +3,7 @@ from __future__ import annotations
 import asyncio
 from enum import Enum
 from typing import Any
-
+import logging
 from switchbot.models import SwitchBotAdvertisement
 
 from .device import SwitchbotDevice
@@ -21,6 +21,8 @@ CW_BRIGHTNESS_KEY = f"{BULB_COMMAND}13"
 BRIGHTNESS_KEY = f"{BULB_COMMAND}14"
 RGB_KEY = f"{BULB_COMMAND}16"
 CW_KEY = f"{BULB_COMMAND}17"
+
+_LOGGER = logging.getLogger(__name__)
 
 
 class ColorMode(Enum):
@@ -78,6 +80,7 @@ class SwitchbotBulb(SwitchbotDevice):
 
     async def update(self, interface: int | None = None) -> None:
         """Update state of device."""
+        _LOGGER.debug("%s: Updating bulb state", self.name)
         result = await self._sendcommand(BULB_REQUEST)
         self._update_state(result)
 
@@ -138,11 +141,20 @@ class SwitchbotBulb(SwitchbotDevice):
         self._state["g"] = result[4]
         self._state["b"] = result[5]
         self._state["cw"] = int(result[6:7].hex(), 16)
+        _LOGGER.debug("%s: Bulb update state: %s = %s", self.name, result, self._state)
         self._fire_callbacks()
 
     def update_from_advertisement(self, advertisement: SwitchBotAdvertisement) -> None:
         """Update device data from advertisement."""
         current_state = self._get_adv_value("sequence_number")
         super().update_from_advertisement(advertisement)
-        if current_state != self._get_adv_value("sequence_number"):
+        new_state = self._get_adv_value("sequence_number")
+        _LOGGER.debug(
+            "%s: Bulb update advertisement: %s (seq before: %s) (seq after: %s)",
+            self.name,
+            advertisement,
+            current_state,
+            new_state,
+        )
+        if current_state != new_state:
             asyncio.ensure_future(self.update())
