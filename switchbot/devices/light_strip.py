@@ -43,20 +43,20 @@ class SwitchbotLightStrip(SwitchbotBaseLight):
         """Turn device on."""
         result = await self._sendcommand(STRIP_ON_KEY)
         self._update_state(result)
-        return result[1] == 0x80
+        return self._check_command_result(result, 1, {0x80})
 
     async def turn_off(self) -> bool:
         """Turn device off."""
         result = await self._sendcommand(STRIP_OFF_KEY)
         self._update_state(result)
-        return result[1] == 0x00
+        return self._check_command_result(result, 1, {0x00})
 
     async def set_brightness(self, brightness: int) -> bool:
         """Set brightness."""
         assert 0 <= brightness <= 100, "Brightness must be between 0 and 100"
         result = await self._sendcommand(f"{BRIGHTNESS_KEY}{brightness:02X}")
         self._update_state(result)
-        return result[1] == 0x80
+        return self._check_command_result(result, 1, {0x80})
 
     async def set_color_temp(self, brightness: int, color_temp: int) -> bool:
         """Set color temp."""
@@ -72,7 +72,7 @@ class SwitchbotLightStrip(SwitchbotBaseLight):
             f"{RGB_BRIGHTNESS_KEY}{brightness:02X}{r:02X}{g:02X}{b:02X}"
         )
         self._update_state(result)
-        return result[1] == 0x80
+        return self._check_command_result(result, 1, {0x80})
 
     def _update_state(self, result: bytes) -> None:
         """Update device state."""
