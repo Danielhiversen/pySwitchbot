@@ -36,25 +36,25 @@ class SwitchbotLightStrip(SwitchbotBaseLight):
 
     async def update(self) -> None:
         """Update state of device."""
-        result = await self._sendcommand(STRIP_REQUEST)
+        result = await self._send_command(STRIP_REQUEST)
         self._update_state(result)
 
     async def turn_on(self) -> bool:
         """Turn device on."""
-        result = await self._sendcommand(STRIP_ON_KEY)
+        result = await self._send_command(STRIP_ON_KEY)
         self._update_state(result)
         return self._check_command_result(result, 1, {0x80})
 
     async def turn_off(self) -> bool:
         """Turn device off."""
-        result = await self._sendcommand(STRIP_OFF_KEY)
+        result = await self._send_command(STRIP_OFF_KEY)
         self._update_state(result)
         return self._check_command_result(result, 1, {0x00})
 
     async def set_brightness(self, brightness: int) -> bool:
         """Set brightness."""
         assert 0 <= brightness <= 100, "Brightness must be between 0 and 100"
-        result = await self._sendcommand(f"{BRIGHTNESS_KEY}{brightness:02X}")
+        result = await self._send_command(f"{BRIGHTNESS_KEY}{brightness:02X}")
         self._update_state(result)
         return self._check_command_result(result, 1, {0x80})
 
@@ -68,7 +68,7 @@ class SwitchbotLightStrip(SwitchbotBaseLight):
         assert 0 <= r <= 255, "r must be between 0 and 255"
         assert 0 <= g <= 255, "g must be between 0 and 255"
         assert 0 <= b <= 255, "b must be between 0 and 255"
-        result = await self._sendcommand(
+        result = await self._send_command(
             f"{RGB_BRIGHTNESS_KEY}{brightness:02X}{r:02X}{g:02X}{b:02X}"
         )
         self._update_state(result)
@@ -81,6 +81,10 @@ class SwitchbotLightStrip(SwitchbotBaseLight):
         self._state["r"] = result[3]
         self._state["g"] = result[4]
         self._state["b"] = result[5]
+        self._override_adv_data = {
+            "isOn": result[1] == 0x80,
+            "color_mode": result[10],
+        }
         _LOGGER.debug(
             "%s: Bulb update state: %s = %s", self.name, result.hex(), self._state
         )

@@ -44,25 +44,25 @@ class SwitchbotBulb(SwitchbotBaseLight):
 
     async def update(self) -> None:
         """Update state of device."""
-        result = await self._sendcommand(BULB_REQUEST)
+        result = await self._send_command(BULB_REQUEST)
         self._update_state(result)
 
     async def turn_on(self) -> bool:
         """Turn device on."""
-        result = await self._sendcommand(BULB_ON_KEY)
+        result = await self._send_command(BULB_ON_KEY)
         self._update_state(result)
         return self._check_command_result(result, 1, {0x80})
 
     async def turn_off(self) -> bool:
         """Turn device off."""
-        result = await self._sendcommand(BULB_OFF_KEY)
+        result = await self._send_command(BULB_OFF_KEY)
         self._update_state(result)
         return self._check_command_result(result, 1, {0x00})
 
     async def set_brightness(self, brightness: int) -> bool:
         """Set brightness."""
         assert 0 <= brightness <= 100, "Brightness must be between 0 and 100"
-        result = await self._sendcommand(f"{BRIGHTNESS_KEY}{brightness:02X}")
+        result = await self._send_command(f"{BRIGHTNESS_KEY}{brightness:02X}")
         self._update_state(result)
         return self._check_command_result(result, 1, {0x80})
 
@@ -70,7 +70,7 @@ class SwitchbotBulb(SwitchbotBaseLight):
         """Set color temp."""
         assert 0 <= brightness <= 100, "Brightness must be between 0 and 100"
         assert 2700 <= color_temp <= 6500, "Color Temp must be between 0 and 100"
-        result = await self._sendcommand(
+        result = await self._send_command(
             f"{CW_BRIGHTNESS_KEY}{brightness:02X}{color_temp:04X}"
         )
         self._update_state(result)
@@ -82,7 +82,7 @@ class SwitchbotBulb(SwitchbotBaseLight):
         assert 0 <= r <= 255, "r must be between 0 and 255"
         assert 0 <= g <= 255, "g must be between 0 and 255"
         assert 0 <= b <= 255, "b must be between 0 and 255"
-        result = await self._sendcommand(
+        result = await self._send_command(
             f"{RGB_BRIGHTNESS_KEY}{brightness:02X}{r:02X}{g:02X}{b:02X}"
         )
         self._update_state(result)
@@ -96,6 +96,10 @@ class SwitchbotBulb(SwitchbotBaseLight):
         self._state["g"] = result[4]
         self._state["b"] = result[5]
         self._state["cw"] = int(result[6:8].hex(), 16)
+        self._override_adv_data = {
+            "isOn": result[1] == 0x80,
+            "color_mode": result[10],
+        }
         _LOGGER.debug(
             "%s: Bulb update state: %s = %s", self.name, result.hex(), self._state
         )

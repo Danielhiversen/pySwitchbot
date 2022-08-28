@@ -87,6 +87,7 @@ class SwitchbotDevice:
         self._interface = f"hci{interface}"
         self._device = device
         self._sb_adv_data: SwitchBotAdvertisement | None = None
+        self._override_adv_data: dict[str, Any] | None = None
         self._scan_timeout: int = kwargs.pop("scan_timeout", DEFAULT_SCAN_TIMEOUT)
         self._retry_count: int = kwargs.pop("retry_count", DEFAULT_RETRY_COUNT)
         self._connect_lock = asyncio.Lock()
@@ -114,7 +115,7 @@ class SwitchbotDevice:
         key_suffix = key[4:]
         return KEY_PASSWORD_PREFIX + key_action + self._password_encoded + key_suffix
 
-    async def _sendcommand(self, key: str, retry: int | None = None) -> bytes | None:
+    async def _send_command(self, key: str, retry: int | None = None) -> bytes | None:
         """Send command to device and read response."""
         if retry is None:
             retry = self._retry_count
@@ -344,6 +345,8 @@ class SwitchbotDevice:
 
     def _get_adv_value(self, key: str) -> Any:
         """Return value from advertisement data."""
+        if self._override_adv_data and key in self._override_adv_data:
+            return self._override_adv_data[key]
         if not self._sb_adv_data:
             return None
         return self._sb_adv_data.data["data"].get(key)
@@ -355,6 +358,7 @@ class SwitchbotDevice:
     def update_from_advertisement(self, advertisement: SwitchBotAdvertisement) -> None:
         """Update device data from advertisement."""
         self._sb_adv_data = advertisement
+        self._override_adv_data = None
         if self._device and ble_device_has_changed(self._device, advertisement.device):
             self._cached_services = None
         self._device = advertisement.device
@@ -382,7 +386,7 @@ class SwitchbotDevice:
 
     async def _get_basic_info(self) -> bytes | None:
         """Return basic info of device."""
-        _data = await self._sendcommand(
+        _data = await self._send_command(
             key=DEVICE_GET_BASIC_SETTINGS_KEY, retry=self._retry_count
         )
 
@@ -394,6 +398,7 @@ class SwitchbotDevice:
 
     def _fire_callbacks(self) -> None:
         """Fire callbacks."""
+        _LOGGER.debug("%s: Fire callbacks", self.name)
         for callback in self._callbacks:
             callback()
 
