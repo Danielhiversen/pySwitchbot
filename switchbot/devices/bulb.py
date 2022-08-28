@@ -140,7 +140,7 @@ class SwitchbotBulb(SwitchbotDevice):
         self._state["r"] = result[3]
         self._state["g"] = result[4]
         self._state["b"] = result[5]
-        self._state["cw"] = int(result[6:7].hex(), 16)
+        self._state["cw"] = int(result[6:7].decode(), 16)
         _LOGGER.debug("%s: Bulb update state: %s = %s", self.name, result.hex(), self._state)
         self._fire_callbacks()
 
