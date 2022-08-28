@@ -392,3 +392,6 @@ class SwitchbotDevice:
             self._callbacks.remove(callback)
 
         return _unsub
+
+    async def update(self) -> None:
+        """Update state of device."""

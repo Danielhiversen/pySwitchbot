@@ -79,9 +79,8 @@ class SwitchbotBulb(SwitchbotDevice):
         """Return maximum color temp."""
         return 6500
 
-    async def update(self, interface: int | None = None) -> None:
+    async def update(self) -> None:
         """Update state of device."""
-        _LOGGER.debug("%s: Updating bulb state", self.name)
         result = await self._sendcommand(BULB_REQUEST)
         self._update_state(result)
 
