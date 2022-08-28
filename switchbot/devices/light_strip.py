@@ -1,12 +1,7 @@
 from __future__ import annotations
 
-import asyncio
 import logging
 from typing import Any
-
-from switchbot.models import SwitchBotAdvertisement
-
-from .device import SwitchbotDevice, SwitchbotSequenceDevice
 
 REQ_HEADER = "570f"
 STRIP_COMMMAND_HEADER = "4901"
@@ -22,10 +17,11 @@ BRIGHTNESS_KEY = f"{STRIP_COMMAND}14"
 _LOGGER = logging.getLogger(__name__)
 
 
+from .base_light import SwitchbotBaseLight
 from .device import ColorMode
 
 
-class SwitchbotLightStrip(SwitchbotSequenceDevice):
+class SwitchbotLightStrip(SwitchbotBaseLight):
     """Representation of a Switchbot light strip."""
 
     def __init__(self, *args: Any, **kwargs: Any) -> None:
@@ -34,41 +30,9 @@ class SwitchbotLightStrip(SwitchbotSequenceDevice):
         self._state: dict[str, Any] = {}
 
     @property
-    def on(self) -> bool | None:
-        """Return if bulb is on."""
-        return self.is_on()
-
-    @property
-    def rgb(self) -> tuple[int, int, int] | None:
-        """Return the current rgb value."""
-        if "r" not in self._state or "g" not in self._state or "b" not in self._state:
-            return None
-        return self._state["r"], self._state["g"], self._state["b"]
-
-    @property
-    def brightness(self) -> int | None:
-        """Return the current brightness value."""
-        return self._get_adv_value("brightness") or 0
-
-    @property
     def color_modes(self) -> set[ColorMode]:
         """Return the supported color modes."""
         return {ColorMode.RGB}
-
-    @property
-    def min_temp(self) -> int:
-        """Return minimum color temp."""
-        return 0
-
-    @property
-    def max_temp(self) -> int:
-        """Return maximum color temp."""
-        return 0
-
-    @property
-    def color_mode(self) -> ColorMode:
-        """Return the current color mode."""
-        return ColorMode(self._get_adv_value("color_mode") or 0)
 
     async def update(self) -> None:
         """Update state of device."""
@@ -105,10 +69,6 @@ class SwitchbotLightStrip(SwitchbotSequenceDevice):
         )
         self._update_state(result)
         return result[1] == 0x80
-
-    def is_on(self) -> bool | None:
-        """Return bulb state from cache."""
-        return self._get_adv_value("isOn")
 
     def _update_state(self, result: bytes) -> None:
         """Update device state."""

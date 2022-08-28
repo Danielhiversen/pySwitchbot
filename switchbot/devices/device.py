@@ -3,8 +3,8 @@ from __future__ import annotations
 
 import asyncio
 import binascii
-from enum import Enum
 import logging
+from enum import Enum
 from typing import Any, Callable
 from uuid import UUID
 
