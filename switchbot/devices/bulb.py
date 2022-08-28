@@ -131,6 +131,8 @@ class SwitchbotBulb(SwitchbotDevice):
 
     def _update_state(self, result: bytes) -> None:
         """Update device state."""
+        if len(result) < 10:
+            return
         self._state["r"] = result[3]
         self._state["g"] = result[4]
         self._state["b"] = result[5]
