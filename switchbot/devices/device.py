@@ -3,6 +3,7 @@ from __future__ import annotations
 
 import asyncio
 import binascii
+from enum import Enum
 import logging
 from typing import Any, Callable
 from uuid import UUID
@@ -404,3 +405,20 @@ class SwitchbotDevice:
 
     async def update(self) -> None:
         """Update state of device."""
+
+
+class SwitchbotSequenceDevice(SwitchbotDevice):
+    def update_from_advertisement(self, advertisement: SwitchBotAdvertisement) -> None:
+        """Update device data from advertisement."""
+        current_state = self._get_adv_value("sequence_number")
+        super().update_from_advertisement(advertisement)
+        new_state = self._get_adv_value("sequence_number")
+        _LOGGER.debug(
+            "%s: Strip update advertisement: %s (seq before: %s) (seq after: %s)",
+            self.name,
+            advertisement,
+            current_state,
+            new_state,
+        )
+        if current_state != new_state:
+            asyncio.ensure_future(self.update())
