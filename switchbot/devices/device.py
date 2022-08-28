@@ -8,11 +8,10 @@ from typing import Any
 from uuid import UUID
 
 import async_timeout
-
 from bleak import BleakError
-from bleak.exc import BleakDBusError
 from bleak.backends.device import BLEDevice
 from bleak.backends.service import BleakGATTCharacteristic, BleakGATTServiceCollection
+from bleak.exc import BleakDBusError
 from bleak_retry_connector import (
     BleakClientWithServiceCache,
     BleakNotFoundError,
@@ -101,8 +100,10 @@ class SwitchbotDevice:
         key_suffix = key[4:]
         return KEY_PASSWORD_PREFIX + key_action + self._password_encoded + key_suffix
 
-    async def _sendcommand(self, key: str, retry: int) -> bytes:
+    async def _sendcommand(self, key: str, retry: int | None = None) -> bytes:
         """Send command to device and read response."""
+        if retry is None:
+            retry = self._retry_count
         command = bytearray.fromhex(self._commandkey(key))
         _LOGGER.debug("%s: Sending command %s", self.name, command)
         if self._operation_lock.locked():
@@ -344,9 +345,12 @@ class SwitchbotDevice:
         self._device = advertisement.device
 
     async def get_device_data(
-        self, retry: int = DEFAULT_RETRY_COUNT, interface: int | None = None
+        self, retry: int | None = None, interface: int | None = None
     ) -> SwitchBotAdvertisement | None:
         """Find switchbot devices and their advertisement data."""
+        if retry is None:
+            retry = self._retry_count
+
         if interface:
             _interface: int = interface
         else:

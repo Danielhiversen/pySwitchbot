@@ -41,37 +41,25 @@ class SwitchbotCurtain(SwitchbotDevice):
 
     async def open(self) -> bool:
         """Send open command."""
-        result = await self._sendcommand(OPEN_KEY, self._retry_count)
-        if result[0] == 1:
-            return True
-
-        return False
+        result = await self._sendcommand(OPEN_KEY)
+        return result[0] == 1
 
     async def close(self) -> bool:
         """Send close command."""
-        result = await self._sendcommand(CLOSE_KEY, self._retry_count)
-        if result[0] == 1:
-            return True
-
-        return False
+        result = await self._sendcommand(CLOSE_KEY)
+        return result[0] == 1
 
     async def stop(self) -> bool:
         """Send stop command to device."""
-        result = await self._sendcommand(STOP_KEY, self._retry_count)
-        if result[0] == 1:
-            return True
-
-        return False
+        result = await self._sendcommand(STOP_KEY)
+        return result[0] == 1
 
     async def set_position(self, position: int) -> bool:
         """Send position command (0-100) to device."""
         position = (100 - position) if self._reverse else position
         hex_position = "%0.2X" % position
-        result = await self._sendcommand(POSITION_KEY + hex_position, self._retry_count)
-        if result[0] == 1:
-            return True
-
-        return False
+        result = await self._sendcommand(POSITION_KEY + hex_position)
+        return result[0] == 1
 
     async def update(self, interface: int | None = None) -> None:
         """Update position, battery percent and light level of device."""
@@ -107,9 +95,7 @@ class SwitchbotCurtain(SwitchbotDevice):
 
     async def get_extended_info_summary(self) -> dict[str, Any] | None:
         """Get basic info for all devices in chain."""
-        _data = await self._sendcommand(
-            key=CURTAIN_EXT_SUM_KEY, retry=self._retry_count
-        )
+        _data = await self._sendcommand(key=CURTAIN_EXT_SUM_KEY)
 
         if _data in (b"\x07", b"\x00"):
             _LOGGER.error("%s: Unsuccessful, please try again", self.name)
@@ -140,9 +126,7 @@ class SwitchbotCurtain(SwitchbotDevice):
     async def get_extended_info_adv(self) -> dict[str, Any] | None:
         """Get advance page info for device chain."""
 
-        _data = await self._sendcommand(
-            key=CURTAIN_EXT_ADV_KEY, retry=self._retry_count
-        )
+        _data = await self._sendcommand(key=CURTAIN_EXT_ADV_KEY)
 
         if _data in (b"\x07", b"\x00"):
             _LOGGER.error("%s: Unsuccessful, please try again", self.name)
