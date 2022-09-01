@@ -423,8 +423,9 @@ class SwitchbotDevice:
     ) -> bool:
         """Check command result."""
         if not result or len(result) - 1 < index:
+            result_hex = result.hex() if result else "None"
             raise SwitchbotOperationError(
-                f"{self.name}: Sending command failed (rssi={self.rssi})"
+                f"{self.name}: Sending command failed (result={result_hex} index={index} expected={values} rssi={self.rssi})"
             )
         return result[index] in values
 
