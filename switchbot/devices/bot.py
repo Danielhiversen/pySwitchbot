@@ -14,9 +14,6 @@ DOWN_KEY = "570103"
 UP_KEY = "570104"
 
 
-_LOGGER = logging.getLogger(__name__)
-
-
 class Switchbot(SwitchbotDevice):
     """Representation of a Switchbot."""
 

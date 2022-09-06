@@ -6,6 +6,7 @@ from .const import SwitchbotModel
 from .devices.base_light import SwitchbotBaseLight
 from .devices.bot import Switchbot
 from .devices.bulb import SwitchbotBulb
+from .devices.ceiling_light import SwitchbotCeilingLight
 from .devices.curtain import SwitchbotCurtain
 from .devices.device import ColorMode, SwitchbotDevice
 from .devices.light_strip import SwitchbotLightStrip
@@ -20,6 +21,7 @@ __all__ = [
     "ColorMode",
     "SwitchbotBaseLight",
     "SwitchbotBulb",
+    "SwitchbotCeilingLight",
     "SwitchbotDevice",
     "SwitchbotCurtain",
     "SwitchbotLightStrip",

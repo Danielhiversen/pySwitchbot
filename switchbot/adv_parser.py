@@ -1,11 +1,14 @@
 """Library to handle connection with Switchbot."""
 from __future__ import annotations
 
+import logging
 from collections.abc import Callable
 from typing import TypedDict
 
 from bleak.backends.device import BLEDevice
 from bleak.backends.scanner import AdvertisementData
+
+from switchbot.adv_parsers.ceiling_light import process_woceiling
 
 from .adv_parsers.bot import process_wohand
 from .adv_parsers.bulb import process_color_bulb
@@ -17,6 +20,8 @@ from .adv_parsers.motion import process_wopresence
 from .adv_parsers.plug import process_woplugmini
 from .const import SwitchbotModel
 from .models import SwitchBotAdvertisement
+
+_LOGGER = logging.getLogger(__name__)
 
 
 class SwitchbotSupportedType(TypedDict):
@@ -73,6 +78,11 @@ SUPPORTED_TYPES: dict[str, SwitchbotSupportedType] = {
         "modelFriendlyName": "Color Bulb",
         "func": process_color_bulb,
     },
+    "q": {
+        "modelName": SwitchbotModel.CEILING_LIGHT,
+        "modelFriendlyName": "Ceiling Light",
+        "func": process_woceiling,
+    },
 }
 
 
@@ -95,14 +105,14 @@ def parse_advertisement_data(
         "address": device.address,  # MacOS uses UUIDs
         "rawAdvData": list(advertisement_data.service_data.values())[0],
         "data": {},
+        "model": _model,
+        "isEncrypted": bool(_service_data[0] & 0b10000000),
     }
 
     type_data = SUPPORTED_TYPES.get(_model)
     if type_data:
         data.update(
             {
-                "isEncrypted": bool(_service_data[0] & 0b10000000),
-                "model": _model,
                 "modelFriendlyName": type_data["modelFriendlyName"],
                 "modelName": type_data["modelName"],
                 "data": type_data["func"](_service_data, _mfr_data),

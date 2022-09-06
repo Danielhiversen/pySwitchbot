@@ -4,16 +4,16 @@ from __future__ import annotations
 import logging
 from typing import Any
 
-from .device import SwitchbotDevice
+from .device import REQ_HEADER, SwitchbotDevice
 
 # Curtain keys
-OPEN_KEY = "570f450105ff00"  # 570F4501010100
-CLOSE_KEY = "570f450105ff64"  # 570F4501010164
-POSITION_KEY = "570F450105ff"  # +actual_position ex: 570F450105ff32 for 50%
-STOP_KEY = "570F450100ff"
-CURTAIN_EXT_SUM_KEY = "570f460401"
-CURTAIN_EXT_ADV_KEY = "570f460402"
-CURTAIN_EXT_CHAIN_INFO_KEY = "570f468101"
+OPEN_KEY = f"{REQ_HEADER}450105ff00"  # 570F4501010100
+CLOSE_KEY = f"{REQ_HEADER}450105ff64"  # 570F4501010164
+POSITION_KEY = f"{REQ_HEADER}450105ff"  # +actual_position ex: 570F450105ff32 for 50%
+STOP_KEY = f"{REQ_HEADER}450100ff"
+CURTAIN_EXT_SUM_KEY = f"{REQ_HEADER}460401"
+CURTAIN_EXT_ADV_KEY = f"{REQ_HEADER}460402"
+CURTAIN_EXT_CHAIN_INFO_KEY = f"{REQ_HEADER}468101"
 
 
 _LOGGER = logging.getLogger(__name__)
