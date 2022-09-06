@@ -26,6 +26,9 @@ from ..models import SwitchBotAdvertisement
 
 _LOGGER = logging.getLogger(__name__)
 
+REQ_HEADER = "570f"
+
+
 # Keys common to all device types
 DEVICE_GET_BASIC_SETTINGS_KEY = "5702"
 DEVICE_SET_MODE_KEY = "5703"

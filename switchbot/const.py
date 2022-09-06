@@ -18,3 +18,4 @@ class SwitchbotModel(StrEnum):
     METER = "WoSensorTH"
     MOTION_SENSOR = "WoPresence"
     COLOR_BULB = "WoBulb"
+    CEILING_LIGHT = "WoCeiling"

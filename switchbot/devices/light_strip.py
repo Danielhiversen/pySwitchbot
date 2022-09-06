@@ -3,7 +3,9 @@ from __future__ import annotations
 import logging
 from typing import Any
 
-REQ_HEADER = "570f"
+from .base_light import SwitchbotSequenceBaseLight
+from .device import REQ_HEADER, ColorMode
+
 STRIP_COMMMAND_HEADER = "4901"
 STRIP_REQUEST = f"{REQ_HEADER}4A01"
 
@@ -17,11 +19,7 @@ BRIGHTNESS_KEY = f"{STRIP_COMMAND}14"
 _LOGGER = logging.getLogger(__name__)
 
 
-from .base_light import SwitchbotBaseLight
-from .device import ColorMode
-
-
-class SwitchbotLightStrip(SwitchbotBaseLight):
+class SwitchbotLightStrip(SwitchbotSequenceBaseLight):
     """Representation of a Switchbot light strip."""
 
     def __init__(self, *args: Any, **kwargs: Any) -> None:

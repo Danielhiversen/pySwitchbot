@@ -1,13 +1,11 @@
 """Library to handle connection with Switchbot."""
 from __future__ import annotations
 
-from typing import Any
-
-from .device import SwitchbotDevice
+from .device import REQ_HEADER, SwitchbotDevice
 
 # Plug Mini keys
-PLUG_ON_KEY = "570f50010180"
-PLUG_OFF_KEY = "570f50010100"
+PLUG_ON_KEY = f"{REQ_HEADER}50010180"
+PLUG_OFF_KEY = f"{REQ_HEADER}50010100"
 
 
 class SwitchbotPlugMini(SwitchbotDevice):

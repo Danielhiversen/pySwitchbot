@@ -1,15 +1,11 @@
 from __future__ import annotations
 
-import asyncio
 import logging
-from enum import Enum
 from typing import Any
 
-from switchbot.models import SwitchBotAdvertisement
+from .base_light import SwitchbotSequenceBaseLight
+from .device import REQ_HEADER, ColorMode
 
-from .device import SwitchbotDevice, SwitchbotSequenceDevice
-
-REQ_HEADER = "570f"
 BULB_COMMMAND_HEADER = "4701"
 BULB_REQUEST = f"{REQ_HEADER}4801"
 
@@ -29,7 +25,7 @@ from .base_light import SwitchbotBaseLight
 from .device import ColorMode
 
 
-class SwitchbotBulb(SwitchbotBaseLight):
+class SwitchbotBulb(SwitchbotSequenceBaseLight):
     """Representation of a Switchbot bulb."""
 
     def __init__(self, *args: Any, **kwargs: Any) -> None:
