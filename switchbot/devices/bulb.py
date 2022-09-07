@@ -21,9 +21,6 @@ CW_KEY = f"{BULB_COMMAND}17"
 
 _LOGGER = logging.getLogger(__name__)
 
-from .base_light import SwitchbotBaseLight
-from .device import ColorMode
-
 
 class SwitchbotBulb(SwitchbotSequenceBaseLight):
     """Representation of a Switchbot bulb."""
