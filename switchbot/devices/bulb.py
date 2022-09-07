@@ -6,10 +6,10 @@ from typing import Any
 from .base_light import SwitchbotSequenceBaseLight
 from .device import REQ_HEADER, ColorMode
 
-BULB_COMMMAND_HEADER = "4701"
+BULB_COMMAND_HEADER = "4701"
 BULB_REQUEST = f"{REQ_HEADER}4801"
 
-BULB_COMMAND = f"{REQ_HEADER}{BULB_COMMMAND_HEADER}"
+BULB_COMMAND = f"{REQ_HEADER}{BULB_COMMAND_HEADER}"
 # Bulb keys
 BULB_ON_KEY = f"{BULB_COMMAND}01"
 BULB_OFF_KEY = f"{BULB_COMMAND}02"
