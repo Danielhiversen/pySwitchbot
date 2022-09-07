@@ -459,7 +459,7 @@ class SwitchbotDeviceOverrideStateDuringConnection(SwitchbotBaseDevice):
 
     def update_from_advertisement(self, advertisement: SwitchBotAdvertisement) -> None:
         super().update_from_advertisement(advertisement)
-        if self._client.is_connected:
+        if self._client and self._client.is_connected:
             # We do not consume the advertisement data if we are connected
             # to the device. This is because the advertisement data is not
             # updated when the device is connected for some devices.
