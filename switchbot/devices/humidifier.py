@@ -27,12 +27,18 @@ class SwitchbotHumidifier(SwitchbotDevice):
     async def turn_on(self) -> bool:
         """Turn device on."""
         result = await self._send_command(HUMIDIFIER_ON_KEY)
-        return self._check_command_result(result, 0, {0x01})
+        ret = self._check_command_result(result, 0, {0x01})
+        self._override_adv_data = {"isOn": True}
+        self._fire_callbacks()
+        return ret
 
     async def turn_off(self) -> bool:
         """Turn device off."""
         result = await self._send_command(HUMIDIFIER_OFF_KEY)
-        return self._check_command_result(result, 0, {0x01})
+        ret = self._check_command_result(result, 0, {0x01})
+        self._override_adv_data = {"isOn": False}
+        self._fire_callbacks()
+        return ret
 
     async def set_level(self, level: int) -> bool:
         """Set level."""
@@ -40,7 +46,10 @@ class SwitchbotHumidifier(SwitchbotDevice):
         result = await self._send_command(
             f"{HUMIDIFIER_COMMAND}0101{level:02X}FFFFFFFF"
         )
-        return self._check_command_result(result, 0, {0x01})
+        ret = self._check_command_result(result, 0, {0x01})
+        self._override_adv_data = {"isOn": False, "level": level}
+        self._fire_callbacks()
+        return ret
 
     def is_on(self) -> bool | None:
         """Return switch state from cache."""
