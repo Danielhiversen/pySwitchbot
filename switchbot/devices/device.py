@@ -441,6 +441,11 @@ class SwitchbotBaseDevice:
             self._sb_adv_data = advertisement
         self._override_adv_data = None
 
+    def switch_mode(self) -> bool | None:
+        """Return true or false from cache."""
+        # To get actual position call update() first.
+        return self._get_adv_value("switchMode")
+
 
 class SwitchbotDevice(SwitchbotBaseDevice):
     """Base Representation of a Switchbot Device.
