@@ -76,7 +76,7 @@ READ_CHAR_UUID = _sb_uuid(comms_type="rx")
 WRITE_CHAR_UUID = _sb_uuid(comms_type="tx")
 
 
-class SwitchbotDevice:
+class SwitchbotBaseDevice:
     """Base Representation of a Switchbot Device."""
 
     def __init__(
@@ -349,6 +349,12 @@ class SwitchbotDevice:
     def _get_adv_value(self, key: str) -> Any:
         """Return value from advertisement data."""
         if self._override_adv_data and key in self._override_adv_data:
+            _LOGGER.debug(
+                "%s: Using override value for %s: %s",
+                self.name,
+                key,
+                self._override_adv_data[key],
+            )
             return self._override_adv_data[key]
         if not self._sb_adv_data:
             return None
@@ -362,9 +368,6 @@ class SwitchbotDevice:
         """Update device data from advertisement."""
         # Only accept advertisements if the data is not missing
         # if we already have an advertisement with data
-        if advertisement.data.get("data") or not self._sb_adv_data.data.get("data"):
-            self._sb_adv_data = advertisement
-        self._override_adv_data = None
         if self._device and ble_device_has_changed(self._device, advertisement.device):
             self._cached_services = None
         self._device = advertisement.device
@@ -432,9 +435,51 @@ class SwitchbotDevice:
             )
         return result[index] in values
 
+    def _set_advertisement_data(self, advertisement: SwitchBotAdvertisement) -> None:
+        """Set advertisement data."""
+        if advertisement.data.get("data") or not self._sb_adv_data.data.get("data"):
+            self._sb_adv_data = advertisement
+        self._override_adv_data = None
+
+
+class SwitchbotDevice(SwitchbotBaseDevice):
+    """Base Representation of a Switchbot Device.
+
+    This base class consumes the advertisement data during connection. If the device
+    sends stale advertisement data while connected, use
+    SwitchbotDeviceOverrideStateDuringConnection instead.
+    """
+
+    def update_from_advertisement(self, advertisement: SwitchBotAdvertisement) -> None:
+        """Update device data from advertisement."""
+        super().update_from_advertisement(advertisement)
+        self._set_advertisement_data(advertisement)
+
+
+class SwitchbotDeviceOverrideStateDuringConnection(SwitchbotBaseDevice):
+    """Base Representation of a Switchbot Device.
+
+    This base class ignores the advertisement data during connection and uses the
+    data from the device instead.
+    """
+
+    def update_from_advertisement(self, advertisement: SwitchBotAdvertisement) -> None:
+        super().update_from_advertisement(advertisement)
+        if self._client and self._client.is_connected:
+            # We do not consume the advertisement data if we are connected
+            # to the device. This is because the advertisement data is not
+            # updated when the device is connected for some devices.
+            _LOGGER.debug("%s: Ignore advertisement data during connection", self.name)
+            return
+        self._set_advertisement_data(advertisement)
+
 
 class SwitchbotSequenceDevice(SwitchbotDevice):
-    """A Switchbot sequence device."""
+    """A Switchbot sequence device.
+
+    This class must not use SwitchbotDeviceOverrideStateDuringConnection because
+    it needs to know when the sequence_number has changed.
+    """
 
     def update_from_advertisement(self, advertisement: SwitchBotAdvertisement) -> None:
         """Update device data from advertisement."""
