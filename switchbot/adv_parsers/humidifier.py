@@ -20,7 +20,7 @@ def process_wohumidifier(data: bytes, mfr_data: bytes | None) -> dict[str, bool 
     _LOGGER.debug("data: %s", data.hex())
 
     return {
-        "isOn": bool(data[2]),
+        "isOn": bool(data[1]),
         "level": data[4],
         "switchMode": True,
     }
