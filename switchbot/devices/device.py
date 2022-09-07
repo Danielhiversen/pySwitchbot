@@ -349,6 +349,12 @@ class SwitchbotBaseDevice:
     def _get_adv_value(self, key: str) -> Any:
         """Return value from advertisement data."""
         if self._override_adv_data and key in self._override_adv_data:
+            _LOGGER.debug(
+                "%s: Using override value for %s: %s",
+                self.name,
+                key,
+                self._override_adv_data[key],
+            )
             return self._override_adv_data[key]
         if not self._sb_adv_data:
             return None
@@ -463,6 +469,7 @@ class SwitchbotDeviceOverrideStateDuringConnection(SwitchbotBaseDevice):
             # We do not consume the advertisement data if we are connected
             # to the device. This is because the advertisement data is not
             # updated when the device is connected for some devices.
+            _LOGGER.debug("%s: Ignore advertisement data during connection", self.name)
             return
         self._set_advertisement_data(advertisement)
 

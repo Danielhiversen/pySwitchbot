@@ -1,21 +1,25 @@
 """Library to handle connection with Switchbot."""
 from __future__ import annotations
 
+import logging
 from typing import Any
 
 from .device import (
     DEVICE_SET_EXTENDED_KEY,
     DEVICE_SET_MODE_KEY,
-    SwitchbotDevice,
     SwitchbotDeviceOverrideStateDuringConnection,
 )
 
+_LOGGER = logging.getLogger(__name__)
+
+BOT_COMMAND_HEADER = "5701"
+
 # Bot keys
-PRESS_KEY = "570100"
-ON_KEY = "570101"
-OFF_KEY = "570102"
-DOWN_KEY = "570103"
-UP_KEY = "570104"
+PRESS_KEY = f"{BOT_COMMAND_HEADER}00"
+ON_KEY = f"{BOT_COMMAND_HEADER}01"
+OFF_KEY = f"{BOT_COMMAND_HEADER}02"
+DOWN_KEY = f"{BOT_COMMAND_HEADER}03"
+UP_KEY = f"{BOT_COMMAND_HEADER}04"
 
 
 class Switchbot(SwitchbotDeviceOverrideStateDuringConnection):
@@ -35,6 +39,9 @@ class Switchbot(SwitchbotDeviceOverrideStateDuringConnection):
         result = await self._send_command(ON_KEY)
         ret = self._check_command_result(result, 0, {1, 5})
         self._override_adv_data = {"isOn": True}
+        _LOGGER.debug(
+            "%s: Turn on result: %s -> %s", self.name, result, self._override_adv_data
+        )
         self._fire_callbacks()
         return ret
 
@@ -43,6 +50,9 @@ class Switchbot(SwitchbotDeviceOverrideStateDuringConnection):
         result = await self._send_command(OFF_KEY)
         ret = self._check_command_result(result, 0, {1, 5})
         self._override_adv_data = {"isOn": False}
+        _LOGGER.debug(
+            "%s: Turn off result: %s -> %s", self.name, result, self._override_adv_data
+        )
         self._fire_callbacks()
         return ret
 
@@ -90,12 +100,12 @@ class Switchbot(SwitchbotDeviceOverrideStateDuringConnection):
             "holdSeconds": _data[10],
         }
 
-    def switch_mode(self) -> Any:
+    def switch_mode(self) -> bool | None:
         """Return true or false from cache."""
         # To get actual position call update() first.
         return self._get_adv_value("switchMode")
 
-    def is_on(self) -> Any:
+    def is_on(self) -> bool | None:
         """Return switch state from cache."""
         # To get actual position call update() first.
         value = self._get_adv_value("isOn")
