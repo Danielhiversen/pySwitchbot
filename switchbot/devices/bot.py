@@ -3,7 +3,12 @@ from __future__ import annotations
 
 from typing import Any
 
-from .device import DEVICE_SET_EXTENDED_KEY, DEVICE_SET_MODE_KEY, SwitchbotDevice
+from .device import (
+    DEVICE_SET_EXTENDED_KEY,
+    DEVICE_SET_MODE_KEY,
+    SwitchbotDevice,
+    SwitchbotDeviceOverrideStateDuringConnection,
+)
 
 # Bot keys
 PRESS_KEY = "570100"
@@ -13,7 +18,7 @@ DOWN_KEY = "570103"
 UP_KEY = "570104"
 
 
-class Switchbot(SwitchbotDevice):
+class Switchbot(SwitchbotDeviceOverrideStateDuringConnection):
     """Representation of a Switchbot."""
 
     def __init__(self, *args: Any, **kwargs: Any) -> None:
@@ -28,12 +33,18 @@ class Switchbot(SwitchbotDevice):
     async def turn_on(self) -> bool:
         """Turn device on."""
         result = await self._send_command(ON_KEY)
-        return self._check_command_result(result, 0, {1, 5})
+        ret = self._check_command_result(result, 0, {1, 5})
+        self._override_adv_data = {"isOn": True}
+        self._fire_callbacks()
+        return ret
 
     async def turn_off(self) -> bool:
         """Turn device off."""
         result = await self._send_command(OFF_KEY)
-        return self._check_command_result(result, 0, {1, 5})
+        ret = self._check_command_result(result, 0, {1, 5})
+        self._override_adv_data = {"isOn": False}
+        self._fire_callbacks()
+        return ret
 
     async def hand_up(self) -> bool:
         """Raise device arm."""
