@@ -22,11 +22,6 @@ _LOGGER = logging.getLogger(__name__)
 class SwitchbotLightStrip(SwitchbotSequenceBaseLight):
     """Representation of a Switchbot light strip."""
 
-    def __init__(self, *args: Any, **kwargs: Any) -> None:
-        """Switchbot light strip constructor."""
-        super().__init__(*args, **kwargs)
-        self._state: dict[str, Any] = {}
-
     @property
     def color_modes(self) -> set[ColorMode]:
         """Return the supported color modes."""
