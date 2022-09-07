@@ -5,21 +5,22 @@ import logging
 
 _LOGGER = logging.getLogger(__name__)
 
-# Off d94b2d012b3c4864106124
-# on  d94b2d012b3c4a641061a4
-# Off d94b2d012b3c4b64106124
-# on  d94b2d012b3c4d641061a4
-#     00112233445566778899AA
+# mfr_data: 943cc68d3d2e
+# data: 650000cd802b6300
+# data: 650000cd802b6300
+# data: 658000c9802b6300
 
-
+# Low:  658000c5222b6300
+# Med:  658000c5432b6300
+# High: 658000c5642b6300
 def process_wohumidifier(data: bytes, mfr_data: bytes | None) -> dict[str, bool | int]:
     """Process WoHumidifier services data."""
     assert mfr_data is not None
     _LOGGER.debug("mfr_data: %s", mfr_data.hex())
+    _LOGGER.debug("data: %s", data.hex())
+
     return {
-        "sequence_number": mfr_data[6],
-        "isOn": bool(mfr_data[10] & 0b10000000),
-        "brightness": mfr_data[7] & 0b01111111,
-        "cw": int(mfr_data[8:10].hex(), 16),
-        "color_mode": 1,
+        "isOn": bool(data[2]),
+        "level": data[4],
+        "switchMode": True,
     }
