@@ -9,6 +9,7 @@ from .devices.bulb import SwitchbotBulb
 from .devices.ceiling_light import SwitchbotCeilingLight
 from .devices.curtain import SwitchbotCurtain
 from .devices.device import ColorMode, SwitchbotDevice
+from .devices.humidifer import SwitchbotHumidifier
 from .devices.light_strip import SwitchbotLightStrip
 from .devices.plug import SwitchbotPlugMini
 from .discovery import GetSwitchbotDevices
@@ -25,6 +26,7 @@ __all__ = [
     "SwitchbotDevice",
     "SwitchbotCurtain",
     "SwitchbotLightStrip",
+    "SwitchbotHumidifier",
     "Switchbot",
     "SwitchbotPlugMini",
     "SwitchbotSupportedType",
