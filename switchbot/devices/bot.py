@@ -100,11 +100,6 @@ class Switchbot(SwitchbotDeviceOverrideStateDuringConnection):
             "holdSeconds": _data[10],
         }
 
-    def switch_mode(self) -> bool | None:
-        """Return true or false from cache."""
-        # To get actual position call update() first.
-        return self._get_adv_value("switchMode")
-
     def is_on(self) -> bool | None:
         """Return switch state from cache."""
         # To get actual position call update() first.
