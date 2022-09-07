@@ -14,7 +14,7 @@ _LOGGER = logging.getLogger(__name__)
 # Med:  658000c5432b6300
 # High: 658000c5642b6300
 def process_wohumidifier(data: bytes, mfr_data: bytes | None) -> dict[str, bool | int]:
-    """Process WoHumidifier services data."""
+    """Process WoHumi services data."""
     assert mfr_data is not None
     _LOGGER.debug("mfr_data: %s", mfr_data.hex())
     _LOGGER.debug("data: %s", data.hex())
