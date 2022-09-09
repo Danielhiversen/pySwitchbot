@@ -110,6 +110,14 @@ class SwitchbotBaseDevice:
         self.loop = asyncio.get_event_loop()
         self._callbacks: list[Callable[[], None]] = []
 
+    def advertisement_changed(self, advertisement: SwitchBotAdvertisement) -> bool:
+        """Check if the advertisement has changed."""
+        return bool(
+            not self._sb_adv_data
+            or ble_device_has_changed(self._sb_adv_data.device, advertisement.device)
+            or advertisement.data != self._sb_adv_data.data
+        )
+
     def _commandkey(self, key: str) -> str:
         """Add password to key if set."""
         if self._password_encoded is None:

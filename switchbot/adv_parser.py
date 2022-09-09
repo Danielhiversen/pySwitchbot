@@ -1,5 +1,6 @@
 """Library to handle connection with Switchbot."""
 from __future__ import annotations
+from functools import lru_cache
 
 import logging
 from collections.abc import Callable
@@ -104,11 +105,19 @@ def parse_advertisement_data(
     if not _service_data:
         return None
     _mfr_data = _mgr_datas[0] if _mgr_datas else None
-    _model = chr(_service_data[0] & 0b01111111)
 
+    data = _parse_data(_service_data, _mfr_data)
+    return SwitchBotAdvertisement(device.address, data, device)
+
+
+@lru_cache(maxsize=128)
+def _parse_data(
+    _service_data: bytes, _mfr_data: bytes | None
+) -> SwitchBotAdvertisement | None:
+    """Parse advertisement data."""
+    _model = chr(_service_data[0] & 0b01111111)
     data = {
-        "address": device.address,  # MacOS uses UUIDs
-        "rawAdvData": list(advertisement_data.service_data.values())[0],
+        "rawAdvData": _service_data,
         "data": {},
         "model": _model,
         "isEncrypted": bool(_service_data[0] & 0b10000000),
@@ -124,6 +133,4 @@ def parse_advertisement_data(
             }
         )
 
-    data["data"]["rssi"] = device.rssi
-
-    return SwitchBotAdvertisement(device.address, data, device)
+    return data
