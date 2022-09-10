@@ -1,9 +1,9 @@
 """Library to handle connection with Switchbot."""
 from __future__ import annotations
-from functools import lru_cache
 
 import logging
 from collections.abc import Callable
+from functools import lru_cache
 from typing import TypedDict
 
 from bleak.backends.device import BLEDevice
