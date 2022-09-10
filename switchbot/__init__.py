@@ -1,6 +1,8 @@
 """Library to handle connection with Switchbot."""
 from __future__ import annotations
 
+from bleak_retry_connector import get_device
+
 from .adv_parser import SwitchbotSupportedType, parse_advertisement_data
 from .const import SwitchbotModel
 from .devices.base_light import SwitchbotBaseLight
@@ -16,6 +18,7 @@ from .discovery import GetSwitchbotDevices
 from .models import SwitchBotAdvertisement
 
 __all__ = [
+    "get_device",
     "parse_advertisement_data",
     "GetSwitchbotDevices",
     "SwitchBotAdvertisement",
