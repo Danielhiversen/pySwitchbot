@@ -37,7 +37,7 @@ DEVICE_SET_EXTENDED_KEY = REQ_HEADER
 # Base key when encryption is set
 KEY_PASSWORD_PREFIX = "571"
 
-BLEAK_EXCEPTIONS = (AttributeError, BleakError, asyncio.exceptions.TimeoutError)
+BLEAK_EXCEPTIONS = (AttributeError, BleakError, EOFError, asyncio.exceptions.TimeoutError)
 
 # How long to hold the connection
 # to wait for additional commands for
