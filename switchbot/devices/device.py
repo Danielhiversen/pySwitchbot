@@ -205,7 +205,7 @@ class SwitchbotBaseDevice:
     @property
     def rssi(self) -> int:
         """Return RSSI of device."""
-        return self._get_adv_value("rssi")
+        return self._get_adv_value("rssi") or self._device.rssi
 
     async def _ensure_connected(self):
         """Ensure connection to device is established."""
@@ -274,6 +274,13 @@ class SwitchbotBaseDevice:
         self._disconnect_timer = None
         asyncio.create_task(self._execute_timed_disconnect())
 
+    async def _execute_forced_disconnect(self):
+        """Execute forced disconnection."""
+        if self._disconnect_timer:
+            self._disconnect_timer.cancel()
+        self._disconnect_timer = None
+        await self._execute_disconnect()
+
     async def _execute_timed_disconnect(self):
         """Execute timed disconnection."""
         _LOGGER.debug(
@@ -283,9 +290,11 @@ class SwitchbotBaseDevice:
         )
         await self._execute_disconnect()
 
-    async def _execute_disconnect(self):
+    async def _execute_disconnect(self) -> None:
         """Execute disconnection."""
         async with self._connect_lock:
+            if self._disconnect_timer:  # If the timer was reset, don't disconnect
+                return
             client = self._client
             self._expected_disconnect = True
             self._client = None
@@ -309,14 +318,14 @@ class SwitchbotBaseDevice:
                 0.25,
                 ex,
             )
-            await self._execute_disconnect()
+            await self._execute_forced_disconnect()
             raise
         except BleakError as ex:
             # Disconnect so we can reset state and try again
             _LOGGER.debug(
                 "%s: RSSI: %s; Disconnecting due to error: %s", self.name, self.rssi, ex
             )
-            await self._execute_disconnect()
+            await self._execute_forced_disconnect()
             raise
 
     async def _execute_command_locked(self, key: str, command: bytes) -> bytes:
