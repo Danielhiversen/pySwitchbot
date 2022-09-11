@@ -249,8 +249,7 @@ class SwitchbotBaseDevice:
 
     def _reset_disconnect_timer(self):
         """Reset disconnect timer."""
-        if self._disconnect_timer:
-            self._disconnect_timer.cancel()
+        self._cancel_disconnect_timer()
         self._expected_disconnect = False
         self._disconnect_timer = self.loop.call_later(
             DISCONNECT_DELAY, self._disconnect
@@ -271,17 +270,21 @@ class SwitchbotBaseDevice:
 
     def _disconnect(self):
         """Disconnect from device."""
-        self._disconnect_timer = None
+        self._cancel_disconnect_timer()
         asyncio.create_task(self._execute_timed_disconnect())
 
-    async def _execute_forced_disconnect(self):
-        """Execute forced disconnection."""
+    def _cancel_disconnect_timer(self):
+        """Cancel disconnect timer."""
         if self._disconnect_timer:
             self._disconnect_timer.cancel()
-        self._disconnect_timer = None
+            self._disconnect_timer = None
+
+    async def _execute_forced_disconnect(self) -> None:
+        """Execute forced disconnection."""
+        self._cancel_disconnect_timer()
         await self._execute_disconnect()
 
-    async def _execute_timed_disconnect(self):
+    async def _execute_timed_disconnect(self) -> None:
         """Execute timed disconnection."""
         _LOGGER.debug(
             "%s: Disconnecting after timeout of %s",
