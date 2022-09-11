@@ -282,12 +282,16 @@ class SwitchbotBaseDevice:
     async def _execute_forced_disconnect(self) -> None:
         """Execute forced disconnection."""
         self._cancel_disconnect_timer()
+        _LOGGER.debug(
+            "%s: Executing forced disconnect",
+            self.name,
+        )
         await self._execute_disconnect()
 
     async def _execute_timed_disconnect(self) -> None:
         """Execute timed disconnection."""
         _LOGGER.debug(
-            "%s: Disconnecting after timeout of %s",
+            "%s: Executing timed disconnect after timeout of %s",
             self.name,
             DISCONNECT_DELAY,
         )
@@ -304,7 +308,9 @@ class SwitchbotBaseDevice:
             self._read_char = None
             self._write_char = None
             if client and client.is_connected:
+                _LOGGER.debug("%s: Disconnecting", self.name)
                 await client.disconnect()
+                _LOGGER.debug("%s: Disconnect completed", self.name)
 
     async def _send_command_locked(self, key: str, command: bytes) -> bytes:
         """Send command to device and read response."""
