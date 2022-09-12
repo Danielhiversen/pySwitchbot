@@ -162,7 +162,7 @@ class SwitchbotBaseDevice:
                         self.rssi,
                         exc_info=True,
                     )
-                    return None
+                    raise
                 except CharacteristicMissingError as ex:
                     if attempt == retry:
                         _LOGGER.error(
@@ -172,7 +172,7 @@ class SwitchbotBaseDevice:
                             self.rssi,
                             exc_info=True,
                         )
-                        return None
+                        raise
 
                     _LOGGER.debug(
                         "%s: characteristic missing: %s; RSSI: %s",
@@ -189,7 +189,7 @@ class SwitchbotBaseDevice:
                             self.rssi,
                             exc_info=True,
                         )
-                        return None
+                        raise
 
                     _LOGGER.debug(
                         "%s: communication failed with:", self.name, exc_info=True
