@@ -107,7 +107,6 @@ class SwitchbotBaseDevice:
                 binascii.crc32(password.encode("ascii")) & 0xFFFFFFFF
             )
         self._client: BleakClientWithServiceCache | None = None
-        self._cached_services: BleakGATTServiceCollection | None = None
         self._read_char: BleakGATTCharacteristic | None = None
         self._write_char: BleakGATTCharacteristic | None = None
         self._disconnect_timer: asyncio.TimerHandle | None = None
@@ -229,7 +228,7 @@ class SwitchbotBaseDevice:
                 self._device,
                 self.name,
                 self._disconnected,
-                cached_services=self._cached_services,
+                use_services_cache=True,
                 ble_device_callback=lambda: self._device,
             )
             _LOGGER.debug("%s: Connected; RSSI: %s", self.name, self.rssi)
@@ -237,7 +236,6 @@ class SwitchbotBaseDevice:
             if not resolved:
                 # Try to handle services failing to load
                 resolved = self._resolve_characteristics(await client.get_services())
-            self._cached_services = client.services if resolved else None
             self._client = client
             self._reset_disconnect_timer()
 
@@ -399,8 +397,6 @@ class SwitchbotBaseDevice:
         """Update device data from advertisement."""
         # Only accept advertisements if the data is not missing
         # if we already have an advertisement with data
-        if self._device and ble_device_has_changed(self._device, advertisement.device):
-            self._cached_services = None
         self._device = advertisement.device
 
     async def get_device_data(
