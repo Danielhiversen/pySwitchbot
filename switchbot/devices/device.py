@@ -14,6 +14,7 @@ from bleak.backends.device import BLEDevice
 from bleak.backends.service import BleakGATTCharacteristic, BleakGATTServiceCollection
 from bleak.exc import BleakDBusError
 from bleak_retry_connector import (
+    BLEAK_RETRY_EXCEPTIONS,
     BleakClientWithServiceCache,
     BleakNotFoundError,
     ble_device_has_changed,
@@ -37,12 +38,6 @@ DEVICE_SET_EXTENDED_KEY = REQ_HEADER
 # Base key when encryption is set
 KEY_PASSWORD_PREFIX = "571"
 
-BLEAK_EXCEPTIONS = (
-    AttributeError,
-    BleakError,
-    EOFError,
-    asyncio.exceptions.TimeoutError,
-)
 
 # How long to hold the connection
 # to wait for additional commands for
@@ -181,7 +176,7 @@ class SwitchbotBaseDevice:
                         self.rssi,
                         exc_info=True,
                     )
-                except BLEAK_EXCEPTIONS:
+                except BLEAK_RETRY_EXCEPTIONS:
                     if attempt == retry:
                         _LOGGER.error(
                             "%s: communication failed; Stopping trying; RSSI: %s",
