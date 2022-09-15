@@ -47,7 +47,7 @@ BLEAK_EXCEPTIONS = (
 # How long to hold the connection
 # to wait for additional commands for
 # disconnecting the device.
-DISCONNECT_DELAY = 49
+DISCONNECT_DELAY = 20
 
 
 class ColorMode(Enum):
