@@ -131,14 +131,7 @@ class SwitchbotBaseDevice:
         if retry is None:
             retry = self._retry_count
         command = bytearray.fromhex(self._commandkey(key))
-        _LOGGER.debug("%s: Sending command %s", self.name, command)
-        if self._operation_lock.locked():
-            _LOGGER.debug(
-                "%s: Operation already in progress, waiting for it to complete; RSSI: %s",
-                self.name,
-                self.rssi,
-            )
-
+        _LOGGER.debug("%s: Scheduling command %s", self.name, command.hex())
         max_attempts = retry + 1
         if self._operation_lock.locked():
             _LOGGER.debug(
@@ -359,7 +352,7 @@ class SwitchbotBaseDevice:
 
         async with async_timeout.timeout(5):
             notify_msg = await self._notify_future
-        _LOGGER.debug("%s: Notification received: %s", self.name, notify_msg)
+        _LOGGER.debug("%s: Notification received: %s", self.name, notify_msg.hex())
         self._notify_future = None
 
         if notify_msg == b"\x07":

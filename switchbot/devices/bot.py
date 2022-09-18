@@ -40,7 +40,10 @@ class Switchbot(SwitchbotDeviceOverrideStateDuringConnection):
         ret = self._check_command_result(result, 0, {1, 5})
         self._override_adv_data = {"isOn": True}
         _LOGGER.debug(
-            "%s: Turn on result: %s -> %s", self.name, result, self._override_adv_data
+            "%s: Turn on result: %s -> %s",
+            self.name,
+            result.hex() if result else None,
+            self._override_adv_data,
         )
         self._fire_callbacks()
         return ret
@@ -51,7 +54,10 @@ class Switchbot(SwitchbotDeviceOverrideStateDuringConnection):
         ret = self._check_command_result(result, 0, {1, 5})
         self._override_adv_data = {"isOn": False}
         _LOGGER.debug(
-            "%s: Turn off result: %s -> %s", self.name, result, self._override_adv_data
+            "%s: Turn off result: %s -> %s",
+            self.name,
+            result.hex() if result else None,
+            self._override_adv_data,
         )
         self._fire_callbacks()
         return ret
