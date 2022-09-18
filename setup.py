@@ -4,7 +4,7 @@ setup(
     name="PySwitchbot",
     packages=["switchbot", "switchbot.devices", "switchbot.adv_parsers"],
     install_requires=["async_timeout>=4.0.1", "bleak>=0.17.0", "bleak-retry-connector>=1.17.1"],
-    version="0.19.9",
+    version="0.19.10",
     description="A library to communicate with Switchbot",
     author="Daniel Hjelseth Hoyer",
     url="https://github.com/Danielhiversen/pySwitchbot/",
