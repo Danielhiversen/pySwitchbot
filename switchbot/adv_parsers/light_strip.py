@@ -4,7 +4,8 @@ from __future__ import annotations
 
 def process_wostrip(data: bytes, mfr_data: bytes | None) -> dict[str, bool | int]:
     """Process WoStrip services data."""
-    assert mfr_data is not None
+    if mfr_data is None:
+        return {}
     return {
         "sequence_number": mfr_data[6],
         "isOn": bool(mfr_data[7] & 0b10000000),

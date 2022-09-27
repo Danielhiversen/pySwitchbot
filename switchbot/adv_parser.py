@@ -125,12 +125,14 @@ def _parse_data(
 
     type_data = SUPPORTED_TYPES.get(_model)
     if type_data:
-        data.update(
-            {
-                "modelFriendlyName": type_data["modelFriendlyName"],
-                "modelName": type_data["modelName"],
-                "data": type_data["func"](_service_data, _mfr_data),
-            }
-        )
+        model_data = type_data["func"](_service_data, _mfr_data)
+        if model_data:
+            data.update(
+                {
+                    "modelFriendlyName": type_data["modelFriendlyName"],
+                    "modelName": type_data["modelName"],
+                    "data": model_data,
+                }
+            )
 
     return data
