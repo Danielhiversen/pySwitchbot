@@ -14,7 +14,8 @@ _LOGGER = logging.getLogger(__name__)
 
 def process_woceiling(data: bytes, mfr_data: bytes | None) -> dict[str, bool | int]:
     """Process WoCeiling services data."""
-    assert mfr_data is not None
+    if mfr_data is None:
+        return {}
     return {
         "sequence_number": mfr_data[6],
         "isOn": bool(mfr_data[10] & 0b10000000),
