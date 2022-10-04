@@ -11,5 +11,5 @@ def process_wocontact(data: bytes, mfr_data: bytes | None) -> dict[str, bool | i
         "contact_open": data[3] & 0b00000010 == 0b00000010,
         "contact_timeout": data[3] & 0b00000110 == 0b00000110,
         "is_light": bool(data[3] & 0b00000001),
-        "button_count": (data[7] & 0b11110000) >> 4,
+        "button_count": (data[8] & 0b00001111),
     }
