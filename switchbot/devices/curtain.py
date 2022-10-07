@@ -8,10 +8,20 @@ from .device import REQ_HEADER, SwitchbotDevice
 
 # Curtain keys
 CURTAIN_COMMAND = "4501"
-OPEN_KEY = f"{REQ_HEADER}{CURTAIN_COMMAND}010100"
-CLOSE_KEY = f"{REQ_HEADER}{CURTAIN_COMMAND}010164"
-POSITION_KEY = f"{REQ_HEADER}{CURTAIN_COMMAND}0101"  # +actual_position
-STOP_KEY = f"{REQ_HEADER}{CURTAIN_COMMAND}0001"
+OPEN_KEYS = [
+    f"{REQ_HEADER}{CURTAIN_COMMAND}010100",
+    f"{REQ_HEADER}{CURTAIN_COMMAND}05ff00",
+]
+CLOSE_KEYS = [
+    f"{REQ_HEADER}{CURTAIN_COMMAND}010164",
+    f"{REQ_HEADER}{CURTAIN_COMMAND}05ff64",
+]
+POSITION_KEYS = [
+    f"{REQ_HEADER}{CURTAIN_COMMAND}0101",
+    f"{REQ_HEADER}{CURTAIN_COMMAND}05ff",
+]  # +actual_position
+STOP_KEYS = [f"{REQ_HEADER}{CURTAIN_COMMAND}0001", f"{REQ_HEADER}{CURTAIN_COMMAND}00ff"]
+
 CURTAIN_EXT_SUM_KEY = f"{REQ_HEADER}460401"
 CURTAIN_EXT_ADV_KEY = f"{REQ_HEADER}460402"
 CURTAIN_EXT_CHAIN_INFO_KEY = f"{REQ_HEADER}468101"
@@ -40,27 +50,37 @@ class SwitchbotCurtain(SwitchbotDevice):
         self.ext_info_sum: dict[str, Any] = {}
         self.ext_info_adv: dict[str, Any] = {}
 
+    async def _send_multiple_commands(self, keys: list[str]) -> bool:
+        """Send multiple commands to device.
+
+        Since we current have no way to tell which command the device
+        needs we send both.
+        """
+        final_result = False
+        for key in keys:
+            result = await self._send_command(key)
+            final_result |= self._check_command_result(result, 0, {1})
+        return final_result
+
     async def open(self) -> bool:
         """Send open command."""
-        result = await self._send_command(OPEN_KEY)
-        return self._check_command_result(result, 0, {1})
+        return await self._send_multiple_commands(OPEN_KEYS)
 
     async def close(self) -> bool:
         """Send close command."""
-        result = await self._send_command(CLOSE_KEY)
-        return self._check_command_result(result, 0, {1})
+        return await self._send_multiple_commands(CLOSE_KEYS)
 
     async def stop(self) -> bool:
         """Send stop command to device."""
-        result = await self._send_command(STOP_KEY)
-        return self._check_command_result(result, 0, {1})
+        return await self._send_multiple_commands(STOP_KEYS)
 
     async def set_position(self, position: int) -> bool:
         """Send position command (0-100) to device."""
         position = (100 - position) if self._reverse else position
         hex_position = "%0.2X" % position
-        result = await self._send_command(POSITION_KEY + hex_position)
-        return self._check_command_result(result, 0, {1})
+        return await self._send_multiple_commands(
+            [key + hex_position for key in POSITION_KEYS]
+        )
 
     async def update(self, interface: int | None = None) -> None:
         """Update position, battery percent and light level of device."""
