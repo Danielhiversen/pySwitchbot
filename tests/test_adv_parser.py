@@ -25,6 +25,7 @@ def test_parse_advertisement_data_curtain():
                 "position": 100,
                 "lightLevel": 1,
                 "deviceChain": 1,
+                "paired": True,
             },
             "isEncrypted": False,
             "model": "c",
@@ -33,6 +34,69 @@ def test_parse_advertisement_data_curtain():
         },
         device=ble_device,
     )
+
+def test_parse_advertisement_data_paired_curtain():
+    """Test parse_advertisement_data for a paired curtain."""
+    ble_device = BLEDevice("aa:bb:cc:dd:ee:ff", "any")
+    adv_data = AdvertisementData(
+        manufacturer_data={89: b'\xd1K3\x1f\n\xfd'}, service_data={'00000d00-0000-1000-8000-00805f9b34fb': b'c@X\x00!\x04'}
+    )
+    result = parse_advertisement_data(ble_device, adv_data)
+    assert result == SwitchBotAdvertisement(
+        address="aa:bb:cc:dd:ee:ff",
+        data={
+            "rawAdvData": b'c@X\x00!\x04',
+            "data": {
+                "calibration": True,
+                "battery": 88,
+                "inMotion": False,
+                "position": 100,
+                "lightLevel": 2,
+                "deviceChain": 1,
+                "paired": True,
+            },
+            "isEncrypted": False,
+            "model": "c",
+            "modelFriendlyName": "Curtain",
+            "modelName": SwitchbotModel.CURTAIN,
+        },
+        device=ble_device,
+    )
+
+    # Paired Curtain
+    # AdvertisementData(local_name='WoCurtain', manufacturer_data={89: b'\xd1K3\x1f\n\xfd'}, service_data={'00000d00-0000-1000-8000-00805f9b34fb': b'c@X\x00!\x04'}, service_uuids=['cba20d00-224d-11e6-9fb8-0002a5d5c51b']) connectable: True match: {'switchbot'} rssi: -40
+
+
+def test_parse_advertisement_data_unpaired_curtain():
+    """Test parse_advertisement_data for an unpaired curtain."""
+    ble_device = BLEDevice("aa:bb:cc:dd:ee:ff", "any")
+    adv_data = AdvertisementData(
+        manufacturer_data={89: b'\xd1K3\x1f\n\xfd'}, service_data={'00000d00-0000-1000-8000-00805f9b34fb': b'c\xd0X\x00!\x04'}
+    )
+    result = parse_advertisement_data(ble_device, adv_data)
+    assert result == SwitchBotAdvertisement(
+        address="aa:bb:cc:dd:ee:ff",
+        data={
+            "rawAdvData": b'c\xd0X\x00!\x04',
+            "data": {
+                "calibration": True,
+                "battery": 88,
+                "inMotion": False,
+                "position": 100,
+                "lightLevel": 2,
+                "deviceChain": 1,
+                "paired": False,
+            },
+            "isEncrypted": False,
+            "model": "c",
+            "modelFriendlyName": "Curtain",
+            "modelName": SwitchbotModel.CURTAIN,
+        },
+        device=ble_device,
+    )
+
+    # Unpaired Curtain
+    # AdvertisementData(local_name='WoCurtain', manufacturer_data={89: b'\xd1K3\x1f\n\xfd'}, service_data={'00000d00-0000-1000-8000-00805f9b34fb': b'c\xd0X\x00!\x04'}, service_uuids=['cba20d00-224d-11e6-9fb8-0002a5d5c51b']) connectable: True match: {'switchbot'} rssi: -40
 
 
 def test_parse_advertisement_data_empty():
