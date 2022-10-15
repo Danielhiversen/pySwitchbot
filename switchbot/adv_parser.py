@@ -107,7 +107,7 @@ def parse_advertisement_data(
     _mfr_data = _mgr_datas[0] if _mgr_datas else None
 
     data = _parse_data(_service_data, _mfr_data)
-    return SwitchBotAdvertisement(device.address, data, device)
+    return SwitchBotAdvertisement(device.address, data, device, advertisement_data.rssi)
 
 
 @lru_cache(maxsize=128)
