@@ -193,7 +193,9 @@ class SwitchbotBaseDevice:
     @property
     def rssi(self) -> int:
         """Return RSSI of device."""
-        return self._get_adv_value("rssi") or self._device.rssi
+        if self._sb_adv_data:
+            return self._sb_adv_data.rssi
+        return self._device.rssi
 
     async def _ensure_connected(self):
         """Ensure connection to device is established."""

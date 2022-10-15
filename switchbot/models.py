@@ -14,3 +14,4 @@ class SwitchBotAdvertisement:
     address: str
     data: dict[str, Any]
     device: BLEDevice
+    rssi: int
