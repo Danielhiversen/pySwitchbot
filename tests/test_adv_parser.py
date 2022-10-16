@@ -56,6 +56,38 @@ def test_parse_advertisement_data_curtain():
     )
 
 
+def test_parse_advertisement_data_contact():
+    """Test parse_advertisement_data for the contact sensor."""
+    ble_device = BLEDevice("aa:bb:cc:dd:ee:ff", "any")
+    adv_data = generate_advertisement_data(
+        manufacturer_data={2409: b"\xe7\xabF\xac\x8f\x92|\x0f\x00\x11\x04"},
+        service_data={"0000fd3d-0000-1000-8000-00805f9b34fb": b'd@d\x05\x00u\x00\xf8\x12'},
+        rssi=-80,
+    )
+    result = parse_advertisement_data(ble_device, adv_data)
+    assert result == SwitchBotAdvertisement(
+        address="aa:bb:cc:dd:ee:ff",
+        data={
+            "rawAdvData": b'd@d\x05\x00u\x00\xf8\x12',
+            "data": {
+                "button_count": 2,
+                'contact_open': True,
+                'contact_timeout': True,
+                "is_light": True,
+                "battery": 100,
+                'motion_detected': True,
+                "tested": False
+            },
+            "isEncrypted": False,
+            "model": "d",
+            "modelFriendlyName":  'Contact Sensor',
+            "modelName": SwitchbotModel.CONTACT_SENSOR,
+        },
+        device=ble_device,
+        rssi=-80,
+    )
+
+
 def test_parse_advertisement_data_empty():
     """Test parse_advertisement_data with empty data does not blow up."""
     ble_device = BLEDevice("aa:bb:cc:dd:ee:ff", "any")
