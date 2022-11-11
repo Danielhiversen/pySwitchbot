@@ -42,7 +42,7 @@ KEY_PASSWORD_PREFIX = "571"
 # How long to hold the connection
 # to wait for additional commands for
 # disconnecting the device.
-DISCONNECT_DELAY = 12.5
+DISCONNECT_DELAY = 8.5
 
 
 class ColorMode(Enum):
