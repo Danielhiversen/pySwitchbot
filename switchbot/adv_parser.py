@@ -24,6 +24,11 @@ from .models import SwitchBotAdvertisement
 
 _LOGGER = logging.getLogger(__name__)
 
+SERVICE_DATA_ORDER = (
+    "0000fd3d-0000-1000-8000-00805f9b34fb",
+    "00000d00-0000-1000-8000-00805f9b34fb",
+)
+
 
 class SwitchbotSupportedType(TypedDict):
     """Supported type of Switchbot."""
@@ -101,9 +106,17 @@ def parse_advertisement_data(
 
     if not _services:
         return None
-    _service_data = _services[0]
+
+    _service_data = None
+    for uuid in SERVICE_DATA_ORDER:
+        if uuid in _services:
+            _service_data = _services[uuid]
+            break
+    if not _service_data:
+        _service_data = _services[0]
     if not _service_data:
         return None
+
     _mfr_data = _mgr_datas[0] if _mgr_datas else None
 
     data = _parse_data(_service_data, _mfr_data)
