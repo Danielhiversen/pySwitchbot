@@ -56,31 +56,70 @@ def test_parse_advertisement_data_curtain():
     )
 
 
+def test_parse_advertisement_data_curtain_position_zero():
+    """Test parse_advertisement_data for curtain position zero."""
+    ble_device = BLEDevice("aa:bb:cc:dd:ee:ff", "any")
+    adv_data = generate_advertisement_data(
+        local_name="WoCurtain",
+        manufacturer_data={89: b"\xc1\xc7'}U\xab"},
+        service_data={"00000d00-0000-1000-8000-00805f9b34fb": b"c\xd0\xced\x11\x04"},
+        service_uuids=[
+            "00001800-0000-1000-8000-00805f9b34fb",
+            "00001801-0000-1000-8000-00805f9b34fb",
+            "cba20d00-224d-11e6-9fb8-0002a5d5c51b",
+        ],
+        rssi=-52,
+    )
+    result = parse_advertisement_data(ble_device, adv_data)
+    assert result == SwitchBotAdvertisement(
+        address="aa:bb:cc:dd:ee:ff",
+        data={
+            "rawAdvData": b"c\xd0\xced\x11\x04",
+            "data": {
+                "calibration": True,
+                "battery": 78,
+                "inMotion": False,
+                "position": 0,
+                "lightLevel": 1,
+                "deviceChain": 1,
+            },
+            "isEncrypted": False,
+            "model": "c",
+            "modelFriendlyName": "Curtain",
+            "modelName": SwitchbotModel.CURTAIN,
+        },
+        device=ble_device,
+        rssi=-52,
+    )
+
+
 def test_parse_advertisement_data_contact():
     """Test parse_advertisement_data for the contact sensor."""
     ble_device = BLEDevice("aa:bb:cc:dd:ee:ff", "any")
     adv_data = generate_advertisement_data(
         manufacturer_data={2409: b"\xe7\xabF\xac\x8f\x92|\x0f\x00\x11\x04"},
-        service_data={"0000fd3d-0000-1000-8000-00805f9b34fb": b'd@d\x05\x00u\x00\xf8\x12'},
+        service_data={
+            "0000fd3d-0000-1000-8000-00805f9b34fb": b"d@d\x05\x00u\x00\xf8\x12"
+        },
         rssi=-80,
     )
     result = parse_advertisement_data(ble_device, adv_data)
     assert result == SwitchBotAdvertisement(
         address="aa:bb:cc:dd:ee:ff",
         data={
-            "rawAdvData": b'd@d\x05\x00u\x00\xf8\x12',
+            "rawAdvData": b"d@d\x05\x00u\x00\xf8\x12",
             "data": {
                 "button_count": 2,
-                'contact_open': True,
-                'contact_timeout': True,
+                "contact_open": True,
+                "contact_timeout": True,
                 "is_light": True,
                 "battery": 100,
-                'motion_detected': True,
-                "tested": False
+                "motion_detected": True,
+                "tested": False,
             },
             "isEncrypted": False,
             "model": "d",
-            "modelFriendlyName":  'Contact Sensor',
+            "modelFriendlyName": "Contact Sensor",
             "modelName": SwitchbotModel.CONTACT_SENSOR,
         },
         device=ble_device,
