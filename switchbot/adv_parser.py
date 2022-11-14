@@ -101,19 +101,19 @@ def parse_advertisement_data(
     device: BLEDevice, advertisement_data: AdvertisementData
 ) -> SwitchBotAdvertisement | None:
     """Parse advertisement data."""
-    _services = list(advertisement_data.service_data.values())
     _mgr_datas = list(advertisement_data.manufacturer_data.values())
+    service_data = advertisement_data.service_data
 
-    if not _services:
+    if not service_data:
         return None
 
     _service_data = None
     for uuid in SERVICE_DATA_ORDER:
-        if uuid in _services:
-            _service_data = _services[uuid]
+        if uuid in service_data:
+            _service_data = service_data[uuid]
             break
     if not _service_data:
-        _service_data = _services[0]
+        _service_data = list(advertisement_data.service_data.values())[0]
     if not _service_data:
         return None
 
