@@ -118,13 +118,13 @@ def test_parse_advertisement_data_curtain_firmware_six_position_100():
     assert result == SwitchBotAdvertisement(
         address="aa:bb:cc:dd:ee:ff",
         data={
-            "rawAdvData": b"c\xd0H\x00\x12\x04",
+            "rawAdvData": b'c\xc0G\x00"\x04',
             "data": {
                 "calibration": True,
-                "battery": 72,
+                "battery": 71,
                 "inMotion": False,
                 "position": 100,
-                "lightLevel": 1,
+                "lightLevel": 2,
                 "deviceChain": 2,
             },
             "isEncrypted": False,
@@ -161,13 +161,13 @@ def test_parse_advertisement_data_curtain_firmware_six_position_100_other_rssi()
     assert result == SwitchBotAdvertisement(
         address="aa:bb:cc:dd:ee:ff",
         data={
-            "rawAdvData": b"c\xd0H\x00\x12\x04",
+            "rawAdvData": b'c\xc0Gc"\x04',
             "data": {
                 "calibration": True,
-                "battery": 72,
+                "battery": 71,
                 "inMotion": False,
-                "position": 100,
-                "lightLevel": 1,
+                "position": 1,
+                "lightLevel": 2,
                 "deviceChain": 2,
             },
             "isEncrypted": False,
@@ -321,4 +321,90 @@ def test_new_bot_firmware():
         },
         device=ble_device,
         rssi=-90,
+    )
+
+
+def test_parse_advertisement_data_curtain_firmware_six_fully_closed():
+    """Test parse_advertisement_data with firmware six fully closed."""
+    ble_device = BLEDevice("aa:bb:cc:dd:ee:ff", "any")
+    adv_data = generate_advertisement_data(
+        local_name="WoCurtain",
+        manufacturer_data={
+            89: b"\xcc\xf4\xc4\xf9\xacl",
+            2409: b"\xcc\xf4\xc4\xf9\xacl\xeb\x0fd\x12\x04",
+        },
+        service_data={
+            "00000d00-0000-1000-8000-00805f9b34fb": b"c\xd0Yd\x11\x04",
+            "0000fd3d-0000-1000-8000-00805f9b34fb": b"c\xc0dd\x12\x04",
+        },
+        service_uuids=[
+            "00001800-0000-1000-8000-00805f9b34fb",
+            "00001801-0000-1000-8000-00805f9b34fb",
+            "cba20d00-224d-11e6-9fb8-0002a5d5c51b",
+        ],
+        rssi=-2,
+    )
+    result = parse_advertisement_data(ble_device, adv_data)
+    assert result == SwitchBotAdvertisement(
+        address="aa:bb:cc:dd:ee:ff",
+        data={
+            "rawAdvData": b"c\xc0dd\x12\x04",
+            "data": {
+                "calibration": True,
+                "battery": 100,
+                "inMotion": False,
+                "position": 0,
+                "lightLevel": 1,
+                "deviceChain": 2,
+            },
+            "isEncrypted": False,
+            "model": "c",
+            "modelFriendlyName": "Curtain",
+            "modelName": SwitchbotModel.CURTAIN,
+        },
+        device=ble_device,
+        rssi=-2,
+    )
+
+
+def test_parse_advertisement_data_curtain_firmware_six_fully_open():
+    """Test parse_advertisement_data with firmware six fully open."""
+    ble_device = BLEDevice("aa:bb:cc:dd:ee:ff", "any")
+    adv_data = generate_advertisement_data(
+        local_name="WoCurtain",
+        manufacturer_data={
+            89: b"\xcc\xf4\xc4\xf9\xacl",
+            2409: b"\xcc\xf4\xc4\xf9\xacl\xe2\x0f\x00\x12\x04",
+        },
+        service_data={
+            "00000d00-0000-1000-8000-00805f9b34fb": b"c\xd0Yd\x11\x04",
+            "0000fd3d-0000-1000-8000-00805f9b34fb": b"c\xc0d\x00\x12\x04",
+        },
+        service_uuids=[
+            "00001800-0000-1000-8000-00805f9b34fb",
+            "00001801-0000-1000-8000-00805f9b34fb",
+            "cba20d00-224d-11e6-9fb8-0002a5d5c51b",
+        ],
+        rssi=-2,
+    )
+    result = parse_advertisement_data(ble_device, adv_data)
+    assert result == SwitchBotAdvertisement(
+        address="aa:bb:cc:dd:ee:ff",
+        data={
+            "rawAdvData": b"c\xc0d\x00\x12\x04",
+            "data": {
+                "calibration": True,
+                "battery": 100,
+                "inMotion": False,
+                "position": 100,
+                "lightLevel": 1,
+                "deviceChain": 2,
+            },
+            "isEncrypted": False,
+            "model": "c",
+            "modelFriendlyName": "Curtain",
+            "modelName": SwitchbotModel.CURTAIN,
+        },
+        device=ble_device,
+        rssi=-2,
     )
