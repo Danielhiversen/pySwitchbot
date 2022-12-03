@@ -112,14 +112,20 @@ def parse_advertisement_data(
         if uuid in service_data:
             _service_data = service_data[uuid]
             break
-    if not _service_data:
-        _service_data = list(advertisement_data.service_data.values())[0]
+
     if not _service_data:
         return None
 
     _mfr_data = _mgr_datas[0] if _mgr_datas else None
 
-    data = _parse_data(_service_data, _mfr_data)
+    try:
+        data = _parse_data(_service_data, _mfr_data)
+    except Exception as err:  # pylint: disable=broad-except
+        _LOGGER.exception(
+            "Failed to parse advertisement data: %s: %s", advertisement_data, err
+        )
+        return None
+
     return SwitchBotAdvertisement(device.address, data, device, advertisement_data.rssi)
 
 
