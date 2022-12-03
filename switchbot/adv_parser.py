@@ -112,8 +112,7 @@ def parse_advertisement_data(
         if uuid in service_data:
             _service_data = service_data[uuid]
             break
-    if not _service_data:
-        _service_data = list(advertisement_data.service_data.values())[0]
+
     if not _service_data:
         return None
 
