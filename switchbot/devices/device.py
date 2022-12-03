@@ -307,6 +307,17 @@ class SwitchbotBaseDevice:
         await self._ensure_connected()
         try:
             return await self._execute_command_locked(key, command)
+        except CharacteristicMissingError as ex:
+            _LOGGER.debug(
+                "%s: characteristic missing, clearing cache: %s; RSSI: %s",
+                self.name,
+                ex,
+                self.rssi,
+                exc_info=True,
+            )
+            await self._client.clear_cache()
+            await self._execute_forced_disconnect()
+            raise
         except BleakDBusError as ex:
             # Disconnect so we can reset state and try again
             await asyncio.sleep(0.25)
