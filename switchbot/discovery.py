@@ -101,6 +101,10 @@ class GetSwitchbotDevices:
         """Return all WoContact/Contact sensor devices with services data."""
         return await self._get_devices_by_model("d")
 
+    async def get_locks(self) -> dict[str, SwitchBotAdvertisement]:
+        """Return all WoLock/Locks devices with services data."""
+        return await self._get_devices_by_model("o")
+
     async def get_device_data(
         self, address: str
     ) -> dict[str, SwitchBotAdvertisement] | None:

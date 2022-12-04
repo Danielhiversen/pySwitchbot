@@ -19,6 +19,7 @@ from .adv_parsers.light_strip import process_wostrip
 from .adv_parsers.meter import process_wosensorth
 from .adv_parsers.motion import process_wopresence
 from .adv_parsers.plug import process_woplugmini
+from .adv_parsers.lock import process_wolock
 from .const import SwitchbotModel
 from .models import SwitchBotAdvertisement
 
@@ -93,6 +94,11 @@ SUPPORTED_TYPES: dict[str, SwitchbotSupportedType] = {
         "modelName": SwitchbotModel.HUMIDIFIER,
         "modelFriendlyName": "Humidifier",
         "func": process_wohumidifier,
+    },
+    "o": {
+        "modelName": SwitchbotModel.LOCK,
+        "modelFriendlyName": "Lock",
+        "func": process_wolock,
     },
 }
 
