@@ -80,6 +80,11 @@ SUPPORTED_TYPES: dict[str, SwitchbotSupportedType] = {
         "modelFriendlyName": "Plug Mini",
         "func": process_woplugmini,
     },
+    "j": {
+        "modelName": SwitchbotModel.PLUG_MINI,
+        "modelFriendlyName": "Plug Mini (JP)",
+        "func": process_woplugmini,
+    },
     "u": {
         "modelName": SwitchbotModel.COLOR_BULB,
         "modelFriendlyName": "Color Bulb",
