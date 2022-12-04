@@ -1,8 +1,9 @@
 """Lock parser."""
 from __future__ import annotations
-from ..const import LockStatus
 
 import logging
+
+from ..const import LockStatus
 
 _LOGGER = logging.getLogger(__name__)
 

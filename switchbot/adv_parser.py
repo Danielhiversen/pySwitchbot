@@ -16,10 +16,10 @@ from .adv_parsers.contact import process_wocontact
 from .adv_parsers.curtain import process_wocurtain
 from .adv_parsers.humidifier import process_wohumidifier
 from .adv_parsers.light_strip import process_wostrip
+from .adv_parsers.lock import process_wolock
 from .adv_parsers.meter import process_wosensorth
 from .adv_parsers.motion import process_wopresence
 from .adv_parsers.plug import process_woplugmini
-from .adv_parsers.lock import process_wolock
 from .const import SwitchbotModel
 from .models import SwitchBotAdvertisement
 
