@@ -214,7 +214,7 @@ class SwitchbotBaseDevice:
                 self._reset_disconnect_timer()
                 return
             _LOGGER.debug("%s: Connecting; RSSI: %s", self.name, self.rssi)
-            client = await establish_connection(
+            client: BleakClientWithServiceCache = await establish_connection(
                 BleakClientWithServiceCache,
                 self._device,
                 self.name,
@@ -223,19 +223,33 @@ class SwitchbotBaseDevice:
                 ble_device_callback=lambda: self._device,
             )
             _LOGGER.debug("%s: Connected; RSSI: %s", self.name, self.rssi)
-            resolved = self._resolve_characteristics(client.services)
-            if not resolved:
-                # Try to handle services failing to load
-                resolved = self._resolve_characteristics(await client.get_services())
+
+            try:
+                self._resolve_characteristics(client.services)
+            except CharacteristicMissingError as ex:
+                _LOGGER.debug(
+                    "%s: characteristic missing, clearing cache: %s; RSSI: %s",
+                    self.name,
+                    ex,
+                    self.rssi,
+                    exc_info=True,
+                )
+                await client.clear_cache()
+                await self._execute_forced_disconnect()
+                raise
+
             self._client = client
             self._reset_disconnect_timer()
             await self._start_notify()
 
-    def _resolve_characteristics(self, services: BleakGATTServiceCollection) -> bool:
+    def _resolve_characteristics(self, services: BleakGATTServiceCollection) -> None:
         """Resolve characteristics."""
         self._read_char = services.get_characteristic(READ_CHAR_UUID)
+        if not self._read_char:
+            raise CharacteristicMissingError(READ_CHAR_UUID)
         self._write_char = services.get_characteristic(WRITE_CHAR_UUID)
-        return bool(self._read_char and self._write_char)
+        if not self._write_char:
+            raise CharacteristicMissingError(WRITE_CHAR_UUID)
 
     def _reset_disconnect_timer(self):
         """Reset disconnect timer."""
@@ -307,17 +321,6 @@ class SwitchbotBaseDevice:
         await self._ensure_connected()
         try:
             return await self._execute_command_locked(key, command)
-        except CharacteristicMissingError as ex:
-            _LOGGER.debug(
-                "%s: characteristic missing, clearing cache: %s; RSSI: %s",
-                self.name,
-                ex,
-                self.rssi,
-                exc_info=True,
-            )
-            await self._client.clear_cache()
-            await self._execute_forced_disconnect()
-            raise
         except BleakDBusError as ex:
             # Disconnect so we can reset state and try again
             await asyncio.sleep(0.25)
@@ -353,10 +356,8 @@ class SwitchbotBaseDevice:
     async def _execute_command_locked(self, key: str, command: bytes) -> bytes:
         """Execute command and read response."""
         assert self._client is not None
-        if not self._read_char:
-            raise CharacteristicMissingError(READ_CHAR_UUID)
-        if not self._write_char:
-            raise CharacteristicMissingError(WRITE_CHAR_UUID)
+        assert self._read_char is not None
+        assert self._write_char is not None
         self._notify_future = asyncio.Future()
         client = self._client
 
