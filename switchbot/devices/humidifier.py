@@ -43,6 +43,10 @@ class SwitchbotHumidifier(SwitchbotDevice):
     async def set_level(self, level: int) -> bool:
         """Set level."""
         assert 1 <= level <= 100, "Level must be between 1 and 100"
+        await self._set_level(level)
+
+    async def _set_level(self, level: int) -> bool:
+        """Set level."""
         result = await self._send_command(
             f"{HUMIDIFIER_COMMAND}0101{level:02X}FFFFFFFF"
         )
@@ -50,6 +54,22 @@ class SwitchbotHumidifier(SwitchbotDevice):
         self._override_adv_data = {"isOn": False, "level": level}
         self._fire_callbacks()
         return ret
+
+    async def async_set_auto(self) -> bool:
+        """Set auto mode."""
+        await self._set_level(128)
+
+    async def async_set_manual(self) -> bool:
+        """Set manual mode."""
+        await self._set_level(50)
+
+    def is_auto(self) -> bool:
+        """Return auto state from cache."""
+        return self._get_adv_value("level") == 128
+
+    def get_level(self) -> int | None:
+        """Return level state from cache."""
+        return self._get_adv_value("level")
 
     def is_on(self) -> bool | None:
         """Return switch state from cache."""
