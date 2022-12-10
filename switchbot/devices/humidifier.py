@@ -74,3 +74,9 @@ class SwitchbotHumidifier(SwitchbotDevice):
     def is_on(self) -> bool | None:
         """Return switch state from cache."""
         return self._get_adv_value("isOn")
+
+    def get_target_humidity(self) -> int | None:
+        """Return target humidity from cache."""
+        level = self._get_adv_value("level")
+        is_auto = level == 128
+        return None if is_auto else level
