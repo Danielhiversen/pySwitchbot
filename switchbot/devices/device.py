@@ -379,6 +379,12 @@ class SwitchbotBaseDevice:
         """Return address of device."""
         return self._device.address
 
+    def _override_state(self, state: dict[str, Any]) -> None:
+        """Override device state."""
+        if self._override_adv_data is None:
+            self._override_adv_data = {}
+        self._override_adv_data.update(state)
+
     def _get_adv_value(self, key: str) -> Any:
         """Return value from advertisement data."""
         if self._override_adv_data and key in self._override_adv_data:

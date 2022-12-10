@@ -84,9 +84,11 @@ class SwitchbotBulb(SwitchbotSequenceBaseLight):
         self._state["g"] = result[4]
         self._state["b"] = result[5]
         self._state["cw"] = int(result[6:8].hex(), 16)
-        self._override_adv_data = {
-            "isOn": result[1] == 0x80,
-            "color_mode": result[10],
-        }
+        self._override_state(
+            {
+                "isOn": result[1] == 0x80,
+                "color_mode": result[10],
+            }
+        )
         _LOGGER.debug("%s: update state: %s = %s", self.name, result.hex(), self._state)
         self._fire_callbacks()
