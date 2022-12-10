@@ -16,6 +16,12 @@ HUMIDIFIER_ON_KEY = f"{HUMIDIFIER_COMMAND}010180FFFFFFFF"
 # 2.     570F 4381 0101 43FF FFFF FF
 # 3    . 570F 4381 0101 64FF FFFF FF
 
+MANUAL_BUTTON_PRESSES_TO_LEVEL = {
+    101: 33,
+    102: 66,
+    103: 100,
+}
+
 
 class SwitchbotHumidifier(SwitchbotDevice):
     """Representation of a Switchbot humidifier."""
@@ -29,27 +35,27 @@ class SwitchbotHumidifier(SwitchbotDevice):
     ) -> str:
         """Generate command."""
         if level is None:
-            level = self.get_level()
+            level = self.get_target_humidity() or 128
         if on is None:
             on = self.is_on()
         on_hex = "01" if on else "00"
         return f"{HUMIDIFIER_COMMAND}01{on_hex}{level:02X}FFFFFFFF"
 
-    async def turn_on(self) -> bool:
-        """Turn device on."""
-        result = await self._send_command(self._generate_command(on=True))
+    async def _async_set_state(self, state: bool) -> bool:
+        level = self.get_target_humidity() or 128
+        result = await self._send_command(self._generate_command(on=state, level=level))
         ret = self._check_command_result(result, 0, {0x01})
-        self._override_state({"isOn": True})
+        self._override_state({"isOn": state, "level": level})
         self._fire_callbacks()
         return ret
 
+    async def turn_on(self) -> bool:
+        """Turn device on."""
+        await self._async_set_state(True)
+
     async def turn_off(self) -> bool:
         """Turn device off."""
-        result = await self._send_command(self._generate_command(on=False))
-        ret = self._check_command_result(result, 0, {0x01})
-        self._override_state({"isOn": False})
-        self._fire_callbacks()
-        return ret
+        await self._async_set_state(False)
 
     async def set_level(self, level: int) -> bool:
         """Set level."""
@@ -74,7 +80,7 @@ class SwitchbotHumidifier(SwitchbotDevice):
 
     def is_auto(self) -> bool:
         """Return auto state from cache."""
-        return self.get_level() == 128
+        return self.get_level() in (228, 128)
 
     def get_level(self) -> int | None:
         """Return level state from cache."""
@@ -87,5 +93,6 @@ class SwitchbotHumidifier(SwitchbotDevice):
     def get_target_humidity(self) -> int | None:
         """Return target humidity from cache."""
         level = self.get_level()
-        is_auto = level == 128
-        return None if is_auto else level
+        if self.is_auto():
+            return None
+        return MANUAL_BUTTON_PRESSES_TO_LEVEL.get(level, level)
