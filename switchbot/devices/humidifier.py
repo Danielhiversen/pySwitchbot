@@ -26,7 +26,10 @@ class SwitchbotHumidifier(SwitchbotDevice):
 
     async def turn_on(self) -> bool:
         """Turn device on."""
-        result = await self._send_command(HUMIDIFIER_ON_KEY)
+        level = self.get_level()
+        result = await self._send_command(
+            f"{HUMIDIFIER_COMMAND}0101{level:02X}FFFFFFFF"
+        )
         ret = self._check_command_result(result, 0, {0x01})
         self._override_adv_data = {"isOn": True}
         self._fire_callbacks()
@@ -34,7 +37,10 @@ class SwitchbotHumidifier(SwitchbotDevice):
 
     async def turn_off(self) -> bool:
         """Turn device off."""
-        result = await self._send_command(HUMIDIFIER_OFF_KEY)
+        level = self.get_level()
+        result = await self._send_command(
+            f"{HUMIDIFIER_COMMAND}0100{level:02X}FFFFFFFF"
+        )
         ret = self._check_command_result(result, 0, {0x01})
         self._override_adv_data = {"isOn": False}
         self._fire_callbacks()
