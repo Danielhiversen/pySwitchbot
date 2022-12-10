@@ -34,7 +34,7 @@ class SwitchbotCeilingLight(SwitchbotBaseLight):
         """Turn device on."""
         result = await self._send_command(CEILING_LIGHT_ON_KEY)
         ret = self._check_command_result(result, 0, {0x01})
-        self._override_adv_data = {"isOn": True}
+        self._override_state({"isOn": True})
         self._fire_callbacks()
         return ret
 
@@ -42,7 +42,7 @@ class SwitchbotCeilingLight(SwitchbotBaseLight):
         """Turn device off."""
         result = await self._send_command(CEILING_LIGHT_OFF_KEY)
         ret = self._check_command_result(result, 0, {0x01})
-        self._override_adv_data = {"isOn": False}
+        self._override_state({"isOn": False})
         self._fire_callbacks()
         return ret
 
@@ -51,7 +51,7 @@ class SwitchbotCeilingLight(SwitchbotBaseLight):
         assert 0 <= brightness <= 100, "Brightness must be between 0 and 100"
         result = await self._send_command(f"{BRIGHTNESS_KEY}{brightness:02X}0FA1")
         ret = self._check_command_result(result, 0, {0x01})
-        self._override_adv_data = {"brightness": brightness, "isOn": True}
+        self._override_state({"brightness": brightness, "isOn": True})
         self._fire_callbacks()
         return ret
 
@@ -64,7 +64,7 @@ class SwitchbotCeilingLight(SwitchbotBaseLight):
         )
         ret = self._check_command_result(result, 0, {0x01})
         self._state["cw"] = color_temp
-        self._override_adv_data = {"brightness": brightness, "isOn": True}
+        self._override_state({"brightness": brightness, "isOn": True})
         self._fire_callbacks()
         return ret
 

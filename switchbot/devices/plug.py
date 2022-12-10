@@ -19,7 +19,7 @@ class SwitchbotPlugMini(SwitchbotDeviceOverrideStateDuringConnection):
         """Turn device on."""
         result = await self._send_command(PLUG_ON_KEY)
         ret = self._check_command_result(result, 1, {0x80})
-        self._override_adv_data = {"isOn": True}
+        self._override_state({"isOn": True})
         self._fire_callbacks()
         return ret
 
@@ -27,7 +27,7 @@ class SwitchbotPlugMini(SwitchbotDeviceOverrideStateDuringConnection):
         """Turn device off."""
         result = await self._send_command(PLUG_OFF_KEY)
         ret = self._check_command_result(result, 1, {0x80})
-        self._override_adv_data = {"isOn": False}
+        self._override_state({"isOn": False})
         self._fire_callbacks()
         return ret
 
