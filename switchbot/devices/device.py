@@ -256,7 +256,7 @@ class SwitchbotBaseDevice:
         self._cancel_disconnect_timer()
         self._expected_disconnect = False
         self._disconnect_timer = self.loop.call_later(
-            DISCONNECT_DELAY, self._disconnect
+            DISCONNECT_DELAY, self._disconnect_from_timer
         )
 
     def _disconnected(self, client: BleakClientWithServiceCache) -> None:
@@ -272,8 +272,16 @@ class SwitchbotBaseDevice:
             self.rssi,
         )
 
-    def _disconnect(self):
+    def _disconnect_from_timer(self):
         """Disconnect from device."""
+        if self._operation_lock.locked() and self._client.is_connected:
+            _LOGGER.debug(
+                "%s: Operation in progress, resetting disconnect timer; RSSI: %s",
+                self.name,
+                self.rssi,
+            )
+            self._reset_disconnect_timer()
+            return
         self._cancel_disconnect_timer()
         asyncio.create_task(self._execute_timed_disconnect())
 
