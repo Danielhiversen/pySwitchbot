@@ -7,9 +7,9 @@ def process_wocontact(data: bytes, mfr_data: bytes | None) -> dict[str, bool | i
     battery = data[2] & 0b01111111
 
     if mfr_data and len(mfr_data) >= 13:
-        contact_timeout = mfr_data[7] & 0b00000100 == 0b00000100
-        contact_open = mfr_data[7] & 0b00000010 == 0b00000010
         motion_detected = bool(mfr_data[7] & 0b01000000)
+        contact_timeout = bool(mfr_data[7] & 0b00100000)
+        contact_open = bool(mfr_data[7] & 0b00010000)
         button_count = mfr_data[12] & 0b00001111
         is_light = bool(mfr_data[7] & 0b00000001)
         tested = bool(mfr_data[5] & 0b10000000)
