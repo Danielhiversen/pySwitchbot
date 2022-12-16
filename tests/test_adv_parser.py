@@ -479,12 +479,16 @@ def test_contact_sensor_srv():
     )
 
 
-
 def test_contact_sensor_open():
     """Test parsing mfr adv data from new bot firmware."""
     ble_device = BLEDevice("aa:bb:cc:dd:ee:ff", "any")
     adv_data = generate_advertisement_data(
-        manufacturer_data={2409: b'\xcb9\xcd\xc4=F\x84\x9c\x00\x17\x00QD'}, service_data={'0000fd3d-0000-1000-8000-00805f9b34fb': b'd@\xda\x02\x00\x17\x00QD'}, tx_power=-127, rssi=-59
+        manufacturer_data={2409: b"\xcb9\xcd\xc4=F\x84\x9c\x00\x17\x00QD"},
+        service_data={
+            "0000fd3d-0000-1000-8000-00805f9b34fb": b"d@\xda\x02\x00\x17\x00QD"
+        },
+        tx_power=-127,
+        rssi=-59,
     )
     result = parse_advertisement_data(ble_device, adv_data)
     assert result == SwitchBotAdvertisement(
@@ -503,19 +507,23 @@ def test_contact_sensor_open():
             "model": "d",
             "modelFriendlyName": "Contact Sensor",
             "modelName": SwitchbotModel.CONTACT_SENSOR,
-            "rawAdvData": b'd@\xda\x02\x00\x17\x00QD',
+            "rawAdvData": b"d@\xda\x02\x00\x17\x00QD",
         },
         device=ble_device,
         rssi=-59,
     )
 
 
-
 def test_contact_sensor_closed():
     """Test parsing mfr adv data from new bot firmware."""
     ble_device = BLEDevice("aa:bb:cc:dd:ee:ff", "any")
     adv_data = generate_advertisement_data(
-        manufacturer_data={2409: b'\xcb9\xcd\xc4=F\x89\x8c\x00+\x00\x19\x84'}, service_data={'0000fd3d-0000-1000-8000-00805f9b34fb': b'd@\xda\x00\x00+\x00\x19\x84'}, tx_power=-127, rssi=-50
+        manufacturer_data={2409: b"\xcb9\xcd\xc4=F\x89\x8c\x00+\x00\x19\x84"},
+        service_data={
+            "0000fd3d-0000-1000-8000-00805f9b34fb": b"d@\xda\x00\x00+\x00\x19\x84"
+        },
+        tx_power=-127,
+        rssi=-50,
     )
     result = parse_advertisement_data(ble_device, adv_data)
     assert result == SwitchBotAdvertisement(
@@ -534,7 +542,7 @@ def test_contact_sensor_closed():
             "model": "d",
             "modelFriendlyName": "Contact Sensor",
             "modelName": SwitchbotModel.CONTACT_SENSOR,
-            "rawAdvData":  b'd@\xda\x00\x00+\x00\x19\x84',
+            "rawAdvData": b"d@\xda\x00\x00+\x00\x19\x84",
         },
         device=ble_device,
         rssi=-50,
