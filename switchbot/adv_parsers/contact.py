@@ -5,6 +5,7 @@ from __future__ import annotations
 def process_wocontact(data: bytes, mfr_data: bytes | None) -> dict[str, bool | int]:
     """Process woContact Sensor services data."""
     battery = data[2] & 0b01111111
+    tested = bool(data[1] & 0b10000000)
 
     if mfr_data and len(mfr_data) >= 13:
         motion_detected = bool(mfr_data[7] & 0b10000000)
@@ -12,14 +13,12 @@ def process_wocontact(data: bytes, mfr_data: bytes | None) -> dict[str, bool | i
         contact_open = bool(mfr_data[7] & 0b00010000)
         button_count = mfr_data[12] & 0b00001111
         is_light = bool(mfr_data[7] & 0b01000000)
-        tested = bool(mfr_data[5] & 0b10000000)
     else:
         motion_detected = bool(data[1] & 0b01000000)
         contact_timeout = data[3] & 0b00000100 == 0b00000100
         contact_open = data[3] & 0b00000010 == 0b00000010
         button_count = data[8] & 0b00001111
         is_light = bool(data[3] & 0b00000001)
-        tested = bool(data[1] & 0b10000000)
 
     return {
         "tested": tested,
@@ -33,8 +32,5 @@ def process_wocontact(data: bytes, mfr_data: bytes | None) -> dict[str, bool | i
         "mfr7_00000010": bool(mfr_data[7] & 0b00000010) if mfr_data else None,
         "mfr7_00000100": bool(mfr_data[7] & 0b00000100) if mfr_data else None,
         "mfr7_00001000": bool(mfr_data[7] & 0b00001000) if mfr_data else None,
-        "mfr7_00010000": bool(mfr_data[7] & 0b00010000) if mfr_data else None,
         "mfr7_00100000": bool(mfr_data[7] & 0b00100000) if mfr_data else None,
-        "mfr7_01000000": bool(mfr_data[7] & 0b01000000) if mfr_data else None,
-        "mfr7_10000000": bool(mfr_data[7] & 0b10000000) if mfr_data else None,
     }
