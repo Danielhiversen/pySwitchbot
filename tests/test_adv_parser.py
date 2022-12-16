@@ -408,3 +408,72 @@ def test_parse_advertisement_data_curtain_firmware_six_fully_open():
         device=ble_device,
         rssi=-2,
     )
+
+
+def test_contact_sensor_mfr():
+    """Test parsing adv data from new bot firmware."""
+    ble_device = BLEDevice("aa:bb:cc:dd:ee:ff", "any")
+    adv_data = generate_advertisement_data(
+        manufacturer_data={2409: b"\xcb9\xcd\xc4=FA,\x00F\x01\x8f\xc4"},
+        service_data={
+            "0000fd3d-0000-1000-8000-00805f9b34fb": b"d\x00\xda\x04\x00F\x01\x8f\xc4"
+        },
+        tx_power=-127,
+        rssi=-70,
+    )
+    result = parse_advertisement_data(ble_device, adv_data)
+    assert result == SwitchBotAdvertisement(
+        address="aa:bb:cc:dd:ee:ff",
+        data={
+            "data": {
+                "battery": 90,
+                "button_count": 4,
+                "contact_open": True,
+                "contact_timeout": True,
+                "is_light": False,
+                "motion_detected": False,
+                "tested": False,
+            },
+            "isEncrypted": False,
+            "model": "d",
+            "modelFriendlyName": "Contact Sensor",
+            "modelName": SwitchbotModel.CONTACT_SENSOR,
+            "rawAdvData": b"d\x00\xda\x04\x00F\x01\x8f\xc4",
+        },
+        device=ble_device,
+        rssi=-70,
+    )
+
+
+def test_contact_sensor_srv():
+    """Test parsing adv data from new bot firmware."""
+    ble_device = BLEDevice("aa:bb:cc:dd:ee:ff", "any")
+    adv_data = generate_advertisement_data(
+        service_data={
+            "0000fd3d-0000-1000-8000-00805f9b34fb": b"d\x00\xda\x04\x00F\x01\x8f\xc4"
+        },
+        tx_power=-127,
+        rssi=-70,
+    )
+    result = parse_advertisement_data(ble_device, adv_data)
+    assert result == SwitchBotAdvertisement(
+        address="aa:bb:cc:dd:ee:ff",
+        data={
+            "data": {
+                "battery": 90,
+                "button_count": 4,
+                "contact_open": True,
+                "contact_timeout": True,
+                "is_light": False,
+                "motion_detected": False,
+                "tested": False,
+            },
+            "isEncrypted": False,
+            "model": "d",
+            "modelFriendlyName": "Contact Sensor",
+            "modelName": SwitchbotModel.CONTACT_SENSOR,
+            "rawAdvData": b"d\x00\xda\x04\x00F\x01\x8f\xc4",
+        },
+        device=ble_device,
+        rssi=-70,
+    )
