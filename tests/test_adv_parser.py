@@ -998,9 +998,6 @@ def test_motion_with_light_detected():
     result = parse_advertisement_data(
         ble_device, adv_data, SwitchbotModel.MOTION_SENSOR
     )
-    import pprint
-
-    pprint.pprint(result)
     assert result == SwitchBotAdvertisement(
         address="aa:bb:cc:dd:ee:ff",
         data={
