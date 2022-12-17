@@ -59,6 +59,7 @@ SUPPORTED_TYPES: dict[str, SwitchbotSupportedType] = {
         "modelName": SwitchbotModel.MOTION_SENSOR,
         "modelFriendlyName": "Motion Sensor",
         "func": process_wopresence,
+        "manufacturer_data_length": 10,
     },
     "r": {
         "modelName": SwitchbotModel.LIGHT_STRIP,
