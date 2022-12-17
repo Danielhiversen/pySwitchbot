@@ -620,7 +620,7 @@ def test_bulb_active():
         tx_power=-127,
         rssi=-50,
     )
-    result = parse_advertisement_data(ble_device, adv_data, SwitchbotModel.BOT)
+    result = parse_advertisement_data(ble_device, adv_data)
     assert result == SwitchBotAdvertisement(
         address="aa:bb:cc:dd:ee:ff",
         data={
@@ -645,8 +645,6 @@ def test_bulb_active():
     )
 
 
-
-
 def test_lightstrip_passive():
     """Test parsing lightstrip as passive."""
     ble_device = BLEDevice("aa:bb:cc:dd:ee:ff", "any")
@@ -658,7 +656,7 @@ def test_lightstrip_passive():
         tx_power=-127,
         rssi=-50,
     )
-    result = parse_advertisement_data(ble_device, adv_data, SwitchbotModel.BOT)
+    result = parse_advertisement_data(ble_device, adv_data)
     assert result == SwitchBotAdvertisement(
         address="aa:bb:cc:dd:ee:ff",
         data={
@@ -676,6 +674,96 @@ def test_lightstrip_passive():
             "model": "r",
             "modelFriendlyName": "Light Strip",
             "modelName": SwitchbotModel.LIGHT_STRIP,
+            "rawAdvData": None,
+        },
+        device=ble_device,
+        rssi=-50,
+    )
+
+
+def test_wosensor_passive_and_active():
+    """Test parsing wosensor as passive with active data as well."""
+    ble_device = BLEDevice("aa:bb:cc:dd:ee:ff", "any")
+    adv_data = generate_advertisement_data(
+        manufacturer_data={2409: b"\xd7\xc1}]\xebC\xde\x03\x06\x985"},
+        service_data={"0000fd3d-0000-1000-8000-00805f9b34fb": b"T\x00\xe4\x06\x985"},
+        tx_power=-127,
+        rssi=-50,
+    )
+    result = parse_advertisement_data(ble_device, adv_data)
+    assert result == SwitchBotAdvertisement(
+        address="aa:bb:cc:dd:ee:ff",
+        data={
+            "data": {
+                "battery": 100,
+                "fahrenheit": False,
+                "humidity": 53,
+                "temp": {"c": 24.6, "f": 76.28},
+            },
+            "isEncrypted": False,
+            "model": "T",
+            "modelFriendlyName": "Meter",
+            "modelName": SwitchbotModel.METER,
+            "rawAdvData": b"T\x00\xe4\x06\x985",
+        },
+        device=ble_device,
+        rssi=-50,
+    )
+
+
+def test_wosensor_active():
+    """Test parsing wosensor with active data as well."""
+    ble_device = BLEDevice("aa:bb:cc:dd:ee:ff", "any")
+    adv_data = generate_advertisement_data(
+        manufacturer_data={},
+        service_data={"0000fd3d-0000-1000-8000-00805f9b34fb": b"T\x00\xe4\x06\x985"},
+        tx_power=-127,
+        rssi=-50,
+    )
+    result = parse_advertisement_data(ble_device, adv_data)
+    assert result == SwitchBotAdvertisement(
+        address="aa:bb:cc:dd:ee:ff",
+        data={
+            "data": {
+                "battery": 100,
+                "fahrenheit": False,
+                "humidity": 53,
+                "temp": {"c": 24.6, "f": 76.28},
+            },
+            "isEncrypted": False,
+            "model": "T",
+            "modelFriendlyName": "Meter",
+            "modelName": SwitchbotModel.METER,
+            "rawAdvData": b"T\x00\xe4\x06\x985",
+        },
+        device=ble_device,
+        rssi=-50,
+    )
+
+
+def test_wosensor_passive_only():
+    """Test parsing wosensor with only passive data."""
+    ble_device = BLEDevice("aa:bb:cc:dd:ee:ff", "any")
+    adv_data = generate_advertisement_data(
+        manufacturer_data={2409: b"\xd7\xc1}]\xebC\xde\x03\x06\x985"},
+        service_data={},
+        tx_power=-127,
+        rssi=-50,
+    )
+    result = parse_advertisement_data(ble_device, adv_data, SwitchbotModel.METER)
+    assert result == SwitchBotAdvertisement(
+        address="aa:bb:cc:dd:ee:ff",
+        data={
+            "data": {
+                "battery": None,
+                "fahrenheit": False,
+                "humidity": 53,
+                "temp": {"c": 24.6, "f": 76.28},
+            },
+            "isEncrypted": False,
+            "model": "T",
+            "modelFriendlyName": "Meter",
+            "modelName": SwitchbotModel.METER,
             "rawAdvData": None,
         },
         device=ble_device,

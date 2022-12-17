@@ -78,15 +78,15 @@ SUPPORTED_TYPES: dict[str, SwitchbotSupportedType] = {
         },
         "manufacturer_id": 89,
     },
-    "T": {
-        "modelName": SwitchbotModel.METER,
-        "modelFriendlyName": "Meter",
-        "func": process_wosensorth,
-        "manufacturer_id": 2409,
-    },
     "i": {
         "modelName": SwitchbotModel.METER,
         "modelFriendlyName": "Meter Plus",
+        "func": process_wosensorth,
+        "manufacturer_id": 2409,
+    },
+    "T": {
+        "modelName": SwitchbotModel.METER,
+        "modelFriendlyName": "Meter",
         "func": process_wosensorth,
         "manufacturer_id": 2409,
     },
@@ -193,6 +193,9 @@ def _parse_data(
     """Parse advertisement data."""
     _model = chr(_service_data[0] & 0b01111111) if _service_data else None
 
+    if _switchbot_model and _switchbot_model in _SWITCHBOT_MODEL_TO_CHAR:
+        _model = _SWITCHBOT_MODEL_TO_CHAR[_switchbot_model]
+
     if not _model and _mfr_id and _mfr_id in MODELS_BY_MANUFACTURER_DATA:
         _service_uuids = set(_service_uuids_str.split(","))
         for model_chr, model_data in MODELS_BY_MANUFACTURER_DATA[_mfr_id]:
@@ -203,9 +206,6 @@ def _parse_data(
             if service_uuids and service_uuids.intersection(_service_uuids):
                 _model = model_chr
                 break
-
-    if not _model and _switchbot_model and _switchbot_model in _SWITCHBOT_MODEL_TO_CHAR:
-        _model = _SWITCHBOT_MODEL_TO_CHAR[_switchbot_model]
 
     if not _model:
         return None
