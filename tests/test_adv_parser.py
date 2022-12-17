@@ -841,3 +841,42 @@ def test_motion_sensor_motion():
         device=ble_device,
         rssi=-87,
     )
+
+
+def test_motion_sensor_motion_passive():
+    """Test parsing motion sensor with motion data."""
+    ble_device = BLEDevice("aa:bb:cc:dd:ee:ff", "any")
+    adv_data = generate_advertisement_data(
+        manufacturer_data={2409: b"\xc0!\x9a\xe8\xbcIi\\\x008"},
+        service_data={},
+        tx_power=-127,
+        rssi=-87,
+    )
+    result = parse_advertisement_data(
+        ble_device, adv_data, SwitchbotModel.MOTION_SENSOR
+    )
+    import pprint
+
+    pprint.pprint(result.data)
+    assert result == SwitchBotAdvertisement(
+        address="aa:bb:cc:dd:ee:ff",
+        data={
+            "data": {
+                "battery": None,
+                "iot": None,
+                "is_light": None,
+                "led": None,
+                "light_intensity": None,
+                "motion_detected": True,
+                "sense_distance": None,
+                "tested": None,
+            },
+            "isEncrypted": False,
+            "model": "s",
+            "modelFriendlyName": "Motion Sensor",
+            "modelName": SwitchbotModel.MOTION_SENSOR,
+            "rawAdvData": None,
+        },
+        device=ble_device,
+        rssi=-87,
+    )
