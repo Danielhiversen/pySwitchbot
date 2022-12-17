@@ -645,38 +645,6 @@ def test_bulb_active():
     )
 
 
-def test_bulb_passive():
-    """Test parsing bulb as passive."""
-    ble_device = BLEDevice("aa:bb:cc:dd:ee:ff", "any")
-    adv_data = generate_advertisement_data(
-        manufacturer_data={2409: b"\x84\xf7\x03\xb4\xcbz\x03\xe4!\x00\x00"},
-        service_data={},
-        tx_power=-127,
-        rssi=-50,
-    )
-    result = parse_advertisement_data(ble_device, adv_data, SwitchbotModel.BOT)
-    assert result == SwitchBotAdvertisement(
-        address="aa:bb:cc:dd:ee:ff",
-        data={
-            "data": {
-                "brightness": 100,
-                "color_mode": 1,
-                "delay": False,
-                "isOn": True,
-                "loop_index": 0,
-                "preset": False,
-                "sequence_number": 3,
-                "speed": 0,
-            },
-            "isEncrypted": False,
-            "model": "u",
-            "modelFriendlyName": "Color Bulb",
-            "modelName": SwitchbotModel.COLOR_BULB,
-            "rawAdvData": None,
-        },
-        device=ble_device,
-        rssi=-50,
-    )
 
 
 def test_lightstrip_passive():

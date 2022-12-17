@@ -82,11 +82,13 @@ SUPPORTED_TYPES: dict[str, SwitchbotSupportedType] = {
         "modelName": SwitchbotModel.METER,
         "modelFriendlyName": "Meter",
         "func": process_wosensorth,
+        "manufacturer_id": 2409,
     },
     "i": {
         "modelName": SwitchbotModel.METER,
         "modelFriendlyName": "Meter Plus",
         "func": process_wosensorth,
+        "manufacturer_id": 2409,
     },
     "g": {
         "modelName": SwitchbotModel.PLUG_MINI,
@@ -103,7 +105,6 @@ SUPPORTED_TYPES: dict[str, SwitchbotSupportedType] = {
         "modelFriendlyName": "Color Bulb",
         "func": process_color_bulb,
         "manufacturer_id": 2409,
-        "manufacturer_data_length": 11,
     },
     "q": {
         "modelName": SwitchbotModel.CEILING_LIGHT,
