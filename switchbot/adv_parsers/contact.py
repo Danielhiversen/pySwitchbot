@@ -2,11 +2,16 @@
 from __future__ import annotations
 
 
-def process_wocontact(data: bytes, mfr_data: bytes | None) -> dict[str, bool | int]:
+def process_wocontact(
+    data: bytes | None, mfr_data: bytes | None
+) -> dict[str, bool | int]:
     """Process woContact Sensor services data."""
-    battery = data[2] & 0b01111111
-    tested = bool(data[1] & 0b10000000)
-    contact_timeout = data[3] & 0b00000100 == 0b00000100
+    if data is None and mfr_data is None:
+        return {}
+
+    battery = data[2] & 0b01111111 if data else None
+    tested = bool(data[1] & 0b10000000) if data else None
+    contact_timeout = data[3] & 0b00000100 == 0b00000100 if data else False
 
     if mfr_data and len(mfr_data) >= 13:
         motion_detected = bool(mfr_data[7] & 0b10000000)

@@ -4,8 +4,10 @@ from __future__ import annotations
 from typing import Any
 
 
-def process_wosensorth(data: bytes, mfr_data: bytes | None) -> dict[str, Any]:
+def process_wosensorth(data: bytes | None, mfr_data: bytes | None) -> dict[str, Any]:
     """Process woSensorTH/Temp sensor services data."""
+    if data is None:
+        return {}
 
     _temp_sign = 1 if data[4] & 0b10000000 else -1
     _temp_c = _temp_sign * ((data[4] & 0b01111111) + ((data[3] & 0b00001111) / 10))
