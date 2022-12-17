@@ -3,9 +3,11 @@ from __future__ import annotations
 
 
 def process_wocurtain(
-    data: bytes, mfr_data: bytes | None, reverse: bool = True
+    data: bytes | None, mfr_data: bytes | None, reverse: bool = True
 ) -> dict[str, bool | int]:
     """Process woCurtain/Curtain services data."""
+    if data is None:
+        return {}
 
     _position = max(min(data[3] & 0b01111111, 100), 0)
 

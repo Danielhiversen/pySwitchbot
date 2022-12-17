@@ -29,6 +29,7 @@ SERVICE_DATA_ORDER = (
     "0000fd3d-0000-1000-8000-00805f9b34fb",
     "00000d00-0000-1000-8000-00805f9b34fb",
 )
+MFR_DATA_ORDER = (2409, 89)
 
 
 class SwitchbotSupportedType(TypedDict):
@@ -44,11 +45,15 @@ SUPPORTED_TYPES: dict[str, SwitchbotSupportedType] = {
         "modelName": SwitchbotModel.CONTACT_SENSOR,
         "modelFriendlyName": "Contact Sensor",
         "func": process_wocontact,
+        "manufacturer_id": 2409,
+        "manufacturer_data_length": 13,
     },
     "H": {
         "modelName": SwitchbotModel.BOT,
         "modelFriendlyName": "Bot",
         "func": process_wohand,
+        "service_uuids": {"cba20d00-224d-11e6-9fb8-0002a5d5c51b"},
+        "manufacturer_id": 89,
     },
     "s": {
         "modelName": SwitchbotModel.MOTION_SENSOR,
@@ -64,6 +69,12 @@ SUPPORTED_TYPES: dict[str, SwitchbotSupportedType] = {
         "modelName": SwitchbotModel.CURTAIN,
         "modelFriendlyName": "Curtain",
         "func": process_wocurtain,
+        "service_uuids": {
+            "00001800-0000-1000-8000-00805f9b34fb",
+            "00001801-0000-1000-8000-00805f9b34fb",
+            "cba20d00-224d-11e6-9fb8-0002a5d5c51b",
+        },
+        "manufacturer_id": 89,
     },
     "T": {
         "modelName": SwitchbotModel.METER,
@@ -107,16 +118,27 @@ SUPPORTED_TYPES: dict[str, SwitchbotSupportedType] = {
     },
 }
 
+_SWITCHBOT_MODEL_TO_CHAR = {
+    model_data["modelName"]: model_chr
+    for model_chr, model_data in SUPPORTED_TYPES.items()
+}
+
+MODELS_BY_MANUFACTURER_DATA: dict[int, list[tuple[str, SwitchbotSupportedType]]] = {
+    mfr_id: [] for mfr_id in MFR_DATA_ORDER
+}
+for model_chr, model in SUPPORTED_TYPES.items():
+    if "manufacturer_id" in model:
+        mfr_id = model["manufacturer_id"]
+        MODELS_BY_MANUFACTURER_DATA[mfr_id].append((model_chr, model))
+
 
 def parse_advertisement_data(
-    device: BLEDevice, advertisement_data: AdvertisementData
+    device: BLEDevice,
+    advertisement_data: AdvertisementData,
+    model: SwitchbotModel | None = None,
 ) -> SwitchBotAdvertisement | None:
     """Parse advertisement data."""
-    _mgr_datas = list(advertisement_data.manufacturer_data.values())
     service_data = advertisement_data.service_data
-
-    if not service_data:
-        return None
 
     _service_data = None
     for uuid in SERVICE_DATA_ORDER:
@@ -124,17 +146,32 @@ def parse_advertisement_data(
             _service_data = service_data[uuid]
             break
 
-    if not _service_data:
+    _mfr_data = None
+    _mfr_id = None
+    for mfr_id in MFR_DATA_ORDER:
+        if mfr_id in advertisement_data.manufacturer_data:
+            _mfr_id = mfr_id
+            _mfr_data = advertisement_data.manufacturer_data[mfr_id]
+            break
+
+    if _mfr_data is None and _service_data is None:
         return None
 
-    _mfr_data = _mgr_datas[0] if _mgr_datas else None
-
     try:
-        data = _parse_data(_service_data, _mfr_data)
+        data = _parse_data(
+            "".join(sorted(advertisement_data.service_uuids)),
+            _service_data,
+            _mfr_data,
+            _mfr_id,
+            model,
+        )
     except Exception as err:  # pylint: disable=broad-except
         _LOGGER.exception(
             "Failed to parse advertisement data: %s: %s", advertisement_data, err
         )
+        return None
+
+    if not data:
         return None
 
     return SwitchBotAdvertisement(device.address, data, device, advertisement_data.rssi)
@@ -142,15 +179,37 @@ def parse_advertisement_data(
 
 @lru_cache(maxsize=128)
 def _parse_data(
-    _service_data: bytes, _mfr_data: bytes | None
+    _service_uuids_str: str,
+    _service_data: bytes | None,
+    _mfr_data: bytes | None,
+    _mfr_id: int | None = None,
+    _switchbot_model: SwitchbotModel | None = None,
 ) -> SwitchBotAdvertisement | None:
     """Parse advertisement data."""
-    _model = chr(_service_data[0] & 0b01111111)
+    _model = chr(_service_data[0] & 0b01111111) if _service_data else None
+
+    if not _model and _mfr_id and _mfr_id in MODELS_BY_MANUFACTURER_DATA:
+        _service_uuids = set(_service_uuids_str.split(","))
+        for model_chr, model_data in MODELS_BY_MANUFACTURER_DATA[_mfr_id]:
+            if model_data.get("manufacturer_data_length") == len(_mfr_data):
+                _model = model_chr
+                break
+            if model_data.get("service_uuids", set()).intersection(_service_uuids):
+                _model = model_chr
+                break
+
+    if not _model and _switchbot_model and _switchbot_model in _SWITCHBOT_MODEL_TO_CHAR:
+        _model = _SWITCHBOT_MODEL_TO_CHAR[_switchbot_model]
+
+    if not _model:
+        return None
+
+    _isEncrypted = bool(_service_data[0] & 0b10000000) if _service_data else False
     data = {
         "rawAdvData": _service_data,
         "data": {},
         "model": _model,
-        "isEncrypted": bool(_service_data[0] & 0b10000000),
+        "isEncrypted": _isEncrypted,
     }
 
     type_data = SUPPORTED_TYPES.get(_model)

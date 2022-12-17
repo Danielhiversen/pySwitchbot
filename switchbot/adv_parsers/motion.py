@@ -2,8 +2,12 @@
 from __future__ import annotations
 
 
-def process_wopresence(data: bytes, mfr_data: bytes | None) -> dict[str, bool | int]:
+def process_wopresence(
+    data: bytes | None, mfr_data: bytes | None
+) -> dict[str, bool | int]:
     """Process WoPresence Sensor services data."""
+    if data is None:
+        return {}
     return {
         "tested": bool(data[1] & 0b10000000),
         "motion_detected": bool(data[1] & 0b01000000),

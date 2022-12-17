@@ -445,6 +445,39 @@ def test_contact_sensor_mfr():
     )
 
 
+def test_contact_sensor_mfr_no_service_data():
+    """Test contact sensor with passive data only."""
+    ble_device = BLEDevice("aa:bb:cc:dd:ee:ff", "any")
+    adv_data = generate_advertisement_data(
+        manufacturer_data={2409: b"\xcb9\xcd\xc4=FA,\x00F\x01\x8f\xc4"},
+        service_data={},
+        tx_power=-127,
+        rssi=-70,
+    )
+    result = parse_advertisement_data(ble_device, adv_data)
+    assert result == SwitchBotAdvertisement(
+        address="aa:bb:cc:dd:ee:ff",
+        data={
+            "data": {
+                "battery": None,
+                "button_count": 4,
+                "contact_open": False,
+                "contact_timeout": False,
+                "is_light": False,
+                "motion_detected": False,
+                "tested": None,
+            },
+            "isEncrypted": False,
+            "model": "d",
+            "modelFriendlyName": "Contact Sensor",
+            "modelName": SwitchbotModel.CONTACT_SENSOR,
+            "rawAdvData": None,
+        },
+        device=ble_device,
+        rssi=-70,
+    )
+
+
 def test_contact_sensor_srv():
     """Test parsing adv data from new bot firmware."""
     ble_device = BLEDevice("aa:bb:cc:dd:ee:ff", "any")
@@ -543,6 +576,35 @@ def test_contact_sensor_closed():
             "modelFriendlyName": "Contact Sensor",
             "modelName": SwitchbotModel.CONTACT_SENSOR,
             "rawAdvData": b"d@\xda\x00\x00+\x00\x19\x84",
+        },
+        device=ble_device,
+        rssi=-50,
+    )
+
+
+def test_switchbot_passive():
+    """Test parsing switchbot as passive."""
+    ble_device = BLEDevice("aa:bb:cc:dd:ee:ff", "any")
+    adv_data = generate_advertisement_data(
+        manufacturer_data={89: bytes.fromhex("d51cfb397856")},
+        service_data={},
+        tx_power=-127,
+        rssi=-50,
+    )
+    result = parse_advertisement_data(ble_device, adv_data, SwitchbotModel.BOT)
+    assert result == SwitchBotAdvertisement(
+        address="aa:bb:cc:dd:ee:ff",
+        data={
+            "data": {
+                "battery": None,
+                "switchMode": None,
+                "isOn": None,
+            },
+            "isEncrypted": False,
+            "model": "H",
+            "modelFriendlyName": "Bot",
+            "modelName": SwitchbotModel.BOT,
+            "rawAdvData": None,
         },
         device=ble_device,
         rssi=-50,

@@ -2,7 +2,9 @@
 from __future__ import annotations
 
 
-def process_wostrip(data: bytes, mfr_data: bytes | None) -> dict[str, bool | int]:
+def process_wostrip(
+    data: bytes | None, mfr_data: bytes | None
+) -> dict[str, bool | int]:
     """Process WoStrip services data."""
     if mfr_data is None:
         return {}

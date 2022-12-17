@@ -2,8 +2,18 @@
 from __future__ import annotations
 
 
-def process_wohand(data: bytes, mfr_data: bytes | None) -> dict[str, bool | int]:
+def process_wohand(data: bytes | None, mfr_data: bytes | None) -> dict[str, bool | int]:
     """Process woHand/Bot services data."""
+    if data is None and mfr_data is None:
+        return {}
+
+    if data is None:
+        return {
+            "switchMode": None,
+            "isOn": None,
+            "battery": None,
+        }
+
     _switch_mode = bool(data[1] & 0b10000000)
 
     return {

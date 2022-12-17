@@ -2,7 +2,9 @@
 from __future__ import annotations
 
 
-def process_color_bulb(data: bytes, mfr_data: bytes | None) -> dict[str, bool | int]:
+def process_color_bulb(
+    data: bytes | None, mfr_data: bytes | None
+) -> dict[str, bool | int]:
     """Process WoBulb services data."""
     if mfr_data is None:
         return {}
