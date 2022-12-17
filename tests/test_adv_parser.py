@@ -292,7 +292,7 @@ def test_parse_advertisement_data_empty():
     """Test parse_advertisement_data with empty data does not blow up."""
     ble_device = BLEDevice("aa:bb:cc:dd:ee:ff", "any")
     adv_data = generate_advertisement_data(
-        manufacturer_data={2409: b"\xe7\xabF\xac\x8f\x92|\x0f\x00\x11\x04"},
+        manufacturer_data={2403: b"\xe7\xabF\xac\x8f\x92|\x0f\x00\x11\x04"},
         service_data={"0000fd3d-0000-1000-8000-00805f9b34fb": b""},
     )
     result = parse_advertisement_data(ble_device, adv_data)
@@ -604,6 +604,110 @@ def test_switchbot_passive():
             "model": "H",
             "modelFriendlyName": "Bot",
             "modelName": SwitchbotModel.BOT,
+            "rawAdvData": None,
+        },
+        device=ble_device,
+        rssi=-50,
+    )
+
+
+def test_bulb_active():
+    """Test parsing bulb as active."""
+    ble_device = BLEDevice("aa:bb:cc:dd:ee:ff", "any")
+    adv_data = generate_advertisement_data(
+        manufacturer_data={2409: b"\x84\xf7\x03\xb4\xcbz\x03\xe4!\x00\x00"},
+        service_data={"0000fd3d-0000-1000-8000-00805f9b34fb": b"u\x00d"},
+        tx_power=-127,
+        rssi=-50,
+    )
+    result = parse_advertisement_data(ble_device, adv_data, SwitchbotModel.BOT)
+    assert result == SwitchBotAdvertisement(
+        address="aa:bb:cc:dd:ee:ff",
+        data={
+            "data": {
+                "brightness": 100,
+                "color_mode": 1,
+                "delay": False,
+                "isOn": True,
+                "loop_index": 0,
+                "preset": False,
+                "sequence_number": 3,
+                "speed": 0,
+            },
+            "isEncrypted": False,
+            "model": "u",
+            "modelFriendlyName": "Color Bulb",
+            "modelName": SwitchbotModel.COLOR_BULB,
+            "rawAdvData": b"u\x00d",
+        },
+        device=ble_device,
+        rssi=-50,
+    )
+
+
+def test_bulb_passive():
+    """Test parsing bulb as passive."""
+    ble_device = BLEDevice("aa:bb:cc:dd:ee:ff", "any")
+    adv_data = generate_advertisement_data(
+        manufacturer_data={2409: b"\x84\xf7\x03\xb4\xcbz\x03\xe4!\x00\x00"},
+        service_data={},
+        tx_power=-127,
+        rssi=-50,
+    )
+    result = parse_advertisement_data(ble_device, adv_data, SwitchbotModel.BOT)
+    assert result == SwitchBotAdvertisement(
+        address="aa:bb:cc:dd:ee:ff",
+        data={
+            "data": {
+                "brightness": 100,
+                "color_mode": 1,
+                "delay": False,
+                "isOn": True,
+                "loop_index": 0,
+                "preset": False,
+                "sequence_number": 3,
+                "speed": 0,
+            },
+            "isEncrypted": False,
+            "model": "u",
+            "modelFriendlyName": "Color Bulb",
+            "modelName": SwitchbotModel.COLOR_BULB,
+            "rawAdvData": None,
+        },
+        device=ble_device,
+        rssi=-50,
+    )
+
+
+def test_lightstrip_passive():
+    """Test parsing lightstrip as passive."""
+    ble_device = BLEDevice("aa:bb:cc:dd:ee:ff", "any")
+    adv_data = generate_advertisement_data(
+        manufacturer_data={
+            2409: b"`U\xf9(\xe5\x96\x00d\x02\xb0\x00\x00\x00\x00\x00\x00"
+        },
+        service_data={},
+        tx_power=-127,
+        rssi=-50,
+    )
+    result = parse_advertisement_data(ble_device, adv_data, SwitchbotModel.BOT)
+    assert result == SwitchBotAdvertisement(
+        address="aa:bb:cc:dd:ee:ff",
+        data={
+            "data": {
+                "brightness": 100,
+                "color_mode": 2,
+                "delay": False,
+                "isOn": False,
+                "loop_index": 0,
+                "preset": False,
+                "sequence_number": 0,
+                "speed": 48,
+            },
+            "isEncrypted": False,
+            "model": "r",
+            "modelFriendlyName": "Light Strip",
+            "modelName": SwitchbotModel.LIGHT_STRIP,
             "rawAdvData": None,
         },
         device=ble_device,
