@@ -64,6 +64,8 @@ SUPPORTED_TYPES: dict[str, SwitchbotSupportedType] = {
         "modelName": SwitchbotModel.LIGHT_STRIP,
         "modelFriendlyName": "Light Strip",
         "func": process_wostrip,
+        "manufacturer_id": 2409,
+        "manufacturer_data_length": 16,
     },
     "c": {
         "modelName": SwitchbotModel.CURTAIN,
@@ -100,6 +102,8 @@ SUPPORTED_TYPES: dict[str, SwitchbotSupportedType] = {
         "modelName": SwitchbotModel.COLOR_BULB,
         "modelFriendlyName": "Color Bulb",
         "func": process_color_bulb,
+        "manufacturer_id": 2409,
+        "manufacturer_data_length": 11,
     },
     "q": {
         "modelName": SwitchbotModel.CEILING_LIGHT,
@@ -194,7 +198,8 @@ def _parse_data(
             if model_data.get("manufacturer_data_length") == len(_mfr_data):
                 _model = model_chr
                 break
-            if model_data.get("service_uuids", set()).intersection(_service_uuids):
+            service_uuids = model_data.get("service_uuids", set())
+            if service_uuids and service_uuids.intersection(_service_uuids):
                 _model = model_chr
                 break
 
