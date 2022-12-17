@@ -861,7 +861,7 @@ def test_motion_sensor_motion():
             "data": {
                 "battery": 98,
                 "iot": 0,
-                "is_light": True,
+                "is_light": False,
                 "led": 0,
                 "light_intensity": 1,
                 "motion_detected": True,
@@ -897,7 +897,7 @@ def test_motion_sensor_motion_passive():
             "data": {
                 "battery": None,
                 "iot": None,
-                "is_light": True,
+                "is_light": False,
                 "led": None,
                 "light_intensity": None,
                 "motion_detected": True,
@@ -984,4 +984,42 @@ def test_motion_sensor_is_light_active():
         },
         device=ble_device,
         rssi=-93,
+    )
+
+
+def test_motion_with_light_detected():
+    ble_device = BLEDevice("aa:bb:cc:dd:ee:ff", "any")
+    adv_data = generate_advertisement_data(
+        manufacturer_data={2409: b"\xc0!\x9a\xe8\xbcIvl\x00,"},
+        service_data={"0000fd3d-0000-1000-8000-00805f9b34fb": b"s@\xe2\x00,\x02"},
+        tx_power=-127,
+        rssi=-84,
+    )
+    result = parse_advertisement_data(
+        ble_device, adv_data, SwitchbotModel.MOTION_SENSOR
+    )
+    import pprint
+
+    pprint.pprint(result)
+    assert result == SwitchBotAdvertisement(
+        address="aa:bb:cc:dd:ee:ff",
+        data={
+            "data": {
+                "battery": 98,
+                "iot": 0,
+                "is_light": True,
+                "led": 0,
+                "light_intensity": 2,
+                "motion_detected": True,
+                "sense_distance": 0,
+                "tested": False,
+            },
+            "isEncrypted": False,
+            "model": "s",
+            "modelFriendlyName": "Motion Sensor",
+            "modelName": SwitchbotModel.MOTION_SENSOR,
+            "rawAdvData": b"s@\xe2\x00,\x02",
+        },
+        device=ble_device,
+        rssi=-84,
     )

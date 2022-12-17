@@ -24,10 +24,10 @@ def process_wopresence(
         iot = (data[5] & 0b00010000) >> 4
         sense_distance = (data[5] & 0b00001100) >> 2
         light_intensity = data[5] & 0b00000011
-        is_light = bool(data[5] & 0b00000010 or data[5] & 0b00000001)
+        is_light = bool(data[5] & 0b00000010)
     if mfr_data:
         motion_detected = bool(mfr_data[7] & 0b01000000)
-        is_light = bool(mfr_data[6] & 0b00000001)
+        is_light = bool(mfr_data[7] & 0b00100000)
 
     return {
         "tested": tested,
