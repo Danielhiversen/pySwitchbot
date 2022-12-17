@@ -19,7 +19,7 @@ def process_wopresence(
     if data:
         tested = bool(data[1] & 0b10000000)
         motion_detected = bool(data[1] & 0b01000000)
-        battery = (data[2] & 0b01111111,)
+        battery = data[2] & 0b01111111
         led = (data[5] & 0b00100000) >> 5
         iot = (data[5] & 0b00010000) >> 4
         sense_distance = (data[5] & 0b00001100) >> 2
