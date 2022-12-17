@@ -4,7 +4,7 @@ from __future__ import annotations
 import logging
 from collections.abc import Callable
 from functools import lru_cache
-from typing import TypedDict
+from typing import Any, TypedDict
 
 from bleak.backends.device import BLEDevice
 from bleak.backends.scanner import AdvertisementData
@@ -189,7 +189,7 @@ def _parse_data(
     _mfr_data: bytes | None,
     _mfr_id: int | None = None,
     _switchbot_model: SwitchbotModel | None = None,
-) -> SwitchBotAdvertisement | None:
+) -> dict[str, Any] | None:
     """Parse advertisement data."""
     _model = chr(_service_data[0] & 0b01111111) if _service_data else None
 
