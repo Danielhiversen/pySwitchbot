@@ -1022,7 +1022,6 @@ def test_motion_with_light_detected():
     )
 
 
-
 def test_motion_sensor_motion_passive():
     """Test parsing motion sensor with motion data."""
     ble_device = BLEDevice("aa:bb:cc:dd:ee:ff", "any")
@@ -1032,9 +1031,7 @@ def test_motion_sensor_motion_passive():
         tx_power=-127,
         rssi=-87,
     )
-    result = parse_advertisement_data(
-        ble_device, adv_data
-    )
+    result = parse_advertisement_data(ble_device, adv_data)
     assert result == SwitchBotAdvertisement(
         address="aa:bb:cc:dd:ee:ff",
         data={
