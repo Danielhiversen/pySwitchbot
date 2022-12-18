@@ -81,6 +81,15 @@ READ_CHAR_UUID = _sb_uuid(comms_type="rx")
 WRITE_CHAR_UUID = _sb_uuid(comms_type="tx")
 
 
+def _merge_data(old_data: dict[str, Any], new_data: dict[str, Any]) -> dict[str, Any]:
+    """Merge data but only add None keys if they are missing."""
+    merged = old_data.copy()
+    for key, value in new_data.items():
+        if value is not None or key not in old_data:
+            merged[key] = value
+    return merged
+
+
 class SwitchbotBaseDevice:
     """Base Representation of a Switchbot Device."""
 
@@ -202,7 +211,7 @@ class SwitchbotBaseDevice:
         if self._sb_adv_data:
             return self._sb_adv_data.data
         return {}
-        
+
     @property
     def rssi(self) -> int:
         """Return RSSI of device."""
@@ -499,19 +508,15 @@ class SwitchbotBaseDevice:
         if not self._sb_adv_data:
             _LOGGER.exception("No advertisement data to update")
             return
-        _LOGGER.warning("Old data: %s", self._sb_adv_data.data)
-        _LOGGER.warning("Updating data: %s", new_data)
         self._set_parsed_data(
-            self._sb_adv_data, self._sb_adv_data.data.get("data") | new_data
+            self._sb_adv_data,
+            _merge_data(self._sb_adv_data.data.get("data") or {}, new_data),
         )
-        _LOGGER.warning("Updated data: %s", self._sb_adv_data.data)
 
     def _set_parsed_data(
         self, advertisement: SwitchBotAdvertisement, data: dict[str, Any]
     ) -> None:
         """Set data."""
-        _LOGGER.warning("_set_parsed_data: %s", data)
-
         self._sb_adv_data = replace(
             advertisement, data=self._sb_adv_data.data | {"data": data}
         )
