@@ -492,14 +492,19 @@ class SwitchbotBaseDevice:
         if not self._sb_adv_data:
             _LOGGER.exception("No advertisement data to update")
             return
+        _LOGGER.warning("Old data: %s", self._sb_adv_data.data)
+        _LOGGER.warning("Updating data: %s", new_data)
         self._set_parsed_data(
             self._sb_adv_data, self._sb_adv_data.data.get("data") | new_data
         )
+        _LOGGER.warning("Updated data: %s", self._sb_adv_data.data)
 
     def _set_parsed_data(
         self, advertisement: SwitchBotAdvertisement, data: dict[str, Any]
     ) -> None:
         """Set data."""
+        _LOGGER.warning("_set_parsed_data: %s", data)
+
         self._sb_adv_data = replace(
             advertisement, data=self._sb_adv_data.data | {"data": data}
         )

@@ -60,6 +60,7 @@ class SwitchbotCurtain(SwitchbotDevice):
         for key in keys:
             result = await self._send_command(key)
             final_result |= self._check_command_result(result, 0, {1})
+        await self.update()
         return final_result
 
     async def open(self) -> bool:
