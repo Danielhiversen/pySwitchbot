@@ -96,7 +96,6 @@ def update_after_operation(func: WrapFuncType) -> WrapFuncType:
     ) -> None:
         ret = await func(self, *args, **kwargs)
         await self.update()
-        self._fire_callbacks()
         return ret
 
     return cast(WrapFuncType, _async_update_after_operation_wrap)
@@ -520,6 +519,7 @@ class SwitchbotBaseDevice:
         if info := await self.get_basic_info():
             self._last_full_update = time.monotonic()
             self._update_parsed_data(info)
+            self._fire_callbacks()
 
     async def get_basic_info(self) -> dict[str, Any] | None:
         """Get device basic settings."""
