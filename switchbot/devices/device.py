@@ -579,9 +579,9 @@ class SwitchbotBaseDevice:
 
     def poll_needed(self, seconds_since_last_poll: float | None) -> bool:
         """Return if device needs polling."""
-        if seconds_since_last_poll < PASSIVE_POLL_INTERVAL:
+        if (seconds_since_last_poll or 0) < PASSIVE_POLL_INTERVAL:
             return False
-        time_since_last_full_update = time.monotonic() - (self._last_full_update or 0)
+        time_since_last_full_update = time.monotonic() - self._last_full_update
         if time_since_last_full_update < PASSIVE_POLL_INTERVAL:
             return False
         return True
