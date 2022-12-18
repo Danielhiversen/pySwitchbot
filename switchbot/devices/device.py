@@ -213,6 +213,11 @@ class SwitchbotBaseDevice:
         return {}
 
     @property
+    def parsed_data(self) -> dict[str, Any]:
+        """Return parsed device data."""
+        return self.data.get("data") or {}
+
+    @property
     def rssi(self) -> int:
         """Return RSSI of device."""
         if self._sb_adv_data:
