@@ -96,7 +96,6 @@ def update_after_operation(func: WrapFuncType) -> WrapFuncType:
     ) -> None:
         ret = await func(self, *args, **kwargs)
         await self.update()
-        self._fire_callbacks()
         return ret
 
     return cast(WrapFuncType, _async_update_after_operation_wrap)
@@ -520,6 +519,7 @@ class SwitchbotBaseDevice:
         if info := await self.get_basic_info():
             self._last_full_update = time.monotonic()
             self._update_parsed_data(info)
+            self._fire_callbacks()
 
     async def get_basic_info(self) -> dict[str, Any] | None:
         """Get device basic settings."""
@@ -579,6 +579,12 @@ class SwitchbotBaseDevice:
 
     def poll_needed(self, seconds_since_last_poll: float | None) -> bool:
         """Return if device needs polling."""
+        _LOGGER.warning(
+            "%s: Polling needed: seconds_since_last_poll=%s, _last_full_update=%s",
+            self.name,
+            seconds_since_last_poll,
+            self._last_full_update,
+        )
         if (
             seconds_since_last_poll is not None
             and seconds_since_last_poll < PASSIVE_POLL_INTERVAL
