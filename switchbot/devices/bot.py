@@ -7,8 +7,8 @@ from typing import Any
 from .device import (
     DEVICE_SET_EXTENDED_KEY,
     DEVICE_SET_MODE_KEY,
-    update_after_operation,
     SwitchbotDeviceOverrideStateDuringConnection,
+    update_after_operation,
 )
 
 _LOGGER = logging.getLogger(__name__)

@@ -1,8 +1,9 @@
 """Library to handle connection with Switchbot."""
 from __future__ import annotations
 
-from .device import REQ_HEADER, SwitchbotDevice
 import time
+
+from .device import REQ_HEADER, SwitchbotDevice
 
 HUMIDIFIER_COMMAND_HEADER = "4381"
 HUMIDIFIER_REQUEST = f"{REQ_HEADER}4481"

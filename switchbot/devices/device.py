@@ -6,9 +6,8 @@ import binascii
 import logging
 import time
 from dataclasses import replace
-from typing import cast, TypeVar
 from enum import Enum
-from typing import Any, Callable
+from typing import Any, Callable, TypeVar, cast
 from uuid import UUID
 
 import async_timeout

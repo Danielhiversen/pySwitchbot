@@ -1,8 +1,9 @@
 """Library to handle connection with Switchbot."""
 from __future__ import annotations
 
-from .device import REQ_HEADER, SwitchbotDeviceOverrideStateDuringConnection
 import time
+
+from .device import REQ_HEADER, SwitchbotDeviceOverrideStateDuringConnection
 
 # Plug Mini keys
 PLUG_ON_KEY = f"{REQ_HEADER}50010180"

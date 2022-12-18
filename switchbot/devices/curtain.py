@@ -6,7 +6,6 @@ from typing import Any
 
 from .device import REQ_HEADER, SwitchbotDevice, update_after_operation
 
-
 # Curtain keys
 CURTAIN_COMMAND = "4501"
 OPEN_KEYS = [
