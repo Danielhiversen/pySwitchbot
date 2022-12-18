@@ -579,12 +579,6 @@ class SwitchbotBaseDevice:
 
     def poll_needed(self, seconds_since_last_poll: float | None) -> bool:
         """Return if device needs polling."""
-        _LOGGER.warning(
-            "%s: Polling needed: seconds_since_last_poll=%s, _last_full_update=%s",
-            self.name,
-            seconds_since_last_poll,
-            self._last_full_update,
-        )
         if (
             seconds_since_last_poll is not None
             and seconds_since_last_poll < PASSIVE_POLL_INTERVAL
