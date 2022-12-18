@@ -144,7 +144,7 @@ class SwitchbotBaseDevice:
         self.loop = asyncio.get_event_loop()
         self._callbacks: list[Callable[[], None]] = []
         self._notify_future: asyncio.Future[bytearray] | None = None
-        self._last_full_update: float = 0.0
+        self._last_full_update: float = -PASSIVE_POLL_INTERVAL
 
     def advertisement_changed(self, advertisement: SwitchBotAdvertisement) -> bool:
         """Check if the advertisement has changed."""
@@ -579,7 +579,10 @@ class SwitchbotBaseDevice:
 
     def poll_needed(self, seconds_since_last_poll: float | None) -> bool:
         """Return if device needs polling."""
-        if (seconds_since_last_poll or 0) < PASSIVE_POLL_INTERVAL:
+        if (
+            seconds_since_last_poll is not None
+            and seconds_since_last_poll < PASSIVE_POLL_INTERVAL
+        ):
             return False
         time_since_last_full_update = time.monotonic() - self._last_full_update
         if time_since_last_full_update < PASSIVE_POLL_INTERVAL:
