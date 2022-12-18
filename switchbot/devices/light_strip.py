@@ -7,6 +7,7 @@ from .base_light import SwitchbotSequenceBaseLight
 from .device import REQ_HEADER, ColorMode
 
 import time
+
 STRIP_COMMMAND_HEADER = "4901"
 STRIP_REQUEST = f"{REQ_HEADER}4A01"
 
