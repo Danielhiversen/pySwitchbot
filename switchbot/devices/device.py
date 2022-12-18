@@ -494,8 +494,19 @@ class SwitchbotBaseDevice:
 
         return _unsub
 
-    async def update(self) -> None:
-        """Update state of device."""
+    async def update(self, interface: int | None = None) -> None:
+        """Update position, battery percent and light level of device."""
+        if info := await self.get_basic_info():
+            self._update_parsed_data(info)
+
+    async def get_basic_info(self) -> dict[str, Any] | None:
+        """Get device basic settings."""
+        if not (_data := await self._get_basic_info()):
+            return None
+        return {
+            "battery": _data[1],
+            "firmware": _data[2] / 10.0,
+        }
 
     def _check_command_result(
         self, result: bytes | None, index: int, values: set[int]
@@ -547,12 +558,12 @@ class SwitchbotBaseDevice:
     def poll_needed(self, last_poll_time: float | None) -> bool:
         """Return if device needs polling."""
         now = time.time()
-        if (
-            now - (last_poll_time or 0) < BATTERY_POLL_INTERVAL
-            or now - self._last_adv_with_battery < BATTERY_POLL_INTERVAL
-        ):
-            return False
-        return True
+        time_since_last_poll = now - (last_poll_time or 0)
+        time_since_last_battery_adv = now - (self._last_adv_with_battery or 0)
+        return (
+            min(time_since_last_poll, time_since_last_battery_adv)
+            > BATTERY_POLL_INTERVAL
+        )
 
 
 class SwitchbotDevice(SwitchbotBaseDevice):

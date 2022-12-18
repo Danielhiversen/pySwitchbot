@@ -30,11 +30,6 @@ class Switchbot(SwitchbotDeviceOverrideStateDuringConnection):
         super().__init__(*args, **kwargs)
         self._inverse: bool = kwargs.pop("inverse_mode", False)
 
-    async def update(self, interface: int | None = None) -> None:
-        """Update mode, battery percent and state of device."""
-        if info := await self.get_basic_info():
-            self._update_parsed_data(info)
-
     async def turn_on(self) -> bool:
         """Turn device on."""
         result = await self._send_command(ON_KEY)
