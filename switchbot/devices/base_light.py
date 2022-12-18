@@ -88,7 +88,7 @@ class SwitchbotBaseLight(SwitchbotDevice):
 
     async def update(self) -> None:
         """Update device data."""
-        self._last_full_update = time.time()
+        self._last_full_update = time.monotonic()
 
 
 class SwitchbotSequenceBaseLight(SwitchbotBaseLight):

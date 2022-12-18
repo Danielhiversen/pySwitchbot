@@ -1,7 +1,6 @@
 from __future__ import annotations
 
 import logging
-import time
 from typing import Any
 
 from .base_light import SwitchbotSequenceBaseLight
@@ -31,8 +30,8 @@ class SwitchbotLightStrip(SwitchbotSequenceBaseLight):
     async def update(self) -> None:
         """Update state of device."""
         result = await self._send_command(STRIP_REQUEST)
-        self._last_full_update = time.time()
         self._update_state(result)
+        await super().update()
 
     async def turn_on(self) -> bool:
         """Turn device on."""

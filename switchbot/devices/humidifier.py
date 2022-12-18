@@ -31,7 +31,7 @@ class SwitchbotHumidifier(SwitchbotDevice):
     async def update(self, interface: int | None = None) -> None:
         """Update state of device."""
         # No battery here
-        self._last_full_update = time.time()
+        self._last_full_update = time.monotonic()
 
     def _generate_command(
         self, on: bool | None = None, level: int | None = None

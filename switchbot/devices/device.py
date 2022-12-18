@@ -515,7 +515,7 @@ class SwitchbotBaseDevice:
     async def update(self, interface: int | None = None) -> None:
         """Update position, battery percent and light level of device."""
         if info := await self.get_basic_info():
-            self._last_full_update = time.time()
+            self._last_full_update = time.monotonic()
             self._update_parsed_data(info)
 
     async def get_basic_info(self) -> dict[str, Any] | None:
@@ -562,7 +562,7 @@ class SwitchbotBaseDevice:
         if advertisement.active:
             # If we are getting active data, we can assume we are
             # getting active scans and we do not need to poll
-            self._last_full_update = time.time()
+            self._last_full_update = time.monotonic()
         if not self._sb_adv_data:
             self._sb_adv_data = advertisement
         elif new_data:
@@ -576,7 +576,7 @@ class SwitchbotBaseDevice:
 
     def poll_needed(self, last_poll_time: float | None) -> bool:
         """Return if device needs polling."""
-        now = time.time()
+        now = time.monotonic()
         time_since_last_poll = now - (last_poll_time or 0)
         time_since_last_full_update = now - (self._last_full_update or 0)
         _LOGGER.warning(
