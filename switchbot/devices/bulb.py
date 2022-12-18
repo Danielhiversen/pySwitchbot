@@ -34,6 +34,7 @@ class SwitchbotBulb(SwitchbotSequenceBaseLight):
         """Update state of device."""
         result = await self._send_command(BULB_REQUEST)
         self._update_state(result)
+        await super().update()
 
     async def turn_on(self) -> bool:
         """Turn device on."""

@@ -4,7 +4,7 @@ from __future__ import annotations
 import logging
 from typing import Any
 
-from .device import REQ_HEADER, SwitchbotDevice
+from .device import REQ_HEADER, SwitchbotDevice, update_after_operation
 
 # Curtain keys
 CURTAIN_COMMAND = "4501"
@@ -62,18 +62,22 @@ class SwitchbotCurtain(SwitchbotDevice):
             final_result |= self._check_command_result(result, 0, {1})
         return final_result
 
+    @update_after_operation
     async def open(self) -> bool:
         """Send open command."""
         return await self._send_multiple_commands(OPEN_KEYS)
 
+    @update_after_operation
     async def close(self) -> bool:
         """Send close command."""
         return await self._send_multiple_commands(CLOSE_KEYS)
 
+    @update_after_operation
     async def stop(self) -> bool:
         """Send stop command to device."""
         return await self._send_multiple_commands(STOP_KEYS)
 
+    @update_after_operation
     async def set_position(self, position: int) -> bool:
         """Send position command (0-100) to device."""
         position = (100 - position) if self._reverse else position
@@ -81,10 +85,6 @@ class SwitchbotCurtain(SwitchbotDevice):
         return await self._send_multiple_commands(
             [key + hex_position for key in POSITION_KEYS]
         )
-
-    async def update(self, interface: int | None = None) -> None:
-        """Update position, battery percent and light level of device."""
-        await self.get_device_data(retry=self._retry_count, interface=interface)
 
     def get_position(self) -> Any:
         """Return cached position (0-100) of Curtain."""
@@ -108,6 +108,7 @@ class SwitchbotCurtain(SwitchbotDevice):
             "light": bool(_data[4] & 0b00100000),
             "fault": bool(_data[4] & 0b00001000),
             "solarPanel": bool(_data[5] & 0b00001000),
+            "calibration": bool(_data[5] & 0b00000100),
             "calibrated": bool(_data[5] & 0b00000100),
             "inMotion": bool(_data[5] & 0b01000011),
             "position": (100 - _position) if self._reverse else _position,

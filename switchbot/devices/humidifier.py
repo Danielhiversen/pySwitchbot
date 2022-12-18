@@ -1,6 +1,8 @@
 """Library to handle connection with Switchbot."""
 from __future__ import annotations
 
+import time
+
 from .device import REQ_HEADER, SwitchbotDevice
 
 HUMIDIFIER_COMMAND_HEADER = "4381"
@@ -28,7 +30,8 @@ class SwitchbotHumidifier(SwitchbotDevice):
 
     async def update(self, interface: int | None = None) -> None:
         """Update state of device."""
-        await self.get_device_data(retry=self._retry_count, interface=interface)
+        # No battery here
+        self._last_full_update = time.monotonic()
 
     def _generate_command(
         self, on: bool | None = None, level: int | None = None
@@ -96,3 +99,7 @@ class SwitchbotHumidifier(SwitchbotDevice):
         if self.is_auto():
             return None
         return MANUAL_BUTTON_PRESSES_TO_LEVEL.get(level, level)
+
+    def poll_needed(self, last_poll_time: float | None) -> bool:
+        """Return if device needs polling."""
+        return False

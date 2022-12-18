@@ -31,6 +31,7 @@ class SwitchbotLightStrip(SwitchbotSequenceBaseLight):
         """Update state of device."""
         result = await self._send_command(STRIP_REQUEST)
         self._update_state(result)
+        await super().update()
 
     async def turn_on(self) -> bool:
         """Turn device on."""

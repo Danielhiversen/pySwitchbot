@@ -1,6 +1,8 @@
 """Library to handle connection with Switchbot."""
 from __future__ import annotations
 
+import time
+
 from .device import REQ_HEADER, SwitchbotDeviceOverrideStateDuringConnection
 
 # Plug Mini keys
@@ -13,7 +15,8 @@ class SwitchbotPlugMini(SwitchbotDeviceOverrideStateDuringConnection):
 
     async def update(self, interface: int | None = None) -> None:
         """Update state of device."""
-        await self.get_device_data(retry=self._retry_count, interface=interface)
+        # No battery here
+        self._last_full_update = time.monotonic()
 
     async def turn_on(self) -> bool:
         """Turn device on."""
@@ -34,3 +37,7 @@ class SwitchbotPlugMini(SwitchbotDeviceOverrideStateDuringConnection):
     def is_on(self) -> bool | None:
         """Return switch state from cache."""
         return self._get_adv_value("isOn")
+
+    def poll_needed(self, last_poll_time: float | None) -> bool:
+        """Return if device needs polling."""
+        return False

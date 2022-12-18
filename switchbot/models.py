@@ -15,3 +15,4 @@ class SwitchBotAdvertisement:
     data: dict[str, Any]
     device: BLEDevice
     rssi: int
+    active: bool = False
