@@ -177,7 +177,7 @@ def parse_advertisement_data(
     if not data:
         return None
 
-    return SwitchBotAdvertisement(device.address, data, device, advertisement_data.rssi)
+    return SwitchBotAdvertisement(device.address, data, device, advertisement_data.rssi, bool(_service_data))
 
 
 @lru_cache(maxsize=128)

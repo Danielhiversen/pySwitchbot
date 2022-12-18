@@ -559,7 +559,7 @@ class SwitchbotBaseDevice:
     def _set_advertisement_data(self, advertisement: SwitchBotAdvertisement) -> None:
         """Set advertisement data."""
         new_data = advertisement.data.get("data") or {}
-        if new_data and ACTIVE_SCAN_ONLY_KEYS.intersection(new_data):
+        if advertisement.active:
             # If we are getting active data, we can assume we are
             # getting active scans and we do not need to poll
             self._last_full_update = time.time()
