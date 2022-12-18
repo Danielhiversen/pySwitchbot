@@ -80,6 +80,9 @@ def _sb_uuid(comms_type: str = "service") -> UUID | str:
 
 READ_CHAR_UUID = _sb_uuid(comms_type="rx")
 WRITE_CHAR_UUID = _sb_uuid(comms_type="tx")
+
+ACTIVE_SCAN_ONLY_KEYS = {"battery"}
+
 WrapFuncType = TypeVar("WrapFuncType", bound=Callable[..., Any])
 
 
@@ -557,9 +560,9 @@ class SwitchbotBaseDevice:
     def _set_advertisement_data(self, advertisement: SwitchBotAdvertisement) -> None:
         """Set advertisement data."""
         new_data = advertisement.data.get("data") or {}
-        if new_data.get("battery"):
-            # If we are getting battery data, we can assume we are
-            # getting active scans and we do not need to poll for battery
+        if new_data and ACTIVE_SCAN_ONLY_KEYS.intersection(new_data):
+            # If we are getting active data, we can assume we are
+            # getting active scans and we do not need to poll
             self._last_full_update = time.time()
         if not self._sb_adv_data:
             self._sb_adv_data = advertisement
@@ -576,9 +579,14 @@ class SwitchbotBaseDevice:
         """Return if device needs polling."""
         now = time.time()
         time_since_last_poll = now - (last_poll_time or 0)
-        time_since_last_battery_adv = now - (self._last_full_update or 0)
+        time_since_last_full_update = now - (self._last_full_update or 0)
+        _LOGGER.warning(
+            "%s: time_since_last_poll: %s, time_since_last_full_update: %s",
+            self.name,
+            time_since_last_poll,
+        )
         return (
-            min(time_since_last_poll, time_since_last_battery_adv)
+            min(time_since_last_poll, time_since_last_full_update)
             > BATTERY_POLL_INTERVAL
         )
 
