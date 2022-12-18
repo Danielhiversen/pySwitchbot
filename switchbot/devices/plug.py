@@ -35,6 +35,6 @@ class SwitchbotPlugMini(SwitchbotDeviceOverrideStateDuringConnection):
         """Return switch state from cache."""
         return self._get_adv_value("isOn")
 
-    def poll_needed(self, last_poll_time: float) -> bool:
+    def poll_needed(self, last_poll_time: float | None) -> bool:
         """Return if device needs polling."""
         return False

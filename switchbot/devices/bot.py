@@ -7,6 +7,7 @@ from typing import Any
 from .device import (
     DEVICE_SET_EXTENDED_KEY,
     DEVICE_SET_MODE_KEY,
+    update_after_operation,
     SwitchbotDeviceOverrideStateDuringConnection,
 )
 
@@ -30,6 +31,7 @@ class Switchbot(SwitchbotDeviceOverrideStateDuringConnection):
         super().__init__(*args, **kwargs)
         self._inverse: bool = kwargs.pop("inverse_mode", False)
 
+    @update_after_operation
     async def turn_on(self) -> bool:
         """Turn device on."""
         result = await self._send_command(ON_KEY)
@@ -44,6 +46,7 @@ class Switchbot(SwitchbotDeviceOverrideStateDuringConnection):
         self._fire_callbacks()
         return ret
 
+    @update_after_operation
     async def turn_off(self) -> bool:
         """Turn device off."""
         result = await self._send_command(OFF_KEY)
@@ -58,21 +61,25 @@ class Switchbot(SwitchbotDeviceOverrideStateDuringConnection):
         self._fire_callbacks()
         return ret
 
+    @update_after_operation
     async def hand_up(self) -> bool:
         """Raise device arm."""
         result = await self._send_command(UP_KEY)
         return self._check_command_result(result, 0, {1, 5})
 
+    @update_after_operation
     async def hand_down(self) -> bool:
         """Lower device arm."""
         result = await self._send_command(DOWN_KEY)
         return self._check_command_result(result, 0, {1, 5})
 
+    @update_after_operation
     async def press(self) -> bool:
         """Press command to device."""
         result = await self._send_command(PRESS_KEY)
         return self._check_command_result(result, 0, {1, 5})
 
+    @update_after_operation
     async def set_switch_mode(
         self, switch_mode: bool = False, strength: int = 100, inverse: bool = False
     ) -> bool:
@@ -82,6 +89,7 @@ class Switchbot(SwitchbotDeviceOverrideStateDuringConnection):
         result = await self._send_command(DEVICE_SET_MODE_KEY + strength_key + mode_key)
         return self._check_command_result(result, 0, {1})
 
+    @update_after_operation
     async def set_long_press(self, duration: int = 0) -> bool:
         """Set bot long press duration."""
         duration_key = f"{duration:0{2}x}"  # to hex with padding to double digit

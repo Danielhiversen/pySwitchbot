@@ -4,7 +4,8 @@ from __future__ import annotations
 import logging
 from typing import Any
 
-from .device import REQ_HEADER, SwitchbotDevice
+from .device import REQ_HEADER, SwitchbotDevice, update_after_operation
+
 
 # Curtain keys
 CURTAIN_COMMAND = "4501"
@@ -60,21 +61,24 @@ class SwitchbotCurtain(SwitchbotDevice):
         for key in keys:
             result = await self._send_command(key)
             final_result |= self._check_command_result(result, 0, {1})
-        await self.update()
         return final_result
 
+    @update_after_operation
     async def open(self) -> bool:
         """Send open command."""
         return await self._send_multiple_commands(OPEN_KEYS)
 
+    @update_after_operation
     async def close(self) -> bool:
         """Send close command."""
         return await self._send_multiple_commands(CLOSE_KEYS)
 
+    @update_after_operation
     async def stop(self) -> bool:
         """Send stop command to device."""
         return await self._send_multiple_commands(STOP_KEYS)
 
+    @update_after_operation
     async def set_position(self, position: int) -> bool:
         """Send position command (0-100) to device."""
         position = (100 - position) if self._reverse else position
@@ -82,11 +86,6 @@ class SwitchbotCurtain(SwitchbotDevice):
         return await self._send_multiple_commands(
             [key + hex_position for key in POSITION_KEYS]
         )
-
-    async def update(self, interface: int | None = None) -> None:
-        """Update position, battery percent and light level of device."""
-        if info := await self.get_basic_info():
-            self._update_parsed_data(info)
 
     def get_position(self) -> Any:
         """Return cached position (0-100) of Curtain."""

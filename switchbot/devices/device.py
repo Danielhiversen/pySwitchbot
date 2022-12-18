@@ -6,6 +6,7 @@ import binascii
 import logging
 import time
 from dataclasses import replace
+from typing import cast, TypeVar
 from enum import Enum
 from typing import Any, Callable
 from uuid import UUID
@@ -79,6 +80,21 @@ def _sb_uuid(comms_type: str = "service") -> UUID | str:
 
 READ_CHAR_UUID = _sb_uuid(comms_type="rx")
 WRITE_CHAR_UUID = _sb_uuid(comms_type="tx")
+WrapFuncType = TypeVar("WrapFuncType", bound=Callable[..., Any])
+
+
+def update_after_operation(func: WrapFuncType) -> WrapFuncType:
+    """Define a wrapper to update after an operation."""
+
+    async def _async_update_after_operation_wrap(
+        self: SwitchbotBaseDevice, *args: Any, **kwargs: Any
+    ) -> None:
+        ret = await func(self, *args, **kwargs)
+        await self.update()
+        self._fire_callbacks()
+        return ret
+
+    return cast(WrapFuncType, _async_update_after_operation_wrap)
 
 
 def _merge_data(old_data: dict[str, Any], new_data: dict[str, Any]) -> dict[str, Any]:
