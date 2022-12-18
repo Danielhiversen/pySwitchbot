@@ -38,6 +38,8 @@ class SwitchbotSupportedType(TypedDict):
     modelName: SwitchbotModel
     modelFriendlyName: str
     func: Callable[[bytes, bytes | None], dict[str, bool | int]]
+    manufacturer_id: int | None
+    manufacturer_data_length: int | None
 
 
 SUPPORTED_TYPES: dict[str, SwitchbotSupportedType] = {
@@ -73,12 +75,7 @@ SUPPORTED_TYPES: dict[str, SwitchbotSupportedType] = {
         "modelName": SwitchbotModel.CURTAIN,
         "modelFriendlyName": "Curtain",
         "func": process_wocurtain,
-        "service_uuids": {
-            "00001800-0000-1000-8000-00805f9b34fb",
-            "00001801-0000-1000-8000-00805f9b34fb",
-            "cba20d00-224d-11e6-9fb8-0002a5d5c51b",
-        },
-        "manufacturer_id": 89,
+        "manufacturer_id": 2409,
     },
     "i": {
         "modelName": SwitchbotModel.METER,
@@ -166,7 +163,6 @@ def parse_advertisement_data(
 
     try:
         data = _parse_data(
-            "".join(sorted(advertisement_data.service_uuids)),
             _service_data,
             _mfr_data,
             _mfr_id,
@@ -186,7 +182,6 @@ def parse_advertisement_data(
 
 @lru_cache(maxsize=128)
 def _parse_data(
-    _service_uuids_str: str,
     _service_data: bytes | None,
     _mfr_data: bytes | None,
     _mfr_id: int | None = None,
@@ -199,13 +194,8 @@ def _parse_data(
         _model = _SWITCHBOT_MODEL_TO_CHAR[_switchbot_model]
 
     if not _model and _mfr_id and _mfr_id in MODELS_BY_MANUFACTURER_DATA:
-        _service_uuids = set(_service_uuids_str.split(","))
         for model_chr, model_data in MODELS_BY_MANUFACTURER_DATA[_mfr_id]:
             if model_data.get("manufacturer_data_length") == len(_mfr_data):
-                _model = model_chr
-                break
-            service_uuids = model_data.get("service_uuids", set())
-            if service_uuids and service_uuids.intersection(_service_uuids):
                 _model = model_chr
                 break
 

@@ -25,7 +25,7 @@ def process_wopresence(
         sense_distance = (data[5] & 0b00001100) >> 2
         light_intensity = data[5] & 0b00000011
         is_light = bool(data[5] & 0b00000010)
-    if mfr_data:
+    if mfr_data and len(mfr_data) >= 8:
         motion_detected = bool(mfr_data[7] & 0b01000000)
         is_light = bool(mfr_data[7] & 0b00100000)
 
