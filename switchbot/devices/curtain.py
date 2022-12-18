@@ -84,7 +84,8 @@ class SwitchbotCurtain(SwitchbotDevice):
 
     async def update(self, interface: int | None = None) -> None:
         """Update position, battery percent and light level of device."""
-        await self.get_device_data(retry=self._retry_count, interface=interface)
+        if info := await self.get_basic_info():
+            self._update_parsed_data(info)
 
     def get_position(self) -> Any:
         """Return cached position (0-100) of Curtain."""

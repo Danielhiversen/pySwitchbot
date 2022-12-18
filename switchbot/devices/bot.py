@@ -32,7 +32,8 @@ class Switchbot(SwitchbotDeviceOverrideStateDuringConnection):
 
     async def update(self, interface: int | None = None) -> None:
         """Update mode, battery percent and state of device."""
-        await self.get_device_data(retry=self._retry_count, interface=interface)
+        if info := await self.get_basic_info():
+            self._update_parsed_data(info)
 
     async def turn_on(self) -> bool:
         """Turn device on."""

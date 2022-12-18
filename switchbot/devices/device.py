@@ -8,6 +8,7 @@ from enum import Enum
 from typing import Any, Callable
 from uuid import UUID
 
+from dataclasses import replace
 import async_timeout
 from bleak import BleakError
 from bleak.backends.device import BLEDevice
@@ -392,6 +393,7 @@ class SwitchbotBaseDevice:
         if self._override_adv_data is None:
             self._override_adv_data = {}
         self._override_adv_data.update(state)
+        self._update_parsed_data(state)
 
     def _get_adv_value(self, key: str) -> Any:
         """Return value from advertisement data."""
@@ -480,14 +482,23 @@ class SwitchbotBaseDevice:
             )
         return result[index] in values
 
+    def _update_parsed_data(self, new_data: dict[str, Any]) -> None:
+        """Update data."""
+        if not self._sb_adv_data:
+            _LOGGER.exception("No advertisement data to update")
+            return
+        self._set_parsed_data(self._sb_adv_data, self._sb_adv_data.data.get("data") | new_data)
+
+    def _set_parsed_data(self, advertisement: SwitchBotAdvertisement, data: dict[str, Any]) -> None:
+        """Set data."""
+        self._sb_adv_data = replace(advertisement, data=self._sb_adv_data.data | {"data": data})
+
     def _set_advertisement_data(self, advertisement: SwitchBotAdvertisement) -> None:
         """Set advertisement data."""
-        if (
-            advertisement.data.get("data")
-            or not self._sb_adv_data
-            or not self._sb_adv_data.data.get("data")
-        ):
+        if not self._sb_adv_data:
             self._sb_adv_data = advertisement
+        elif new_data := advertisement.data.get("data"):
+            self._update_parsed_data(new_data)
         self._override_adv_data = None
 
     def switch_mode(self) -> bool | None:
