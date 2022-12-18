@@ -55,7 +55,11 @@ class ColorMode(Enum):
     EFFECT = 3
 
 
-BATTERY_POLL_INTERVAL = 60 * 60 * 24
+# If the scanner is in passive mode, we
+# need to poll the device to get the
+# battery and a few rarely updating
+# values.
+PASSIVE_POLL_INTERVAL = 60 * 60 * 24
 
 
 class CharacteristicMissingError(Exception):
@@ -80,7 +84,6 @@ def _sb_uuid(comms_type: str = "service") -> UUID | str:
 READ_CHAR_UUID = _sb_uuid(comms_type="rx")
 WRITE_CHAR_UUID = _sb_uuid(comms_type="tx")
 
-ACTIVE_SCAN_ONLY_KEYS = {"battery"}
 
 WrapFuncType = TypeVar("WrapFuncType", bound=Callable[..., Any])
 
@@ -574,21 +577,14 @@ class SwitchbotBaseDevice:
         # To get actual position call update() first.
         return self._get_adv_value("switchMode")
 
-    def poll_needed(self, last_poll_time: float | None) -> bool:
+    def poll_needed(self, seconds_since_last_poll: float | None) -> bool:
         """Return if device needs polling."""
-        now = time.monotonic()
-        time_since_last_poll = now - (last_poll_time or 0)
-        time_since_last_full_update = now - (self._last_full_update or 0)
-        _LOGGER.warning(
-            "%s: time_since_last_poll: %s, time_since_last_full_update: %s",
-            self.name,
-            time_since_last_poll,
-            time_since_last_full_update,
-        )
-        return (
-            min(time_since_last_poll, time_since_last_full_update)
-            > BATTERY_POLL_INTERVAL
-        )
+        if seconds_since_last_poll < PASSIVE_POLL_INTERVAL:
+            return False
+        time_since_last_full_update = time.monotonic() - (self._last_full_update or 0)
+        if time_since_last_full_update < PASSIVE_POLL_INTERVAL:
+            return False
+        return True
 
 
 class SwitchbotDevice(SwitchbotBaseDevice):
