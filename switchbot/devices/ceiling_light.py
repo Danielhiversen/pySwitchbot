@@ -71,7 +71,3 @@ class SwitchbotCeilingLight(SwitchbotBaseLight):
     async def set_rgb(self, brightness: int, r: int, g: int, b: int) -> bool:
         """Set rgb."""
         # Not supported on this device
-
-    def poll_needed(self, last_poll_time: float) -> bool:
-        """Return if device needs polling."""
-        return False
