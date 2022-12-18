@@ -197,6 +197,13 @@ class SwitchbotBaseDevice:
         return f"{self._device.name} ({self._device.address})"
 
     @property
+    def data(self) -> dict[str, Any]:
+        """Return device data."""
+        if self._sb_adv_data:
+            return self._sb_adv_data.data
+        return {}
+        
+    @property
     def rssi(self) -> int:
         """Return RSSI of device."""
         if self._sb_adv_data:
