@@ -25,6 +25,7 @@ from bleak_retry_connector import (
 from ..const import DEFAULT_RETRY_COUNT, DEFAULT_SCAN_TIMEOUT
 from ..discovery import GetSwitchbotDevices
 from ..models import SwitchBotAdvertisement
+import time
 
 _LOGGER = logging.getLogger(__name__)
 
@@ -52,6 +53,9 @@ class ColorMode(Enum):
     COLOR_TEMP = 1
     RGB = 2
     EFFECT = 3
+
+
+BATTERY_POLL_INTERVAL = 60 * 60 * 24
 
 
 class CharacteristicMissingError(Exception):
@@ -110,6 +114,7 @@ class SwitchbotBaseDevice:
         self.loop = asyncio.get_event_loop()
         self._callbacks: list[Callable[[], None]] = []
         self._notify_future: asyncio.Future[bytearray] | None = None
+        self._last_adv_with_battery: float = 0.0
 
     def advertisement_changed(self, advertisement: SwitchBotAdvertisement) -> bool:
         """Check if the advertisement has changed."""
@@ -487,17 +492,28 @@ class SwitchbotBaseDevice:
         if not self._sb_adv_data:
             _LOGGER.exception("No advertisement data to update")
             return
-        self._set_parsed_data(self._sb_adv_data, self._sb_adv_data.data.get("data") | new_data)
+        self._set_parsed_data(
+            self._sb_adv_data, self._sb_adv_data.data.get("data") | new_data
+        )
 
-    def _set_parsed_data(self, advertisement: SwitchBotAdvertisement, data: dict[str, Any]) -> None:
+    def _set_parsed_data(
+        self, advertisement: SwitchBotAdvertisement, data: dict[str, Any]
+    ) -> None:
         """Set data."""
-        self._sb_adv_data = replace(advertisement, data=self._sb_adv_data.data | {"data": data})
+        self._sb_adv_data = replace(
+            advertisement, data=self._sb_adv_data.data | {"data": data}
+        )
 
     def _set_advertisement_data(self, advertisement: SwitchBotAdvertisement) -> None:
         """Set advertisement data."""
+        new_data = advertisement.data.get("data") or {}
+        if new_data.get("battery"):
+            # If we are getting battery data, we can assume we are
+            # getting active scans and we do not need to poll for battery
+            self._last_adv_with_battery = time.time()
         if not self._sb_adv_data:
             self._sb_adv_data = advertisement
-        elif new_data := advertisement.data.get("data"):
+        elif new_data:
             self._update_parsed_data(new_data)
         self._override_adv_data = None
 
@@ -505,6 +521,15 @@ class SwitchbotBaseDevice:
         """Return true or false from cache."""
         # To get actual position call update() first.
         return self._get_adv_value("switchMode")
+
+    def poll_needed(self, last_poll_time: float) -> bool:
+        """Return if device needs polling."""
+        now = time.time()
+        if now - last_poll_time < BATTERY_POLL_INTERVAL:
+            return False
+        if now - self._last_adv_with_battery < BATTERY_POLL_INTERVAL:
+            return False
+        return True
 
 
 class SwitchbotDevice(SwitchbotBaseDevice):
