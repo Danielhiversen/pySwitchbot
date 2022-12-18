@@ -110,6 +110,7 @@ class SwitchbotCurtain(SwitchbotDevice):
             "light": bool(_data[4] & 0b00100000),
             "fault": bool(_data[4] & 0b00001000),
             "solarPanel": bool(_data[5] & 0b00001000),
+            "calibration": bool(_data[5] & 0b00000100),
             "calibrated": bool(_data[5] & 0b00000100),
             "inMotion": bool(_data[5] & 0b01000011),
             "position": (100 - _position) if self._reverse else _position,
