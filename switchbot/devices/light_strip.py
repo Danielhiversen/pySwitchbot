@@ -6,6 +6,7 @@ from typing import Any
 from .base_light import SwitchbotSequenceBaseLight
 from .device import REQ_HEADER, ColorMode
 
+import time
 STRIP_COMMMAND_HEADER = "4901"
 STRIP_REQUEST = f"{REQ_HEADER}4A01"
 
@@ -30,6 +31,7 @@ class SwitchbotLightStrip(SwitchbotSequenceBaseLight):
     async def update(self) -> None:
         """Update state of device."""
         result = await self._send_command(STRIP_REQUEST)
+        self._last_full_update = time.time()
         self._update_state(result)
 
     async def turn_on(self) -> bool:

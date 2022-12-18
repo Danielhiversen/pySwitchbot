@@ -27,9 +27,6 @@ class SwitchbotCeilingLight(SwitchbotBaseLight):
         """Return the supported color modes."""
         return {ColorMode.COLOR_TEMP}
 
-    async def update(self) -> None:
-        """Update state of device."""
-
     async def turn_on(self) -> bool:
         """Turn device on."""
         result = await self._send_command(CEILING_LIGHT_ON_KEY)

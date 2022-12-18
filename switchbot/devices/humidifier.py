@@ -2,6 +2,7 @@
 from __future__ import annotations
 
 from .device import REQ_HEADER, SwitchbotDevice
+import time
 
 HUMIDIFIER_COMMAND_HEADER = "4381"
 HUMIDIFIER_REQUEST = f"{REQ_HEADER}4481"
@@ -28,7 +29,8 @@ class SwitchbotHumidifier(SwitchbotDevice):
 
     async def update(self, interface: int | None = None) -> None:
         """Update state of device."""
-        await self.get_device_data(retry=self._retry_count, interface=interface)
+        # No battery here
+        self._last_full_update = time.time()
 
     def _generate_command(
         self, on: bool | None = None, level: int | None = None

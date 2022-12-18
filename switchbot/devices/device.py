@@ -139,7 +139,7 @@ class SwitchbotBaseDevice:
         self.loop = asyncio.get_event_loop()
         self._callbacks: list[Callable[[], None]] = []
         self._notify_future: asyncio.Future[bytearray] | None = None
-        self._last_adv_with_battery: float = 0.0
+        self._last_full_update: float = 0.0
 
     def advertisement_changed(self, advertisement: SwitchBotAdvertisement) -> bool:
         """Check if the advertisement has changed."""
@@ -513,6 +513,7 @@ class SwitchbotBaseDevice:
     async def update(self, interface: int | None = None) -> None:
         """Update position, battery percent and light level of device."""
         if info := await self.get_basic_info():
+            self._last_full_update = time.time()
             self._update_parsed_data(info)
 
     async def get_basic_info(self) -> dict[str, Any] | None:
@@ -559,7 +560,7 @@ class SwitchbotBaseDevice:
         if new_data.get("battery"):
             # If we are getting battery data, we can assume we are
             # getting active scans and we do not need to poll for battery
-            self._last_adv_with_battery = time.time()
+            self._last_full_update = time.time()
         if not self._sb_adv_data:
             self._sb_adv_data = advertisement
         elif new_data:
@@ -575,7 +576,7 @@ class SwitchbotBaseDevice:
         """Return if device needs polling."""
         now = time.time()
         time_since_last_poll = now - (last_poll_time or 0)
-        time_since_last_battery_adv = now - (self._last_adv_with_battery or 0)
+        time_since_last_battery_adv = now - (self._last_full_update or 0)
         return (
             min(time_since_last_poll, time_since_last_battery_adv)
             > BATTERY_POLL_INTERVAL

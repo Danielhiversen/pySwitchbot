@@ -2,6 +2,7 @@
 from __future__ import annotations
 
 from .device import REQ_HEADER, SwitchbotDeviceOverrideStateDuringConnection
+import time
 
 # Plug Mini keys
 PLUG_ON_KEY = f"{REQ_HEADER}50010180"
@@ -13,7 +14,8 @@ class SwitchbotPlugMini(SwitchbotDeviceOverrideStateDuringConnection):
 
     async def update(self, interface: int | None = None) -> None:
         """Update state of device."""
-        await self.get_device_data(retry=self._retry_count, interface=interface)
+        # No battery here
+        self._last_full_update = time.time()
 
     async def turn_on(self) -> bool:
         """Turn device on."""

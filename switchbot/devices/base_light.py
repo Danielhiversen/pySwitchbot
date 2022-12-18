@@ -8,6 +8,7 @@ from .device import ColorMode, SwitchbotDevice
 
 _LOGGER = logging.getLogger(__name__)
 import asyncio
+import time
 
 from ..models import SwitchBotAdvertisement
 
@@ -84,6 +85,10 @@ class SwitchbotBaseLight(SwitchbotDevice):
     def poll_needed(self, last_poll_time: float | None) -> bool:
         """Return if poll is needed."""
         return False
+
+    async def update(self) -> None:
+        """Update device data."""
+        self._last_full_update = time.time()
 
 
 class SwitchbotSequenceBaseLight(SwitchbotBaseLight):
