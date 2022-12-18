@@ -25,7 +25,9 @@ def process_wosensorth(data: bytes | None, mfr_data: bytes | None) -> dict[str, 
     _temp_f = (_temp_f * 10) / 10
 
     _wosensorth_data = {
+        # Data should be flat, but we keep the original structure for now
         "temp": {"c": _temp_c, "f": _temp_f},
+        "temperature": _temp_c,
         "fahrenheit": bool(temp_data[2] & 0b10000000),
         "humidity": temp_data[2] & 0b01111111,
         "battery": battery,
