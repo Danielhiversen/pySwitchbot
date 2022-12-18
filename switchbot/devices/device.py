@@ -583,6 +583,7 @@ class SwitchbotBaseDevice:
             "%s: time_since_last_poll: %s, time_since_last_full_update: %s",
             self.name,
             time_since_last_poll,
+            time_since_last_full_update,
         )
         return (
             min(time_since_last_poll, time_since_last_full_update)
