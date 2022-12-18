@@ -81,6 +81,10 @@ class SwitchbotBaseLight(SwitchbotDevice):
     async def set_rgb(self, brightness: int, r: int, g: int, b: int) -> bool:
         """Set rgb."""
 
+    def poll_needed(self, last_poll_time: float | None) -> bool:
+        """Return if poll is needed."""
+        return False
+
 
 class SwitchbotSequenceBaseLight(SwitchbotBaseLight):
     """Representation of a Switchbot light."""

@@ -4,11 +4,12 @@ from __future__ import annotations
 import asyncio
 import binascii
 import logging
+import time
+from dataclasses import replace
 from enum import Enum
 from typing import Any, Callable
 from uuid import UUID
 
-from dataclasses import replace
 import async_timeout
 from bleak import BleakError
 from bleak.backends.device import BLEDevice
@@ -25,7 +26,6 @@ from bleak_retry_connector import (
 from ..const import DEFAULT_RETRY_COUNT, DEFAULT_SCAN_TIMEOUT
 from ..discovery import GetSwitchbotDevices
 from ..models import SwitchBotAdvertisement
-import time
 
 _LOGGER = logging.getLogger(__name__)
 
@@ -522,12 +522,13 @@ class SwitchbotBaseDevice:
         # To get actual position call update() first.
         return self._get_adv_value("switchMode")
 
-    def poll_needed(self, last_poll_time: float) -> bool:
+    def poll_needed(self, last_poll_time: float | None) -> bool:
         """Return if device needs polling."""
         now = time.time()
-        if now - last_poll_time < BATTERY_POLL_INTERVAL:
-            return False
-        if now - self._last_adv_with_battery < BATTERY_POLL_INTERVAL:
+        if (
+            now - (last_poll_time or 0) < BATTERY_POLL_INTERVAL
+            or now - self._last_adv_with_battery < BATTERY_POLL_INTERVAL
+        ):
             return False
         return True
 

@@ -96,3 +96,7 @@ class SwitchbotHumidifier(SwitchbotDevice):
         if self.is_auto():
             return None
         return MANUAL_BUTTON_PRESSES_TO_LEVEL.get(level, level)
+
+    def poll_needed(self, last_poll_time: float | None) -> bool:
+        """Return if device needs polling."""
+        return False

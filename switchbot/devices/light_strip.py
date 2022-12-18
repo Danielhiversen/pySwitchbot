@@ -82,7 +82,3 @@ class SwitchbotLightStrip(SwitchbotSequenceBaseLight):
         )
         _LOGGER.debug("%s: update state: %s = %s", self.name, result.hex(), self._state)
         self._fire_callbacks()
-
-    def poll_needed(self, last_poll_time: float) -> bool:
-        """Return if device needs polling."""
-        return False
