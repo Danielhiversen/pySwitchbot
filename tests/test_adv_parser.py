@@ -54,6 +54,7 @@ def test_parse_advertisement_data_curtain():
         },
         device=ble_device,
         rssi=-80,
+        active=True,
     )
 
 
@@ -85,7 +86,9 @@ def test_parse_advertisement_data_curtain_passive():
         },
         device=ble_device,
         rssi=-80,
+        active=False,
     )
+
 
 def test_parse_advertisement_data_curtain_position_zero():
     """Test parse_advertisement_data for curtain position zero."""
@@ -121,6 +124,7 @@ def test_parse_advertisement_data_curtain_position_zero():
         },
         device=ble_device,
         rssi=-52,
+        active=True,
     )
 
 
@@ -164,6 +168,7 @@ def test_parse_advertisement_data_curtain_firmware_six_position_100():
         },
         device=ble_device,
         rssi=-62,
+        active=True,
     )
 
 
@@ -207,6 +212,7 @@ def test_parse_advertisement_data_curtain_firmware_six_position_100_other_rssi()
         },
         device=ble_device,
         rssi=-67,
+        active=True,
     )
 
 
@@ -244,6 +250,7 @@ def test_parse_advertisement_data_curtain_fully_closed():
         },
         device=ble_device,
         rssi=1,
+        active=True,
     )
 
 
@@ -281,6 +288,7 @@ def test_parse_advertisement_data_curtain_fully_open():
         },
         device=ble_device,
         rssi=1,
+        active=True,
     )
 
 
@@ -315,6 +323,7 @@ def test_parse_advertisement_data_contact():
         },
         device=ble_device,
         rssi=-80,
+        active=True,
     )
 
 
@@ -351,6 +360,7 @@ def test_new_bot_firmware():
         },
         device=ble_device,
         rssi=-90,
+        active=True,
     )
 
 
@@ -394,6 +404,7 @@ def test_parse_advertisement_data_curtain_firmware_six_fully_closed():
         },
         device=ble_device,
         rssi=-2,
+        active=True,
     )
 
 
@@ -437,6 +448,7 @@ def test_parse_advertisement_data_curtain_firmware_six_fully_open():
         },
         device=ble_device,
         rssi=-2,
+        active=True,
     )
 
 
@@ -472,6 +484,7 @@ def test_contact_sensor_mfr():
         },
         device=ble_device,
         rssi=-70,
+        active=True,
     )
 
 
@@ -505,6 +518,7 @@ def test_contact_sensor_mfr_no_service_data():
         },
         device=ble_device,
         rssi=-70,
+        active=False,
     )
 
 
@@ -539,6 +553,7 @@ def test_contact_sensor_srv():
         },
         device=ble_device,
         rssi=-70,
+        active=True,
     )
 
 
@@ -574,6 +589,7 @@ def test_contact_sensor_open():
         },
         device=ble_device,
         rssi=-59,
+        active=True,
     )
 
 
@@ -609,6 +625,7 @@ def test_contact_sensor_closed():
         },
         device=ble_device,
         rssi=-50,
+        active=True,
     )
 
 
@@ -638,6 +655,7 @@ def test_switchbot_passive():
         },
         device=ble_device,
         rssi=-50,
+        active=False,
     )
 
 
@@ -672,6 +690,7 @@ def test_bulb_active():
         },
         device=ble_device,
         rssi=-50,
+        active=True,
     )
 
 
@@ -708,6 +727,7 @@ def test_lightstrip_passive():
         },
         device=ble_device,
         rssi=-50,
+        active=False,
     )
 
 
@@ -729,6 +749,7 @@ def test_wosensor_passive_and_active():
                 "fahrenheit": False,
                 "humidity": 53,
                 "temp": {"c": 24.6, "f": 76.28},
+                "temperature": 24.6,
             },
             "isEncrypted": False,
             "model": "T",
@@ -738,6 +759,7 @@ def test_wosensor_passive_and_active():
         },
         device=ble_device,
         rssi=-50,
+        active=True,
     )
 
 
@@ -759,6 +781,7 @@ def test_wosensor_active():
                 "fahrenheit": False,
                 "humidity": 53,
                 "temp": {"c": 24.6, "f": 76.28},
+                "temperature": 24.6,
             },
             "isEncrypted": False,
             "model": "T",
@@ -768,6 +791,7 @@ def test_wosensor_active():
         },
         device=ble_device,
         rssi=-50,
+        active=True,
     )
 
 
@@ -789,6 +813,7 @@ def test_wosensor_passive_only():
                 "fahrenheit": False,
                 "humidity": 53,
                 "temp": {"c": 24.6, "f": 76.28},
+                "temperature": 24.6,
             },
             "isEncrypted": False,
             "model": "T",
@@ -798,6 +823,7 @@ def test_wosensor_passive_only():
         },
         device=ble_device,
         rssi=-50,
+        active=False,
     )
 
 
@@ -834,6 +860,7 @@ def test_motion_sensor_clear():
         },
         device=ble_device,
         rssi=-87,
+        active=True,
     )
 
 
@@ -870,6 +897,7 @@ def test_motion_sensor_clear_passive():
         },
         device=ble_device,
         rssi=-87,
+        active=False,
     )
 
 
@@ -906,6 +934,7 @@ def test_motion_sensor_motion():
         },
         device=ble_device,
         rssi=-87,
+        active=True,
     )
 
 
@@ -942,6 +971,7 @@ def test_motion_sensor_motion_passive():
         },
         device=ble_device,
         rssi=-87,
+        active=False,
     )
 
 
@@ -978,6 +1008,7 @@ def test_motion_sensor_is_light_passive():
         },
         device=ble_device,
         rssi=-93,
+        active=True,
     )
 
 
@@ -1014,6 +1045,7 @@ def test_motion_sensor_is_light_active():
         },
         device=ble_device,
         rssi=-93,
+        active=True,
     )
 
 
@@ -1049,6 +1081,7 @@ def test_motion_with_light_detected():
         },
         device=ble_device,
         rssi=-84,
+        active=True,
     )
 
 
@@ -1083,4 +1116,5 @@ def test_motion_sensor_motion_passive():
         },
         device=ble_device,
         rssi=-87,
+        active=False,
     )
