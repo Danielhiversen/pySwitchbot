@@ -93,11 +93,14 @@ SUPPORTED_TYPES: dict[str, SwitchbotSupportedType] = {
         "modelName": SwitchbotModel.PLUG_MINI,
         "modelFriendlyName": "Plug Mini",
         "func": process_woplugmini,
+        "manufacturer_data_length": 12,
+        "manufacturer_id": 2409,
     },
     "j": {
         "modelName": SwitchbotModel.PLUG_MINI,
         "modelFriendlyName": "Plug Mini (JP)",
         "func": process_woplugmini,
+        "manufacturer_id": 2409,
     },
     "u": {
         "modelName": SwitchbotModel.COLOR_BULB,
@@ -109,11 +112,13 @@ SUPPORTED_TYPES: dict[str, SwitchbotSupportedType] = {
         "modelName": SwitchbotModel.CEILING_LIGHT,
         "modelFriendlyName": "Ceiling Light",
         "func": process_woceiling,
+        "manufacturer_id": 2409,
     },
     "e": {
         "modelName": SwitchbotModel.HUMIDIFIER,
         "modelFriendlyName": "Humidifier",
         "func": process_wohumidifier,
+        "manufacturer_id": 2409,
     },
     "o": {
         "modelName": SwitchbotModel.LOCK,
