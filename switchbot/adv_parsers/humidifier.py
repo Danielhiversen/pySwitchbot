@@ -18,9 +18,11 @@ def process_wohumidifier(
 ) -> dict[str, bool | int]:
     """Process WoHumi services data."""
     if data is None:
-        return {}
-    _LOGGER.debug("mfr_data: %s", mfr_data.hex())
-    _LOGGER.debug("data: %s", data.hex())
+        return {
+            "isOn": None,
+            "level": None,
+            "switchMode": True,
+        }
 
     return {
         "isOn": bool(data[1]),

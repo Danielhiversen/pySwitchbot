@@ -29,7 +29,7 @@ SERVICE_DATA_ORDER = (
     "0000fd3d-0000-1000-8000-00805f9b34fb",
     "00000d00-0000-1000-8000-00805f9b34fb",
 )
-MFR_DATA_ORDER = (2409, 89)
+MFR_DATA_ORDER = (2409, 741, 89)
 
 
 class SwitchbotSupportedType(TypedDict):
@@ -93,11 +93,14 @@ SUPPORTED_TYPES: dict[str, SwitchbotSupportedType] = {
         "modelName": SwitchbotModel.PLUG_MINI,
         "modelFriendlyName": "Plug Mini",
         "func": process_woplugmini,
+        "manufacturer_data_length": 12,
+        "manufacturer_id": 2409,
     },
     "j": {
         "modelName": SwitchbotModel.PLUG_MINI,
         "modelFriendlyName": "Plug Mini (JP)",
         "func": process_woplugmini,
+        "manufacturer_id": 2409,
     },
     "u": {
         "modelName": SwitchbotModel.COLOR_BULB,
@@ -109,11 +112,14 @@ SUPPORTED_TYPES: dict[str, SwitchbotSupportedType] = {
         "modelName": SwitchbotModel.CEILING_LIGHT,
         "modelFriendlyName": "Ceiling Light",
         "func": process_woceiling,
+        "manufacturer_id": 2409,
     },
     "e": {
         "modelName": SwitchbotModel.HUMIDIFIER,
         "modelFriendlyName": "Humidifier",
         "func": process_wohumidifier,
+        "manufacturer_id": 741,
+        "manufacturer_data_length": 6,
     },
     "o": {
         "modelName": SwitchbotModel.LOCK,
