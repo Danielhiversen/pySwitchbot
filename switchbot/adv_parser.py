@@ -29,7 +29,7 @@ SERVICE_DATA_ORDER = (
     "0000fd3d-0000-1000-8000-00805f9b34fb",
     "00000d00-0000-1000-8000-00805f9b34fb",
 )
-MFR_DATA_ORDER = (2409, 89)
+MFR_DATA_ORDER = (2409, 741, 89)
 
 
 class SwitchbotSupportedType(TypedDict):
