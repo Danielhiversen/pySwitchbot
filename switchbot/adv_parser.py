@@ -118,7 +118,8 @@ SUPPORTED_TYPES: dict[str, SwitchbotSupportedType] = {
         "modelName": SwitchbotModel.HUMIDIFIER,
         "modelFriendlyName": "Humidifier",
         "func": process_wohumidifier,
-        "manufacturer_id": 2409,
+        "manufacturer_id": 741,
+        "manufacturer_data_length": 6,
     },
     "o": {
         "modelName": SwitchbotModel.LOCK,
