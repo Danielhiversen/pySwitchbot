@@ -1,6 +1,7 @@
 """Library to handle connection with Switchbot Lock."""
 from __future__ import annotations
 
+import asyncio
 import logging
 from typing import Any
 
@@ -10,6 +11,7 @@ from bleak import BLEDevice
 from .device import SwitchbotDevice
 from ..const import LockStatus
 
+ACTION_UPDATE_DELAY = 2
 COMMAND_HEADER = "57"
 COMMAND_GET_CK_IV = f"{COMMAND_HEADER}0f2103"
 COMMAND_UNLOCK = f"{COMMAND_HEADER}0f4e01011080"
@@ -34,20 +36,55 @@ class SwitchbotLock(SwitchbotDevice):
         self._cipher = None
         self._key_id = key_id
         self._encryption_key = bytearray.fromhex(encryption_key)
+        self._update_timer: asyncio.TimerHandle | None = None
+        self._status_before_update: LockStatus | None = None
         super().__init__(device, None, interface, **kwargs)
 
     async def lock(self) -> bool:
         """Send lock command."""
-        result = await self._send_command(COMMAND_LOCK)
-        return self._check_command_result(result, 0, {1})
+        return await self._lock_unlock(COMMAND_LOCK, {LockStatus.LOCKED, LockStatus.LOCKING})
 
     async def unlock(self) -> bool:
         """Send unlock command."""
-        result = await self._send_command(COMMAND_UNLOCK)
-        return self._check_command_result(result, 0, {1})
+        return await self._lock_unlock(COMMAND_UNLOCK, {LockStatus.UNLOCKED, LockStatus.UNLOCKING})
 
-    async def update(self, interface: int | None = None) -> None:
-        await self.get_device_data(retry=self._retry_count, interface=interface)
+    async def _lock_unlock(self, command: str, ignore_statuses: set[LockStatus]) -> bool:
+        status = self.get_lock_status()
+        if status is None:
+            await self.update()
+            status = self.get_lock_status()
+        if status in ignore_statuses:
+            return True
+
+        result = await self._send_command(command)
+        if not self._check_command_result(result, 0, {1}):
+            return False
+        self._set_status_update_timer(status)
+        return True
+
+    def _set_status_update_timer(self, status: LockStatus):
+        if self._update_timer is not None:
+            self._update_timer.cancel()
+        self._status_before_update = status
+        self._update_timer = self.loop.call_later(ACTION_UPDATE_DELAY, self._update_status_from_timer)
+
+    def _update_status_from_timer(self):
+        if self._update_timer is not None:
+            self._update_timer.cancel()
+            self._update_timer = None
+        asyncio.create_task(self._update_status())
+
+    async def _update_status(self):
+        await self.update()
+        status = self.get_lock_status()
+        if status == self._status_before_update or status in {LockStatus.LOCKING, LockStatus.UNLOCKING}:
+            self._set_status_update_timer(status)
+        else:
+            self._status_before_update = None
+
+    async def get_basic_info(self) -> dict[str, Any] | None:
+        """Get device basic settings."""
+        return (await self.get_device_data()).data["data"]
 
     def is_calibrated(self) -> Any:
         """Return True if lock is calibrated."""
