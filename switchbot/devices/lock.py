@@ -23,13 +23,13 @@ class SwitchbotLock(SwitchbotDevice):
 
     def __init__(self, device: BLEDevice, key_id: str, encryption_key: str, interface: int = 0, **kwargs: Any) -> None:
         if len(key_id) == 0:
-            _LOGGER.error("key_id is missing")
+            raise ValueError("key_id is missing")
         elif len(key_id) != 2:
-            _LOGGER.error("invalid key_id")
+            raise ValueError("key_id is invalid")
         if len(encryption_key) == 0:
-            _LOGGER.error("encryption_key is missing")
+            raise ValueError("encryption_key is missing")
         elif len(encryption_key) != 32:
-            _LOGGER.error("invalid encryption_key")
+            raise ValueError("encryption_key is invalid")
         self._iv = None
         self._cipher = None
         self._key_id = key_id
