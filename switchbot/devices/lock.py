@@ -2,11 +2,9 @@
 from __future__ import annotations
 
 import logging
-import struct
 from typing import Any
 
-from Crypto.Cipher import AES
-from Crypto.Util import Counter
+from cryptography.hazmat.primitives.ciphers import Cipher, algorithms, modes
 from bleak import BLEDevice
 
 from .device import SwitchbotDevice
@@ -24,7 +22,16 @@ class SwitchbotLock(SwitchbotDevice):
     """Representation of a Switchbot Lock."""
 
     def __init__(self, device: BLEDevice, key_id: str, encryption_key: str, interface: int = 0, **kwargs: Any) -> None:
+        if len(key_id) == 0:
+            _LOGGER.error("key_id is missing")
+        elif len(key_id) != 2:
+            _LOGGER.error("invalid key_id")
+        if len(encryption_key) == 0:
+            _LOGGER.error("encryption_key is missing")
+        elif len(encryption_key) != 32:
+            _LOGGER.error("invalid encryption_key")
         self._iv = None
+        self._cipher = None
         self._key_id = key_id
         self._encryption_key = bytearray.fromhex(encryption_key)
         super().__init__(device, None, interface, **kwargs)
@@ -92,18 +99,22 @@ class SwitchbotLock(SwitchbotDevice):
 
     async def _execute_disconnect(self) -> None:
         self._iv = None
+        self._cipher = None
         await super()._execute_disconnect()
 
-    def _get_cipher(self) -> AES:
-        counter = Counter.new(64, self._iv[:8], initial_value=struct.unpack(">Q", self._iv[8:])[0])
-        return AES.new(self._encryption_key, AES.MODE_CTR, counter=counter)
+    def _get_cipher(self) -> Cipher:
+        if self._cipher is None:
+            self._cipher = Cipher(algorithms.AES128(self._encryption_key), modes.CTR(self._iv))
+        return self._cipher
 
     def _encrypt(self, data: str) -> str:
         if len(data) == 0:
             return ""
-        return self._get_cipher().encrypt(bytearray.fromhex(data)).hex()
+        encryptor = self._get_cipher().encryptor()
+        return (encryptor.update(bytearray.fromhex(data)) + encryptor.finalize()).hex()
 
     def _decrypt(self, data: bytearray) -> bytes:
         if len(data) == 0:
             return b''
-        return self._get_cipher().decrypt(data)
+        decryptor = self._get_cipher().decryptor()
+        return decryptor.update(data) + decryptor.finalize()
