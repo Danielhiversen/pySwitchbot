@@ -270,6 +270,7 @@ class SwitchbotBaseDevice:
                 ble_device_callback=lambda: self._device,
             )
             _LOGGER.debug("%s: Connected; RSSI: %s", self.name, self.rssi)
+            self._client = client
 
             try:
                 self._resolve_characteristics(client.services)
@@ -282,10 +283,10 @@ class SwitchbotBaseDevice:
                     exc_info=True,
                 )
                 await client.clear_cache()
-                await self._execute_forced_disconnect()
+                self._cancel_disconnect_timer()
+                await self._execute_disconnect_with_lock()
                 raise
 
-            self._client = client
             self._reset_disconnect_timer()
             await self._start_notify()
 
@@ -358,18 +359,28 @@ class SwitchbotBaseDevice:
 
     async def _execute_disconnect(self) -> None:
         """Execute disconnection."""
+        _LOGGER.debug("%s: Executing disconnect", self.name)
         async with self._connect_lock:
-            if self._disconnect_timer:  # If the timer was reset, don't disconnect
-                return
-            client = self._client
-            self._expected_disconnect = True
-            self._client = None
-            self._read_char = None
-            self._write_char = None
-            if client and client.is_connected:
-                _LOGGER.debug("%s: Disconnecting", self.name)
-                await client.disconnect()
-                _LOGGER.debug("%s: Disconnect completed", self.name)
+            await self._execute_disconnect_with_lock()
+
+    async def _execute_disconnect_with_lock(self) -> None:
+        """Execute disconnection while holding the lock."""
+        assert self._connect_lock.locked(), "Lock not held"
+        _LOGGER.debug("%s: Executing disconnect with lock", self.name)
+        if self._disconnect_timer:  # If the timer was reset, don't disconnect
+            _LOGGER.debug("%s: Skipping disconnect as timer reset", self.name)
+            return
+        client = self._client
+        self._expected_disconnect = True
+        self._client = None
+        self._read_char = None
+        self._write_char = None
+        if client and client.is_connected:
+            _LOGGER.debug("%s: Disconnecting", self.name)
+            await client.disconnect()
+            _LOGGER.debug("%s: Disconnect completed", self.name)
+        else:
+            _LOGGER.debug("%s: Already disconnected", self.name)
 
     async def _send_command_locked(self, key: str, command: bytes) -> bytes:
         """Send command to device and read response."""
