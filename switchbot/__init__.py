@@ -13,6 +13,7 @@ from .devices.curtain import SwitchbotCurtain
 from .devices.device import ColorMode, SwitchbotDevice
 from .devices.humidifier import SwitchbotHumidifier
 from .devices.light_strip import SwitchbotLightStrip
+from .devices.lock import SwitchbotLock
 from .devices.plug import SwitchbotPlugMini
 from .discovery import GetSwitchbotDevices
 from .models import SwitchBotAdvertisement
@@ -35,4 +36,5 @@ __all__ = [
     "SwitchbotPlugMini",
     "SwitchbotSupportedType",
     "SwitchbotModel",
+    "SwitchbotLock",
 ]
