@@ -6,16 +6,22 @@ import logging
 from typing import Any
 
 from cryptography.hazmat.primitives.ciphers import Cipher, algorithms, modes
-from bleak import BLEDevice
 
+from ..models import SwitchBotAdvertisement
 from .device import SwitchbotDevice
 from ..const import LockStatus
 
-ACTION_UPDATE_DELAY = 2
 COMMAND_HEADER = "57"
 COMMAND_GET_CK_IV = f"{COMMAND_HEADER}0f2103"
+COMMAND_LOCK_INFO = f"{COMMAND_HEADER}0f4f8101"
 COMMAND_UNLOCK = f"{COMMAND_HEADER}0f4e01011080"
 COMMAND_LOCK = f"{COMMAND_HEADER}0f4e01011000"
+COMMAND_ENABLE_NOTIFICATIONS = f"{COMMAND_HEADER}0e01001e00008101"
+COMMAND_DISABLE_NOTIFICATIONS = f"{COMMAND_HEADER}0e00"
+
+MOVING_STATUSES = {LockStatus.LOCKING, LockStatus.UNLOCKING}
+BLOCKED_STATUSES = {LockStatus.LOCKING_STOP, LockStatus.UNLOCKING_STOP}
+REST_STATUSES = {LockStatus.LOCKED, LockStatus.UNLOCKED, LockStatus.NOT_FULLY_LOCKED}
 
 _LOGGER = logging.getLogger(__name__)
 
@@ -23,7 +29,8 @@ _LOGGER = logging.getLogger(__name__)
 class SwitchbotLock(SwitchbotDevice):
     """Representation of a Switchbot Lock."""
 
-    def __init__(self, device: BLEDevice, key_id: str, encryption_key: str, interface: int = 0, **kwargs: Any) -> None:
+    def __init__(self, advertisement: SwitchBotAdvertisement, key_id: str, encryption_key: str, interface: int = 0,
+                 **kwargs: Any) -> None:
         if len(key_id) == 0:
             raise ValueError("key_id is missing")
         elif len(key_id) != 2:
@@ -36,9 +43,9 @@ class SwitchbotLock(SwitchbotDevice):
         self._cipher = None
         self._key_id = key_id
         self._encryption_key = bytearray.fromhex(encryption_key)
-        self._update_timer: asyncio.TimerHandle | None = None
-        self._status_before_update: LockStatus | None = None
-        super().__init__(device, None, interface, **kwargs)
+        self._notifications_enabled: bool = False
+        super().__init__(advertisement.device, None, interface, **kwargs)
+        self.update_from_advertisement(advertisement)
 
     async def lock(self) -> bool:
         """Send lock command."""
@@ -56,35 +63,26 @@ class SwitchbotLock(SwitchbotDevice):
         if status in ignore_statuses:
             return True
 
+        await self._enable_notifications()
         result = await self._send_command(command)
         if not self._check_command_result(result, 0, {1}):
             return False
-        self._set_status_update_timer(status)
         return True
 
-    def _set_status_update_timer(self, status: LockStatus):
-        if self._update_timer is not None:
-            self._update_timer.cancel()
-        self._status_before_update = status
-        self._update_timer = self.loop.call_later(ACTION_UPDATE_DELAY, self._update_status_from_timer)
-
-    def _update_status_from_timer(self):
-        if self._update_timer is not None:
-            self._update_timer.cancel()
-            self._update_timer = None
-        asyncio.create_task(self._update_status())
-
-    async def _update_status(self):
-        await self.update()
-        status = self.get_lock_status()
-        if status == self._status_before_update or status in {LockStatus.LOCKING, LockStatus.UNLOCKING}:
-            self._set_status_update_timer(status)
-        else:
-            self._status_before_update = None
-
     async def get_basic_info(self) -> dict[str, Any] | None:
-        """Get device basic settings."""
-        return (await self.get_device_data()).data["data"]
+        """Get device basic status."""
+        lock_raw_data = await self._get_lock_info()
+        if not lock_raw_data:
+            return None
+
+        basic_data = await self._get_basic_info()
+        if not basic_data:
+            return None
+
+        lock_data = self._parse_lock_data(lock_raw_data[1:])
+        lock_data.update(battery=basic_data[1], firmware=basic_data[2] / 10.0)
+
+        return lock_data
 
     def is_calibrated(self) -> Any:
         """Return True if lock is calibrated."""
@@ -109,6 +107,60 @@ class SwitchbotLock(SwitchbotDevice):
     def is_auto_lock_paused(self) -> bool:
         """Return True if auto lock is paused."""
         return self._get_adv_value("auto_lock_paused")
+
+    async def _get_lock_info(self) -> bytes | None:
+        """Return lock info of device."""
+        _data = await self._send_command(
+            key=COMMAND_LOCK_INFO, retry=self._retry_count
+        )
+
+        if not self._check_command_result(_data, 0, {1}):
+            _LOGGER.error("Unsuccessful, please try again")
+            return None
+
+        return _data
+
+    async def _enable_notifications(self) -> bool:
+        if self._notifications_enabled:
+            return True
+        result = await self._send_command(COMMAND_ENABLE_NOTIFICATIONS)
+        if self._check_command_result(result, 0, {1}):
+            self._notifications_enabled = True
+        return self._notifications_enabled
+
+    async def _disable_notifications(self) -> bool:
+        if not self._notifications_enabled:
+            return True
+        result = await self._send_command(COMMAND_DISABLE_NOTIFICATIONS)
+        if self._check_command_result(result, 0, {1}):
+            self._notifications_enabled = False
+        return not self._notifications_enabled
+
+    def _notification_handler(self, _sender: int, data: bytearray) -> None:
+        if self._notifications_enabled and self._check_command_result(data, 0, {0xf}):
+            self._update_lock_status(data)
+        else:
+            super()._notification_handler(_sender, data)
+
+    def _update_lock_status(self, data: bytearray) -> None:
+        data = self._decrypt(data[4:])
+        lock_data = self._parse_lock_data(data)
+        current_status = self.get_lock_status()
+        if (lock_data["status"] != current_status or current_status not in REST_STATUSES) and \
+                (lock_data["status"] in REST_STATUSES or lock_data["status"] in BLOCKED_STATUSES):
+            asyncio.create_task(self._disable_notifications())
+
+        self._update_parsed_data(lock_data)
+
+    @staticmethod
+    def _parse_lock_data(data: bytes) -> dict[str, Any]:
+        return {
+            "calibration": bool(data[0] & 0b10000000),
+            "status": LockStatus((data[0] & 0b01110000) >> 4),
+            "door_open": bool(data[0] & 0b00000100),
+            "unclosed_alarm": bool(data[1] & 0b00100000),
+            "unlocked_alarm": bool(data[1] & 0b00010000),
+        }
 
     async def _send_command(self, key: str, retry: int | None = None, encrypt: bool = True) -> bytes | None:
         if not encrypt:
@@ -135,9 +187,10 @@ class SwitchbotLock(SwitchbotDevice):
         return ok
 
     async def _execute_disconnect(self) -> None:
+        await super()._execute_disconnect()
         self._iv = None
         self._cipher = None
-        await super()._execute_disconnect()
+        self._notifications_enabled = False
 
     def _get_cipher(self) -> Cipher:
         if self._cipher is None:

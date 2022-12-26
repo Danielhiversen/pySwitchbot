@@ -19,7 +19,7 @@ def process_wolock(data: bytes | None, mfr_data: bytes | None) -> dict[str, bool
     return {
         "battery": data[2] & 0b01111111 if data else None,
         "calibration": bool(mfr_data[7] & 0b10000000),
-        "status": LockStatus(mfr_data[7] & 0b01110000),
+        "status": LockStatus((mfr_data[7] & 0b01110000) >> 4),
         "update_from_secondary_lock": bool(mfr_data[7] & 0b00001000),
         "door_open": bool(mfr_data[7] & 0b00000100),
         "double_lock_mode": bool(mfr_data[8] & 0b10000000),
