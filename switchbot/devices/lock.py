@@ -164,6 +164,7 @@ class SwitchbotLock(SwitchbotDevice):
             asyncio.create_task(self._disable_notifications())
 
         self._update_parsed_data(lock_data)
+        self._fire_callbacks()
 
     @staticmethod
     def _parse_lock_data(data: bytes) -> dict[str, Any]:
