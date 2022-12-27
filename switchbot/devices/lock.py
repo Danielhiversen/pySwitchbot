@@ -5,10 +5,10 @@ import asyncio
 import logging
 from typing import Any
 
+from bleak.backends.device import BLEDevice
 from cryptography.hazmat.primitives.ciphers import Cipher, algorithms, modes
 
 from ..const import LockStatus
-from ..models import SwitchBotAdvertisement
 from .device import SwitchbotDevice
 
 COMMAND_HEADER = "57"
@@ -31,7 +31,7 @@ class SwitchbotLock(SwitchbotDevice):
 
     def __init__(
         self,
-        advertisement: SwitchBotAdvertisement,
+        device: BLEDevice,
         key_id: str,
         encryption_key: str,
         interface: int = 0,
@@ -50,8 +50,7 @@ class SwitchbotLock(SwitchbotDevice):
         self._key_id = key_id
         self._encryption_key = bytearray.fromhex(encryption_key)
         self._notifications_enabled: bool = False
-        super().__init__(advertisement.device, None, interface, **kwargs)
-        self.update_from_advertisement(advertisement)
+        super().__init__(device, None, interface, **kwargs)
 
     async def lock(self) -> bool:
         """Send lock command."""
