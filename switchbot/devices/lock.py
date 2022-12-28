@@ -9,7 +9,7 @@ from bleak.backends.device import BLEDevice
 from cryptography.hazmat.primitives.ciphers import Cipher, algorithms, modes
 
 from ..const import LockStatus
-from .device import SwitchbotDevice
+from .device import SwitchbotDevice, SwitchbotOperationError
 
 COMMAND_HEADER = "57"
 COMMAND_GET_CK_IV = f"{COMMAND_HEADER}0f2103"
@@ -51,6 +51,23 @@ class SwitchbotLock(SwitchbotDevice):
         self._encryption_key = bytearray.fromhex(encryption_key)
         self._notifications_enabled: bool = False
         super().__init__(device, None, interface, **kwargs)
+
+    @staticmethod
+    async def verify_encryption_key(
+        device: BLEDevice, key_id: str, encryption_key: str
+    ) -> bool:
+        try:
+            lock = SwitchbotLock(
+                device=device, key_id=key_id, encryption_key=encryption_key
+            )
+        except ValueError:
+            return False
+        try:
+            lock_info = await lock.get_basic_info()
+        except SwitchbotOperationError:
+            return False
+
+        return lock_info is not None
 
     async def lock(self) -> bool:
         """Send lock command."""
