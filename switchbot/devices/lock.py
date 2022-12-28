@@ -54,15 +54,11 @@ class SwitchbotLock(SwitchbotDevice):
 
     @staticmethod
     async def verify_encryption_key(
-        device: BLEDevice,
-        key_id: str,
-        encryption_key: str
+        device: BLEDevice, key_id: str, encryption_key: str
     ) -> bool:
         try:
             lock = SwitchbotLock(
-                device=device,
-                key_id=key_id,
-                encryption_key=encryption_key
+                device=device, key_id=key_id, encryption_key=encryption_key
             )
         except ValueError:
             return False
