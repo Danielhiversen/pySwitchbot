@@ -4,9 +4,7 @@
 # /res/raw/amplifyconfiguration.json
 # /res/raw/awsconfiguration.json
 
-SWITCHBOT_APP_API_BASE_URL = (
-    "https://l9ren7efdj.execute-api.us-east-1.amazonaws.com"
-)
+SWITCHBOT_APP_API_BASE_URL = "https://l9ren7efdj.execute-api.us-east-1.amazonaws.com"
 SWITCHBOT_APP_COGNITO_POOL = {
     "PoolId": "us-east-1_x1fixo5LC",
     "AppClientId": "66r90hdllaj4nnlne4qna0muls",

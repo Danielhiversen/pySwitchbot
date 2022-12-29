@@ -14,7 +14,7 @@ import requests
 from bleak.backends.device import BLEDevice
 from cryptography.hazmat.primitives.ciphers import Cipher, algorithms, modes
 
-from ..api_config import SWITCHBOT_APP_COGNITO_POOL, SWITCHBOT_APP_API_BASE_URL
+from ..api_config import SWITCHBOT_APP_API_BASE_URL, SWITCHBOT_APP_COGNITO_POOL
 from ..const import LockStatus
 from .device import SwitchbotDevice, SwitchbotOperationError
 
@@ -108,9 +108,9 @@ class SwitchbotLock(SwitchbotDevice):
             raise RuntimeError("Unexpected error during authentication") from err
 
         if (
-                auth_response is None
-                or "AuthenticationResult" not in auth_response
-                or "AccessToken" not in auth_response["AuthenticationResult"]
+            auth_response is None
+            or "AuthenticationResult" not in auth_response
+            or "AccessToken" not in auth_response["AuthenticationResult"]
         ):
             raise RuntimeError("Unexpected authentication response")
 
