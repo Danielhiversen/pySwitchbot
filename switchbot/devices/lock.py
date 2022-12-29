@@ -2,12 +2,19 @@
 from __future__ import annotations
 
 import asyncio
+import base64
+import hashlib
+import hmac
+import json
 import logging
 from typing import Any
 
+import boto3
+import requests
 from bleak.backends.device import BLEDevice
 from cryptography.hazmat.primitives.ciphers import Cipher, algorithms, modes
 
+from ..api_config import SWITCHBOT_APP_API_BASE_URL, SWITCHBOT_APP_COGNITO_POOL
 from ..const import LockStatus
 from .device import SwitchbotDevice, SwitchbotOperationError
 
@@ -68,6 +75,65 @@ class SwitchbotLock(SwitchbotDevice):
             return False
 
         return lock_info is not None
+
+    @staticmethod
+    def retrieve_encryption_key(device_mac: str, username: str, password: str):
+        """Retrieve lock key from internal SwitchBot API."""
+        device_mac = device_mac.replace(":", "").replace("-", "").upper()
+        msg = bytes(username + SWITCHBOT_APP_COGNITO_POOL["AppClientId"], "utf-8")
+        secret_hash = base64.b64encode(
+            hmac.new(
+                SWITCHBOT_APP_COGNITO_POOL["AppClientSecret"].encode(),
+                msg,
+                digestmod=hashlib.sha256,
+            ).digest()
+        ).decode()
+
+        cognito_idp_client = boto3.client(
+            "cognito-idp", region_name=SWITCHBOT_APP_COGNITO_POOL["Region"]
+        )
+        try:
+            auth_response = cognito_idp_client.initiate_auth(
+                ClientId=SWITCHBOT_APP_COGNITO_POOL["AppClientId"],
+                AuthFlow="USER_PASSWORD_AUTH",
+                AuthParameters={
+                    "USERNAME": username,
+                    "PASSWORD": password,
+                    "SECRET_HASH": secret_hash,
+                },
+            )
+        except cognito_idp_client.exceptions.NotAuthorizedException as err:
+            raise RuntimeError("Failed to authenticate") from err
+        except BaseException as err:
+            raise RuntimeError("Unexpected error during authentication") from err
+
+        if (
+            auth_response is None
+            or "AuthenticationResult" not in auth_response
+            or "AccessToken" not in auth_response["AuthenticationResult"]
+        ):
+            raise RuntimeError("Unexpected authentication response")
+
+        access_token = auth_response["AuthenticationResult"]["AccessToken"]
+        key_response = requests.post(
+            url=SWITCHBOT_APP_API_BASE_URL + "/developStage/keys/v1/communicate",
+            headers={"authorization": access_token},
+            json={
+                "device_mac": device_mac,
+                "keyType": "user",
+            },
+            timeout=10,
+        )
+        key_response_content = json.loads(key_response.content)
+        if key_response_content["statusCode"] != 100:
+            raise RuntimeError(
+                f"Unexpected status code returned by SwitchBot API: {key_response_content['statusCode']}"
+            )
+
+        return {
+            "key_id": key_response_content["body"]["communicationKey"]["keyId"],
+            "encryption_key": key_response_content["body"]["communicationKey"]["key"],
+        }
 
     async def lock(self) -> bool:
         """Send lock command."""
