@@ -14,7 +14,8 @@ def process_wolock(data: bytes | None, mfr_data: bytes | None) -> dict[str, bool
         return {}
 
     _LOGGER.debug("mfr_data: %s", mfr_data.hex())
-    _LOGGER.debug("data: %s", data.hex())
+    if data:
+        _LOGGER.debug("data: %s", data.hex())
 
     return {
         "battery": data[2] & 0b01111111 if data else None,

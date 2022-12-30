@@ -4,7 +4,7 @@ from __future__ import annotations
 from bleak_retry_connector import close_stale_connections, get_device
 
 from .adv_parser import SwitchbotSupportedType, parse_advertisement_data
-from .const import SwitchbotModel
+from .const import LockStatus, SwitchbotModel
 from .devices.base_light import SwitchbotBaseLight
 from .devices.bot import Switchbot
 from .devices.bulb import SwitchbotBulb
@@ -25,6 +25,7 @@ __all__ = [
     "GetSwitchbotDevices",
     "SwitchBotAdvertisement",
     "ColorMode",
+    "LockStatus",
     "SwitchbotBaseLight",
     "SwitchbotBulb",
     "SwitchbotCeilingLight",

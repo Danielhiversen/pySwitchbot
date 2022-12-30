@@ -3,7 +3,7 @@ from typing import Any
 from bleak.backends.device import BLEDevice
 from bleak.backends.scanner import AdvertisementData
 
-from switchbot import SwitchbotModel
+from switchbot import LockStatus, SwitchbotModel
 from switchbot.adv_parser import parse_advertisement_data
 from switchbot.models import SwitchBotAdvertisement
 
@@ -1094,7 +1094,9 @@ def test_motion_sensor_motion_passive():
         tx_power=-127,
         rssi=-87,
     )
-    result = parse_advertisement_data(ble_device, adv_data)
+    result = parse_advertisement_data(
+        ble_device, adv_data, SwitchbotModel.MOTION_SENSOR
+    )
     assert result == SwitchBotAdvertisement(
         address="aa:bb:cc:dd:ee:ff",
         data={
@@ -1116,5 +1118,73 @@ def test_motion_sensor_motion_passive():
         },
         device=ble_device,
         rssi=-87,
+        active=False,
+    )
+
+
+def test_parsing_lock_active():
+    """Test parsing lock with active data."""
+    ble_device = BLEDevice("aa:bb:cc:dd:ee:ff", "any")
+    adv_data = generate_advertisement_data(
+        manufacturer_data={2409: b"\xf1\t\x9fE\x1a]\x07\x83\x00 "},
+        service_data={"0000fd3d-0000-1000-8000-00805f9b34fb": b"o\x80d"},
+        rssi=-67,
+    )
+    result = parse_advertisement_data(ble_device, adv_data)
+    assert result == SwitchBotAdvertisement(
+        address="aa:bb:cc:dd:ee:ff",
+        data={
+            "data": {
+                "auto_lock_paused": False,
+                "battery": 100,
+                "calibration": True,
+                "door_open": False,
+                "double_lock_mode": False,
+                "status": LockStatus.LOCKED,
+                "unclosed_alarm": False,
+                "unlocked_alarm": False,
+                "update_from_secondary_lock": False,
+            },
+            "isEncrypted": False,
+            "model": "o",
+            "modelFriendlyName": "Lock",
+            "modelName": SwitchbotModel.LOCK,
+            "rawAdvData": b"o\x80d",
+        },
+        device=ble_device,
+        rssi=-67,
+        active=True,
+    )
+
+
+def test_parsing_lock_passive():
+    """Test parsing lock with active data."""
+    ble_device = BLEDevice("aa:bb:cc:dd:ee:ff", "any")
+    adv_data = generate_advertisement_data(
+        manufacturer_data={2409: b"\xf1\t\x9fE\x1a]\x07\x83\x00 "}, rssi=-67
+    )
+    result = parse_advertisement_data(ble_device, adv_data, SwitchbotModel.LOCK)
+    assert result == SwitchBotAdvertisement(
+        address="aa:bb:cc:dd:ee:ff",
+        data={
+            "data": {
+                "auto_lock_paused": False,
+                "battery": None,
+                "calibration": True,
+                "door_open": False,
+                "double_lock_mode": False,
+                "status": LockStatus.LOCKED,
+                "unclosed_alarm": False,
+                "unlocked_alarm": False,
+                "update_from_secondary_lock": False,
+            },
+            "isEncrypted": False,
+            "model": "o",
+            "modelFriendlyName": "Lock",
+            "modelName": SwitchbotModel.LOCK,
+            "rawAdvData": None,
+        },
+        device=ble_device,
+        rssi=-67,
         active=False,
     )
