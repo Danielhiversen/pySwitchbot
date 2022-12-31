@@ -235,19 +235,13 @@ class SwitchbotLock(SwitchbotDevice):
             super()._notification_handler(_sender, data)
 
     def _update_lock_status(self, data: bytearray) -> None:
-        data = self._decrypt(data[4:])
-        lock_data = self._parse_lock_data(data)
-        current_status = self.get_lock_status()
-        if (
-            lock_data["status"] != current_status or current_status not in REST_STATUSES
-        ) and (
-            lock_data["status"] in REST_STATUSES
-            or lock_data["status"] in BLOCKED_STATUSES
-        ):
-            asyncio.create_task(self._disable_notifications())
-
-        self._update_parsed_data(lock_data)
-        self._fire_callbacks()
+        lock_data = self._parse_lock_data(self._decrypt(data[4:]))
+        if self._update_parsed_data(lock_data):
+            # We leave notifications enabled in case
+            # the lock is operated manually before we
+            # disconnect.
+            self._reset_disconnect_timer()
+            self._fire_callbacks()
 
     @staticmethod
     def _parse_lock_data(data: bytes) -> dict[str, Any]:
