@@ -552,15 +552,20 @@ class SwitchbotBaseDevice:
             )
         return result[index] in values
 
-    def _update_parsed_data(self, new_data: dict[str, Any]) -> None:
-        """Update data."""
+    def _update_parsed_data(self, new_data: dict[str, Any]) -> bool:
+        """Update data.
+
+        Returns true if data has changed and False if not.
+        """
         if not self._sb_adv_data:
             _LOGGER.exception("No advertisement data to update")
             return
-        self._set_parsed_data(
-            self._sb_adv_data,
-            _merge_data(self._sb_adv_data.data.get("data") or {}, new_data),
-        )
+        old_data = self._sb_adv_data.data.get("data") or {}
+        merged_data = _merge_data(old_data, new_data)
+        if merged_data == old_data:
+            return False
+        self._set_parsed_data(self._sb_adv_data, merged_data)
+        return True
 
     def _set_parsed_data(
         self, advertisement: SwitchBotAdvertisement, data: dict[str, Any]
