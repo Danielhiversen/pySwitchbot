@@ -10,6 +10,14 @@ DEFAULT_SCAN_TIMEOUT = 5
 from .enum import StrEnum
 
 
+class SwitchbotAuthenticationError(RuntimeError):
+    """Raised when authentication fails.
+
+    This exception inherits from RuntimeError to avoid breaking existing code
+    but will be changed to Exception in a future release.
+    """
+
+
 class SwitchbotModel(StrEnum):
 
     BOT = "WoHand"
