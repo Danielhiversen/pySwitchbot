@@ -15,7 +15,7 @@ from bleak.backends.device import BLEDevice
 from cryptography.hazmat.primitives.ciphers import Cipher, algorithms, modes
 
 from ..api_config import SWITCHBOT_APP_API_BASE_URL, SWITCHBOT_APP_COGNITO_POOL
-from ..const import LockStatus
+from ..const import LockStatus, SwitchbotAuthenticationError
 from .device import SwitchbotDevice, SwitchbotOperationError
 
 COMMAND_HEADER = "57"
@@ -103,16 +103,18 @@ class SwitchbotLock(SwitchbotDevice):
                 },
             )
         except cognito_idp_client.exceptions.NotAuthorizedException as err:
-            raise RuntimeError("Failed to authenticate") from err
+            raise SwitchbotAuthenticationError("Failed to authenticate") from err
         except BaseException as err:
-            raise RuntimeError("Unexpected error during authentication") from err
+            raise SwitchbotAuthenticationError(
+                "Unexpected error during authentication"
+            ) from err
 
         if (
             auth_response is None
             or "AuthenticationResult" not in auth_response
             or "AccessToken" not in auth_response["AuthenticationResult"]
         ):
-            raise RuntimeError("Unexpected authentication response")
+            raise SwitchbotAuthenticationError("Unexpected authentication response")
 
         access_token = auth_response["AuthenticationResult"]["AccessToken"]
         key_response = requests.post(
@@ -126,7 +128,7 @@ class SwitchbotLock(SwitchbotDevice):
         )
         key_response_content = json.loads(key_response.content)
         if key_response_content["statusCode"] != 100:
-            raise RuntimeError(
+            raise SwitchbotAuthenticationError(
                 f"Unexpected status code returned by SwitchBot API: {key_response_content['statusCode']}"
             )
 
