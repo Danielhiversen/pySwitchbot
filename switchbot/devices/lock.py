@@ -15,7 +15,11 @@ from bleak.backends.device import BLEDevice
 from cryptography.hazmat.primitives.ciphers import Cipher, algorithms, modes
 
 from ..api_config import SWITCHBOT_APP_API_BASE_URL, SWITCHBOT_APP_COGNITO_POOL
-from ..const import LockStatus, SwitchbotAuthenticationError
+from ..const import (
+    LockStatus,
+    SwitchbotAccountConnectionError,
+    SwitchbotAuthenticationError,
+)
 from .device import SwitchbotDevice, SwitchbotOperationError
 
 COMMAND_HEADER = "57"
@@ -104,7 +108,7 @@ class SwitchbotLock(SwitchbotDevice):
             )
         except cognito_idp_client.exceptions.NotAuthorizedException as err:
             raise SwitchbotAuthenticationError("Failed to authenticate") from err
-        except BaseException as err:
+        except Exception as err:
             raise SwitchbotAuthenticationError(
                 "Unexpected error during authentication"
             ) from err
@@ -117,15 +121,24 @@ class SwitchbotLock(SwitchbotDevice):
             raise SwitchbotAuthenticationError("Unexpected authentication response")
 
         access_token = auth_response["AuthenticationResult"]["AccessToken"]
-        key_response = requests.post(
-            url=SWITCHBOT_APP_API_BASE_URL + "/developStage/keys/v1/communicate",
-            headers={"authorization": access_token},
-            json={
-                "device_mac": device_mac,
-                "keyType": "user",
-            },
-            timeout=10,
-        )
+        try:
+            key_response = requests.post(
+                url=SWITCHBOT_APP_API_BASE_URL + "/developStage/keys/v1/communicate",
+                headers={"authorization": access_token},
+                json={
+                    "device_mac": device_mac,
+                    "keyType": "user",
+                },
+                timeout=10,
+            )
+        except requests.exceptions.RequestException as err:
+            raise SwitchbotAccountConnectionError(
+                f"Failed to retrieve encryption key from SwitchBot Account: {err}"
+            ) from err
+        if key_response.status_code > 299:
+            raise SwitchbotAuthenticationError(
+                f"Unexpected status code returned by SwitchBot Account API: {key_response.status_code}"
+            )
         key_response_content = json.loads(key_response.content)
         if key_response_content["statusCode"] != 100:
             raise SwitchbotAuthenticationError(

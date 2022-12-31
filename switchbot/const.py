@@ -18,6 +18,14 @@ class SwitchbotAuthenticationError(RuntimeError):
     """
 
 
+class SwitchbotAccountConnectionError(RuntimeError):
+    """Raised when connection to Switchbot account fails.
+    
+    This exception inherits from RuntimeError to avoid breaking existing code
+    but will be changed to Exception in a future release.    
+    """
+
+
 class SwitchbotModel(StrEnum):
 
     BOT = "WoHand"
