@@ -1,12 +1,12 @@
 """Library to handle connection with Switchbot Lock."""
 from __future__ import annotations
 
-import asyncio
 import base64
 import hashlib
 import hmac
 import json
 import logging
+import time
 from typing import Any
 
 import boto3
@@ -162,6 +162,13 @@ class SwitchbotLock(SwitchbotDevice):
             COMMAND_UNLOCK, {LockStatus.UNLOCKED, LockStatus.UNLOCKING}
         )
 
+    def _parse_basic_data(self, basic_data: bytes) -> dict[str, Any]:
+        """Parse basic data from lock."""
+        return {
+            "battery": basic_data[1],
+            "firmware": basic_data[2] / 10.0,
+        }
+
     async def _lock_unlock(
         self, command: str, ignore_statuses: set[LockStatus]
     ) -> bool:
@@ -174,9 +181,15 @@ class SwitchbotLock(SwitchbotDevice):
 
         await self._enable_notifications()
         result = await self._send_command(command)
-        if not self._check_command_result(result, 0, {1}):
-            return False
-        return True
+        status = self._check_command_result(result, 0, {1})
+
+        # Also update the battery and firmware version
+        if basic_data := await self._get_basic_info():
+            self._last_full_update = time.monotonic()
+            self._update_parsed_data(self._parse_basic_data(basic_data))
+            self._fire_callbacks()
+
+        return status
 
     async def get_basic_info(self) -> dict[str, Any] | None:
         """Get device basic status."""
@@ -188,10 +201,9 @@ class SwitchbotLock(SwitchbotDevice):
         if not basic_data:
             return None
 
-        lock_data = self._parse_lock_data(lock_raw_data[1:])
-        lock_data.update(battery=basic_data[1], firmware=basic_data[2] / 10.0)
-
-        return lock_data
+        return self._parse_lock_data(lock_raw_data[1:]) | self._parse_basic_data(
+            basic_data
+        )
 
     def is_calibrated(self) -> Any:
         """Return True if lock is calibrated."""
