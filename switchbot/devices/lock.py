@@ -107,10 +107,12 @@ class SwitchbotLock(SwitchbotDevice):
                 },
             )
         except cognito_idp_client.exceptions.NotAuthorizedException as err:
-            raise SwitchbotAuthenticationError("Failed to authenticate") from err
+            raise SwitchbotAuthenticationError(
+                f"Failed to authenticate: {err}"
+            ) from err
         except Exception as err:
             raise SwitchbotAuthenticationError(
-                "Unexpected error during authentication"
+                f"Unexpected error during authentication: {err}"
             ) from err
 
         if (
