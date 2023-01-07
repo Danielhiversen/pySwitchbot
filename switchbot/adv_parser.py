@@ -9,6 +9,7 @@ from typing import Any, TypedDict
 from bleak.backends.device import BLEDevice
 from bleak.backends.scanner import AdvertisementData
 
+from .adv_parsers.blind_tilt import process_woblindtilt
 from .adv_parsers.bot import process_wohand
 from .adv_parsers.bulb import process_color_bulb
 from .adv_parsers.ceiling_light import process_woceiling
@@ -126,6 +127,13 @@ SUPPORTED_TYPES: dict[str, SwitchbotSupportedType] = {
         "func": process_wolock,
         "manufacturer_id": 2409,
     },
+    "x": {
+        "modelName": SwitchbotModel.BLIND_TILT,
+        "modelFriendlyName": "Blind Tilt",
+        "func": process_woblindtilt,
+        "manufacturer_id": 2409,
+        "manufacturer_data_length": 10,
+    }
 }
 
 _SWITCHBOT_MODEL_TO_CHAR = {
