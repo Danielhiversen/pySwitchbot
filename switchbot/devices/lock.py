@@ -183,7 +183,7 @@ class SwitchbotLock(SwitchbotDevice):
 
         await self._enable_notifications()
         result = await self._send_command(command)
-        status = self._check_command_result(result, 0, {1})
+        status = self._check_command_result(result, 0, {1, 6})
 
         # Also update the battery and firmware version
         if basic_data := await self._get_basic_info():
@@ -235,7 +235,7 @@ class SwitchbotLock(SwitchbotDevice):
         """Return lock info of device."""
         _data = await self._send_command(key=COMMAND_LOCK_INFO, retry=self._retry_count)
 
-        if not self._check_command_result(_data, 0, {1}):
+        if not self._check_command_result(_data, 0, {1, 6}):
             _LOGGER.error("Unsuccessful, please try again")
             return None
 
@@ -245,7 +245,7 @@ class SwitchbotLock(SwitchbotDevice):
         if self._notifications_enabled:
             return True
         result = await self._send_command(COMMAND_ENABLE_NOTIFICATIONS)
-        if self._check_command_result(result, 0, {1}):
+        if self._check_command_result(result, 0, {1, 6}):
             self._notifications_enabled = True
         return self._notifications_enabled
 
@@ -253,7 +253,7 @@ class SwitchbotLock(SwitchbotDevice):
         if not self._notifications_enabled:
             return True
         result = await self._send_command(COMMAND_DISABLE_NOTIFICATIONS)
-        if self._check_command_result(result, 0, {1}):
+        if self._check_command_result(result, 0, {1, 6}):
             self._notifications_enabled = False
         return not self._notifications_enabled
 
@@ -306,7 +306,7 @@ class SwitchbotLock(SwitchbotDevice):
         result = await self._send_command(
             COMMAND_GET_CK_IV + self._key_id, encrypt=False
         )
-        ok = self._check_command_result(result, 0, {0x01})
+        ok = self._check_command_result(result, 0, {1, 6})
         if ok:
             self._iv = result[4:]
 
