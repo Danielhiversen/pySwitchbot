@@ -7,6 +7,9 @@ def process_woblindtilt(
 ) -> dict[str, bool | int]:
     """Process woBlindTilt services data."""
 
+    if mfr_data is None:
+        return {}
+
     device_data = mfr_data[6:]
 
     _tilt = max(min(device_data[2] & 0b00111111, 100), 0)
