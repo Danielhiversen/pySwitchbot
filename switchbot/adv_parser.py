@@ -113,6 +113,12 @@ SUPPORTED_TYPES: dict[str, SwitchbotSupportedType] = {
         "func": process_woceiling,
         "manufacturer_id": 2409,
     },
+    "n": {
+        "modelName": SwitchbotModel.CEILING_LIGHT,
+        "modelFriendlyName": "Ceiling Light Pro",
+        "func": process_woceiling,
+        "manufacturer_id": 2409,
+    },
     "e": {
         "modelName": SwitchbotModel.HUMIDIFIER,
         "modelFriendlyName": "Humidifier",
