@@ -15,7 +15,7 @@ def process_wocontact(
 
     if mfr_data and len(mfr_data) >= 13:
         motion_detected = bool(mfr_data[7] & 0b10000000)
-        contact_open = bool(mfr_data[7] & 0b00010000)
+        contact_open = bool(mfr_data[7] & 0b00110000)
         button_count = mfr_data[12] & 0b00001111
         is_light = bool(mfr_data[7] & 0b01000000)
     else:
