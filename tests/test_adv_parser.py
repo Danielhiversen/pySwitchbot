@@ -504,8 +504,8 @@ def test_contact_sensor_mfr_no_service_data():
             "data": {
                 "battery": None,
                 "button_count": 4,
-                "contact_open": False,
-                "contact_timeout": False,
+                "contact_open": True,
+                "contact_timeout": True,
                 "is_light": False,
                 "motion_detected": False,
                 "tested": None,
