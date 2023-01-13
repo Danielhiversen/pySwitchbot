@@ -12,7 +12,7 @@ def process_woblindtilt(
 
     device_data = mfr_data[6:]
 
-    _tilt = max(min(device_data[2] & 0b00111111, 100), 0)
+    _tilt = max(min(device_data[2] & 0b01111111, 100), 0)
     _in_motion = bool(device_data[2] & 0b10000000)
     _light_level = (device_data[1] >> 4) & 0b00001111
 
