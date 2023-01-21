@@ -11,4 +11,4 @@ python3 get_encryption_key.py MAC USERNAME
 Where `MAC` is MAC address of the lock and `USERNAME` is your SwitchBot account username, after that script will ask for your password.
 If authentication succeeds then script should output your key id and encryption key.
 
-[Buy me a coffee :)](http://paypal.me/dahoiv)
+
