@@ -83,9 +83,17 @@ class GetSwitchbotDevices:
             if adv.data.get("model") == model
         }
 
+    async def get_blind_tilts(self) -> dict[str, SwitchBotAdvertisement]:
+        """Return all WoBlindTilt/BlindTilts devices with services data."""
+        regular_blinds = await self._get_devices_by_model("x")
+        pairing_blinds = await self._get_devices_by_model("X")
+        return {**regular_blinds, **pairing_blinds}
+
     async def get_curtains(self) -> dict[str, SwitchBotAdvertisement]:
         """Return all WoCurtain/Curtains devices with services data."""
-        return await self._get_devices_by_model("c")
+        regular_curtains = await self._get_devices_by_model("c")
+        pairing_curtains = await self._get_devices_by_model("C")
+        return {**regular_curtains, **pairing_curtains}
 
     async def get_bots(self) -> dict[str, SwitchBotAdvertisement]:
         """Return all WoHand/Bot devices with services data."""
