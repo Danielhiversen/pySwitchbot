@@ -68,6 +68,11 @@ class SwitchbotBlindTilt(SwitchbotCurtain):
         else:
             return await self.close_down()
 
+    def get_position(self) -> Any:
+        """Return cached tilt (0-100) of Blind Tilt."""
+        # To get actual tilt call update() first.
+        return self._get_adv_value("tilt")
+
     async def get_basic_info(self) -> dict[str, Any] | None:
         """Get device basic settings."""
         if not (_data := await self._get_basic_info()):
