@@ -1,6 +1,7 @@
 """Library to handle connection with Switchbot."""
 from __future__ import annotations
 
+
 def process_woblindtilt(
     data: bytes | None, mfr_data: bytes | None, reverse: bool = False
 ) -> dict[str, bool | int]:

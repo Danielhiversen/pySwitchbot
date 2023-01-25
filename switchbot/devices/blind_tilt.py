@@ -6,7 +6,7 @@ from typing import Any
 
 from switchbot.devices.device import REQ_HEADER, update_after_operation
 
-from .curtain import SwitchbotCurtain, CURTAIN_EXT_SUM_KEY
+from .curtain import CURTAIN_EXT_SUM_KEY, SwitchbotCurtain
 
 _LOGGER = logging.getLogger(__name__)
 
@@ -24,6 +24,7 @@ CLOSE_UP_KEYS = [
     f"{REQ_HEADER}{BLIND_COMMAND}010164",
     f"{REQ_HEADER}{BLIND_COMMAND}05ff64",
 ]
+
 
 class SwitchbotBlindTilt(SwitchbotCurtain):
     """Representation of a Switchbot Blind Tilt."""
@@ -63,7 +64,7 @@ class SwitchbotBlindTilt(SwitchbotCurtain):
     @update_after_operation
     async def close(self) -> bool:
         """Send close command."""
-        if (self.get_position() > 50):
+        if self.get_position() > 50:
             return await self.close_up()
         else:
             return await self.close_down()

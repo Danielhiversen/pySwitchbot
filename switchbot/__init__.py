@@ -11,6 +11,7 @@ from .const import (
     SwitchbotModel,
 )
 from .devices.base_light import SwitchbotBaseLight
+from .devices.blind_tilt import SwitchbotBlindTilt
 from .devices.bot import Switchbot
 from .devices.bulb import SwitchbotBulb
 from .devices.ceiling_light import SwitchbotCeilingLight
@@ -20,7 +21,6 @@ from .devices.humidifier import SwitchbotHumidifier
 from .devices.light_strip import SwitchbotLightStrip
 from .devices.lock import SwitchbotLock
 from .devices.plug import SwitchbotPlugMini
-from .devices.blind_tilt import SwitchbotBlindTilt
 from .discovery import GetSwitchbotDevices
 from .models import SwitchBotAdvertisement
 
