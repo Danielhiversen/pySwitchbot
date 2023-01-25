@@ -11,6 +11,7 @@ from .const import (
     SwitchbotModel,
 )
 from .devices.base_light import SwitchbotBaseLight
+from .devices.blind_tilt import SwitchbotBlindTilt
 from .devices.bot import Switchbot
 from .devices.bulb import SwitchbotBulb
 from .devices.ceiling_light import SwitchbotCeilingLight
@@ -45,4 +46,5 @@ __all__ = [
     "SwitchbotSupportedType",
     "SwitchbotModel",
     "SwitchbotLock",
+    "SwitchbotBlindTilt",
 ]
