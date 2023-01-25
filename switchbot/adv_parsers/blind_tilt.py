@@ -17,7 +17,7 @@ def process_woblindtilt(
     _calibrated = bool(device_data[1] & 0b00000001)
 
     return {
-        "libration": _calibrated,
+        "calibration": _calibrated,
         "battery": data[2] & 0b01111111 if data else None,
         "inMotion": _in_motion,
         "tilt": (100 - _tilt) if reverse else _tilt,
