@@ -80,6 +80,16 @@ class SwitchbotBlindTilt(SwitchbotCurtain):
             return None
 
         _tilt = max(min(_data[6], 100), 0)
+        _moving = bool(_data[5] & 0b00000011)
+        if _moving:
+            _opening = bool(_data[5] & 0b00000010)
+            _closing = not _opening and bool(_data[5] & 0b00000001)
+            if _opening:
+                _flag = bool(_data[5] & 0b00000001)
+                _up = _flag if self._reverse else not _flag
+            else:
+                _up = _tilt < 50 if self._reverse else _tilt > 50
+
         return {
             "battery": _data[1],
             "firmware": _data[2] / 10.0,
@@ -88,10 +98,12 @@ class SwitchbotBlindTilt(SwitchbotCurtain):
             "solarPanel": bool(_data[5] & 0b00001000),
             "calibration": bool(_data[5] & 0b00000100),
             "calibrated": bool(_data[5] & 0b00000100),
-            "inMotion": bool(_data[5] & 0b00000011),
+            "inMotion": _moving,
             "motionDirection": {
-                "up": bool(_data[5] & (0b00000010 if self._reverse else 0b00000001)),
-                "down": bool(_data[5] & (0b00000001 if self._reverse else 0b00000010)),
+                "opening": _moving and _opening,
+                "closing": _moving and _closing,
+                "up": _moving and _up,
+                "down": _moving and not _up,
             },
             "tilt": (100 - _tilt) if self._reverse else _tilt,
             "timers": _data[7],
