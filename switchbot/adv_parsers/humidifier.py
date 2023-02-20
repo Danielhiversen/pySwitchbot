@@ -10,6 +10,7 @@ _LOGGER = logging.getLogger(__name__)
 # data: 650000cd802b6300
 # data: 658000c9802b6300
 
+
 # Low:  658000c5222b6300
 # Med:  658000c5432b6300
 # High: 658000c5642b6300
