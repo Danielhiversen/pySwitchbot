@@ -26,7 +26,6 @@ from bleak_retry_connector import (
 from ..const import DEFAULT_RETRY_COUNT, DEFAULT_SCAN_TIMEOUT
 from ..discovery import GetSwitchbotDevices
 from ..models import SwitchBotAdvertisement
-from ..util import execute_task
 
 _LOGGER = logging.getLogger(__name__)
 
@@ -144,6 +143,7 @@ class SwitchbotBaseDevice:
         self._callbacks: list[Callable[[], None]] = []
         self._notify_future: asyncio.Future[bytearray] | None = None
         self._last_full_update: float = -PASSIVE_POLL_INTERVAL
+        self._timed_disconnect_task: asyncio.Task[None] | None = None
 
     def advertisement_changed(self, advertisement: SwitchBotAdvertisement) -> bool:
         """Check if the advertisement has changed."""
@@ -331,7 +331,7 @@ class SwitchbotBaseDevice:
             self._reset_disconnect_timer()
             return
         self._cancel_disconnect_timer()
-        execute_task(self._execute_timed_disconnect())
+        self._timed_disconnect_task = self._execute_timed_disconnect()
 
     def _cancel_disconnect_timer(self):
         """Cancel disconnect timer."""
