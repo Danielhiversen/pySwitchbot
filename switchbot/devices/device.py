@@ -26,6 +26,7 @@ from bleak_retry_connector import (
 from ..const import DEFAULT_RETRY_COUNT, DEFAULT_SCAN_TIMEOUT
 from ..discovery import GetSwitchbotDevices
 from ..models import SwitchBotAdvertisement
+from ..util import execute_task
 
 _LOGGER = logging.getLogger(__name__)
 
@@ -48,7 +49,6 @@ DISCONNECT_DELAY = 8.5
 
 
 class ColorMode(Enum):
-
     OFF = 0
     COLOR_TEMP = 1
     RGB = 2
@@ -331,7 +331,7 @@ class SwitchbotBaseDevice:
             self._reset_disconnect_timer()
             return
         self._cancel_disconnect_timer()
-        asyncio.create_task(self._execute_timed_disconnect())
+        execute_task(self._execute_timed_disconnect())
 
     def _cancel_disconnect_timer(self):
         """Cancel disconnect timer."""
@@ -375,7 +375,7 @@ class SwitchbotBaseDevice:
         self._client = None
         self._read_char = None
         self._write_char = None
-        if client and client.is_connected:
+        if client:
             _LOGGER.debug("%s: Disconnecting", self.name)
             await client.disconnect()
             _LOGGER.debug("%s: Disconnect completed", self.name)

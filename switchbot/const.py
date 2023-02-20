@@ -27,7 +27,6 @@ class SwitchbotAccountConnectionError(RuntimeError):
 
 
 class SwitchbotModel(StrEnum):
-
     BOT = "WoHand"
     CURTAIN = "WoCurtain"
     HUMIDIFIER = "WoHumi"
