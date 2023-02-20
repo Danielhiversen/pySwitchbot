@@ -375,7 +375,7 @@ class SwitchbotBaseDevice:
         self._client = None
         self._read_char = None
         self._write_char = None
-        if client and client.is_connected:
+        if client:
             _LOGGER.debug("%s: Disconnecting", self.name)
             await client.disconnect()
             _LOGGER.debug("%s: Disconnect completed", self.name)
