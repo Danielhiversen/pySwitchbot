@@ -132,7 +132,6 @@ SUPPORTED_TYPES: dict[str, SwitchbotSupportedType] = {
         "modelFriendlyName": "Blind Tilt",
         "func": process_woblindtilt,
         "manufacturer_id": 2409,
-        "manufacturer_data_length": 10,
     },
 }
 
