@@ -331,7 +331,9 @@ class SwitchbotBaseDevice:
             self._reset_disconnect_timer()
             return
         self._cancel_disconnect_timer()
-        self._timed_disconnect_task = self._execute_timed_disconnect()
+        self._timed_disconnect_task = asyncio.create_task(
+            self._execute_timed_disconnect()
+        )
 
     def _cancel_disconnect_timer(self):
         """Cancel disconnect timer."""
@@ -375,12 +377,20 @@ class SwitchbotBaseDevice:
         self._client = None
         self._read_char = None
         self._write_char = None
-        if client:
-            _LOGGER.debug("%s: Disconnecting", self.name)
-            await client.disconnect()
-            _LOGGER.debug("%s: Disconnect completed", self.name)
-        else:
+        if not client:
             _LOGGER.debug("%s: Already disconnected", self.name)
+            return
+        _LOGGER.debug("%s: Disconnecting", self.name)
+        try:
+            await client.disconnect()
+        except BleakError as ex:
+            _LOGGER.warning(
+                "%s: Error disconnecting: %s; RSSI: %s",
+                self.name,
+                ex,
+                self.rssi,
+            )
+        _LOGGER.debug("%s: Disconnect completed", self.name)
 
     async def _send_command_locked(self, key: str, command: bytes) -> bytes:
         """Send command to device and read response."""
