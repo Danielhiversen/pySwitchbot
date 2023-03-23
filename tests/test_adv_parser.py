@@ -1,3 +1,5 @@
+from __future__ import annotations
+
 from typing import Any
 
 from bleak.backends.device import BLEDevice
@@ -22,6 +24,7 @@ BLE_DEVICE_DEFAULTS = {
     "rssi": -127,
     "details": None,
 }
+
 
 def generate_ble_device(
     address: str | None = None,
