@@ -21,7 +21,7 @@ from bleak_retry_connector import (
     ble_device_has_changed,
     establish_connection,
 )
-from bleak_retry_connector import BLEAK_RETRY_EXCEPTIONS
+
 from ..const import DEFAULT_RETRY_COUNT, DEFAULT_SCAN_TIMEOUT
 from ..discovery import GetSwitchbotDevices
 from ..models import SwitchBotAdvertisement
