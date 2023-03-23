@@ -12,7 +12,7 @@ setup(
         "boto3>=1.20.24",
         "requests>=2.28.1",
     ],
-    version="0.37.3",
+    version="0.37.4",
     description="A library to communicate with Switchbot",
     author="Daniel Hjelseth Hoyer",
     url="https://github.com/Danielhiversen/pySwitchbot/",
