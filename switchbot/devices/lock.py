@@ -193,7 +193,10 @@ class SwitchbotLock(SwitchbotDevice):
         # Also update the battery and firmware version
         if basic_data := await self._get_basic_info():
             self._last_full_update = time.monotonic()
-            self._update_parsed_data(self._parse_basic_data(basic_data))
+            if len(basic_data) >= 3:
+                self._update_parsed_data(self._parse_basic_data(basic_data))
+            else:
+                _LOGGER.warning("Invalid basic data received: %s", basic_data)
             self._fire_callbacks()
 
         return status
