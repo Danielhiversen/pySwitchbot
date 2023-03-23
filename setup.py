@@ -5,7 +5,7 @@ setup(
     packages=["switchbot", "switchbot.devices", "switchbot.adv_parsers"],
     install_requires=[
         "async_timeout>=4.0.1",
-        "bleak>=0.20.0",
+        "bleak>=0.19.0",
         "bleak-retry-connector>=2.9.0",
         "cryptography>=39.0.0",
         "pyOpenSSL>=23.0.0",
