@@ -11,7 +11,6 @@ from typing import Any, Callable, TypeVar, cast
 from uuid import UUID
 
 import async_timeout
-from bleak import BleakError
 from bleak.backends.device import BLEDevice
 from bleak.backends.service import BleakGATTCharacteristic, BleakGATTServiceCollection
 from bleak.exc import BleakDBusError
@@ -40,6 +39,7 @@ DEVICE_SET_EXTENDED_KEY = REQ_HEADER
 # Base key when encryption is set
 KEY_PASSWORD_PREFIX = "571"
 
+DBUS_ERROR_BACKOFF_TIME = 0.25
 
 # How long to hold the connection
 # to wait for additional commands for
@@ -383,7 +383,7 @@ class SwitchbotBaseDevice:
         _LOGGER.debug("%s: Disconnecting", self.name)
         try:
             await client.disconnect()
-        except BleakError as ex:
+        except BLEAK_RETRY_EXCEPTIONS as ex:
             _LOGGER.warning(
                 "%s: Error disconnecting: %s; RSSI: %s",
                 self.name,
@@ -399,17 +399,17 @@ class SwitchbotBaseDevice:
             return await self._execute_command_locked(key, command)
         except BleakDBusError as ex:
             # Disconnect so we can reset state and try again
-            await asyncio.sleep(0.25)
+            await asyncio.sleep(DBUS_ERROR_BACKOFF_TIME)
             _LOGGER.debug(
                 "%s: RSSI: %s; Backing off %ss; Disconnecting due to error: %s",
                 self.name,
                 self.rssi,
-                0.25,
+                DBUS_ERROR_BACKOFF_TIME,
                 ex,
             )
             await self._execute_forced_disconnect()
             raise
-        except BleakError as ex:
+        except BLEAK_RETRY_EXCEPTIONS as ex:
             # Disconnect so we can reset state and try again
             _LOGGER.debug(
                 "%s: RSSI: %s; Disconnecting due to error: %s", self.name, self.rssi, ex
