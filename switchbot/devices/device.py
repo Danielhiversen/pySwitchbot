@@ -253,11 +253,21 @@ class SwitchbotBaseDevice:
                 self.rssi,
             )
         if self._client and self._client.is_connected:
+            _LOGGER.debug(
+                "%s: Already connected before obtaining lock, resetting timer; RSSI: %s",
+                self.name,
+                self.rssi,
+            )
             self._reset_disconnect_timer()
             return
         async with self._connect_lock:
             # Check again while holding the lock
             if self._client and self._client.is_connected:
+                _LOGGER.debug(
+                    "%s: Already connected after obtaining lock, resetting timer; RSSI: %s",
+                    self.name,
+                    self.rssi,
+                )
                 self._reset_disconnect_timer()
                 return
             _LOGGER.debug("%s: Connecting; RSSI: %s", self.name, self.rssi)
@@ -287,6 +297,11 @@ class SwitchbotBaseDevice:
                 await self._execute_disconnect_with_lock()
                 raise
 
+            _LOGGER.debug(
+                "%s: Starting notify and disconnect timer; RSSI: %s",
+                self.name,
+                self.rssi,
+            )
             self._reset_disconnect_timer()
             await self._start_notify()
 
@@ -319,6 +334,7 @@ class SwitchbotBaseDevice:
             self.name,
             self.rssi,
         )
+        self._cancel_disconnect_timer()
 
     def _disconnect_from_timer(self):
         """Disconnect from device."""
@@ -390,7 +406,8 @@ class SwitchbotBaseDevice:
                 ex,
                 self.rssi,
             )
-        _LOGGER.debug("%s: Disconnect completed", self.name)
+        else:
+            _LOGGER.debug("%s: Disconnect completed successfully", self.name)
 
     async def _send_command_locked(self, key: str, command: bytes) -> bytes:
         """Send command to device and read response."""
