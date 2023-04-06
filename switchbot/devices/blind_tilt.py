@@ -4,7 +4,7 @@ from __future__ import annotations
 import logging
 from typing import Any
 
-from switchbot.devices.device import REQ_HEADER, update_after_operation
+from switchbot.devices.device import REQ_HEADER, update_after_operation, SwitchbotSequenceDevice
 
 from .curtain import CURTAIN_EXT_SUM_KEY, SwitchbotCurtain
 
@@ -26,7 +26,7 @@ CLOSE_UP_KEYS = [
 ]
 
 
-class SwitchbotBlindTilt(SwitchbotCurtain):
+class SwitchbotBlindTilt(SwitchbotCurtain, SwitchbotSequenceDevice):
     """Representation of a Switchbot Blind Tilt."""
 
     # The position of the blind is saved returned with 0 = closed down, 50 = open and 100 = closed up.
