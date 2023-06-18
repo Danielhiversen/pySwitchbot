@@ -6,9 +6,11 @@ from typing import Any
 
 def process_wosensorth(data: bytes | None, mfr_data: bytes | None) -> dict[str, Any]:
     """Process woSensorTH/Temp sensor services data."""
+    temp_data = None
+    battery = None
+
     if mfr_data:
         temp_data = mfr_data[8:11]
-        battery = None
 
     if data:
         if not temp_data: 
