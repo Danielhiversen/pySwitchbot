@@ -99,7 +99,6 @@ SUPPORTED_TYPES: dict[str, SwitchbotSupportedType] = {
         "modelName": SwitchbotModel.PLUG_MINI,
         "modelFriendlyName": "Plug Mini",
         "func": process_woplugmini,
-        "manufacturer_data_length": 12,
         "manufacturer_id": 2409,
     },
     "j": {
