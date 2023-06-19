@@ -12,13 +12,15 @@ from uuid import UUID
 
 import async_timeout
 from bleak.backends.device import BLEDevice
-from bleak.backends.service import (BleakGATTCharacteristic,
-                                    BleakGATTServiceCollection)
+from bleak.backends.service import BleakGATTCharacteristic, BleakGATTServiceCollection
 from bleak.exc import BleakDBusError
-from bleak_retry_connector import (BLEAK_RETRY_EXCEPTIONS,
-                                   BleakClientWithServiceCache,
-                                   BleakNotFoundError, ble_device_has_changed,
-                                   establish_connection)
+from bleak_retry_connector import (
+    BLEAK_RETRY_EXCEPTIONS,
+    BleakClientWithServiceCache,
+    BleakNotFoundError,
+    ble_device_has_changed,
+    establish_connection,
+)
 
 from ..const import DEFAULT_RETRY_COUNT, DEFAULT_SCAN_TIMEOUT
 from ..discovery import GetSwitchbotDevices

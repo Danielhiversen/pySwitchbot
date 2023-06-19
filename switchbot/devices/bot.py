@@ -4,9 +4,12 @@ from __future__ import annotations
 import logging
 from typing import Any
 
-from .device import (DEVICE_SET_EXTENDED_KEY, DEVICE_SET_MODE_KEY,
-                     SwitchbotDeviceOverrideStateDuringConnection,
-                     update_after_operation)
+from .device import (
+    DEVICE_SET_EXTENDED_KEY,
+    DEVICE_SET_MODE_KEY,
+    SwitchbotDeviceOverrideStateDuringConnection,
+    update_after_operation,
+)
 
 _LOGGER = logging.getLogger(__name__)
 
