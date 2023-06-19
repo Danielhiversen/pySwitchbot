@@ -857,6 +857,70 @@ def test_wosensor_passive_only():
     )
 
 
+def test_woiosensor_passive_and_active():
+    """Test parsing woiosensor as passive with active data as well."""
+    ble_device = generate_ble_device("aa:bb:cc:dd:ee:ff", "any")
+    adv_data = generate_advertisement_data(
+        manufacturer_data={2409: b"\xaa\xbb\xcc\xdd\xee\xff\xe0\x0f\x06\x985\x00"},
+        service_data={"0000fd3d-0000-1000-8000-00805f9b34fb": b"w\x00\xe4"},
+        tx_power=-127,
+        rssi=-50,
+    )
+    result = parse_advertisement_data(ble_device, adv_data)
+    assert result == SwitchBotAdvertisement(
+        address="aa:bb:cc:dd:ee:ff",
+        data={
+            "data": {
+                "battery": 100,
+                "fahrenheit": False,
+                "humidity": 53,
+                "temp": {"c": 24.6, "f": 76.28},
+                "temperature": 24.6,
+            },
+            "isEncrypted": False,
+            "model": "w",
+            "modelFriendlyName": "Indoor/Outdoor Meter",
+            "modelName": SwitchbotModel.IO_METER,
+            "rawAdvData": b"w\x00\xe4",
+        },
+        device=ble_device,
+        rssi=-50,
+        active=True,
+    )
+
+
+def test_woiosensor_passive_only():
+    """Test parsing woiosensor with only passive data."""
+    ble_device = generate_ble_device("aa:bb:cc:dd:ee:ff", "any")
+    adv_data = generate_advertisement_data(
+        manufacturer_data={2409: b"\xaa\xbb\xcc\xdd\xee\xff\xe0\x0f\x06\x985\x00"},
+        service_data={},
+        tx_power=-127,
+        rssi=-50,
+    )
+    result = parse_advertisement_data(ble_device, adv_data, SwitchbotModel.IO_METER)
+    assert result == SwitchBotAdvertisement(
+        address="aa:bb:cc:dd:ee:ff",
+        data={
+            "data": {
+                "battery": None,
+                "fahrenheit": False,
+                "humidity": 53,
+                "temp": {"c": 24.6, "f": 76.28},
+                "temperature": 24.6,
+            },
+            "isEncrypted": False,
+            "model": "w",
+            "modelFriendlyName": "Indoor/Outdoor Meter",
+            "modelName": SwitchbotModel.IO_METER,
+            "rawAdvData": None,
+        },
+        device=ble_device,
+        rssi=-50,
+        active=False,
+    )
+
+
 def test_motion_sensor_clear():
     """Test parsing motion sensor with clear data."""
     ble_device = generate_ble_device("aa:bb:cc:dd:ee:ff", "any")

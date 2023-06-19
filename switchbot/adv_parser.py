@@ -77,6 +77,12 @@ SUPPORTED_TYPES: dict[str, SwitchbotSupportedType] = {
         "func": process_wocurtain,
         "manufacturer_id": 2409,
     },
+    "w": {
+        "modelName": SwitchbotModel.IO_METER,
+        "modelFriendlyName": "Indoor/Outdoor Meter",
+        "func": process_wosensorth,
+        "manufacturer_id": 2409,
+    },
     "i": {
         "modelName": SwitchbotModel.METER,
         "modelFriendlyName": "Meter Plus",
@@ -93,7 +99,6 @@ SUPPORTED_TYPES: dict[str, SwitchbotSupportedType] = {
         "modelName": SwitchbotModel.PLUG_MINI,
         "modelFriendlyName": "Plug Mini",
         "func": process_woplugmini,
-        "manufacturer_data_length": 12,
         "manufacturer_id": 2409,
     },
     "j": {

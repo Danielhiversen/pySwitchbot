@@ -23,5 +23,5 @@ def process_woblindtilt(
         "inMotion": _in_motion,
         "tilt": (100 - _tilt) if reverse else _tilt,
         "lightLevel": _light_level,
-        "sequence_number": device_data[0]
+        "sequence_number": device_data[0],
     }
