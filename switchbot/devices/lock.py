@@ -15,11 +15,8 @@ from bleak.backends.device import BLEDevice
 from cryptography.hazmat.primitives.ciphers import Cipher, algorithms, modes
 
 from ..api_config import SWITCHBOT_APP_API_BASE_URL, SWITCHBOT_APP_COGNITO_POOL
-from ..const import (
-    LockStatus,
-    SwitchbotAccountConnectionError,
-    SwitchbotAuthenticationError,
-)
+from ..const import (LockStatus, SwitchbotAccountConnectionError,
+                     SwitchbotAuthenticationError)
 from .device import SwitchbotDevice, SwitchbotOperationError
 
 COMMAND_HEADER = "57"

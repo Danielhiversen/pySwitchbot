@@ -4,7 +4,8 @@ from __future__ import annotations
 import logging
 from typing import Any
 
-from switchbot.devices.device import REQ_HEADER, update_after_operation, SwitchbotSequenceDevice
+from switchbot.devices.device import (REQ_HEADER, SwitchbotSequenceDevice,
+                                      update_after_operation)
 
 from .curtain import CURTAIN_EXT_SUM_KEY, SwitchbotCurtain
 
