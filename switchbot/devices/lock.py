@@ -26,6 +26,7 @@ COMMAND_HEADER = "57"
 COMMAND_GET_CK_IV = f"{COMMAND_HEADER}0f2103"
 COMMAND_LOCK_INFO = f"{COMMAND_HEADER}0f4f8101"
 COMMAND_UNLOCK = f"{COMMAND_HEADER}0f4e01011080"
+COMMAND_NOT_FULLY_UNLOCK = f"{COMMAND_HEADER}0f4e010110a0"
 COMMAND_LOCK = f"{COMMAND_HEADER}0f4e01011000"
 COMMAND_ENABLE_NOTIFICATIONS = f"{COMMAND_HEADER}0e01001e00008101"
 COMMAND_DISABLE_NOTIFICATIONS = f"{COMMAND_HEADER}0e00"
@@ -165,6 +166,16 @@ class SwitchbotLock(SwitchbotDevice):
 
     async def unlock(self) -> bool:
         """Send unlock command."""
+        if (self.is_night_latch_enabled):
+            return await self._lock_unlock(
+                COMMAND_NOT_FULLY_UNLOCK, {LockStatus.UNLOCKED, LockStatus.UNLOCKING}
+            )
+        return await self._lock_unlock(
+            COMMAND_UNLOCK, {LockStatus.UNLOCKED, LockStatus.UNLOCKING, LockStatus.NOT_FULLY_LOCKED}
+        )
+
+    async def unlatch(self) -> bool:
+        """Send unlatch command. Unlatches door if feature is enabled elsewhere just unlock them."""
         return await self._lock_unlock(
             COMMAND_UNLOCK, {LockStatus.UNLOCKED, LockStatus.UNLOCKING}
         )
@@ -239,6 +250,10 @@ class SwitchbotLock(SwitchbotDevice):
         """Return True if auto lock is paused."""
         return self._get_adv_value("auto_lock_paused")
 
+    def is_night_latch_enabled(self) -> bool:
+        """Return True if Night Latch is enabled on EU firmware."""
+        return self._get_adv_value("night_latch")
+        
     async def _get_lock_info(self) -> bytes | None:
         """Return lock info of device."""
         _data = await self._send_command(key=COMMAND_LOCK_INFO, retry=self._retry_count)
