@@ -165,19 +165,15 @@ class SwitchbotLock(SwitchbotDevice):
         )
 
     async def unlock(self) -> bool:
-        """Send unlock command."""
-        if (self.is_night_latch_enabled):
-            return await self._lock_unlock(
-                COMMAND_NOT_FULLY_UNLOCK, {LockStatus.UNLOCKED, LockStatus.UNLOCKING}
-            )
-        return await self._lock_unlock(
-            COMMAND_UNLOCK, {LockStatus.UNLOCKED, LockStatus.UNLOCKING, LockStatus.NOT_FULLY_LOCKED}
-        )
-
-    async def unlatch(self) -> bool:
-        """Send unlatch command. Unlatches door if feature is enabled elsewhere just unlock them."""
+        """Send unlock command. If unlatch feature is enabled in EU firmware, also unlatches door"""
         return await self._lock_unlock(
             COMMAND_UNLOCK, {LockStatus.UNLOCKED, LockStatus.UNLOCKING}
+        )
+
+    async def not_fully_unlock(self) -> bool:
+        """Send unlock command. This command will not unlatch the door."""
+        return await self._lock_unlock(
+            COMMAND_NOT_FULLY_UNLOCK, {LockStatus.UNLOCKED, LockStatus.UNLOCKING, LockStatus.NOT_FULLY_LOCKED}
         )
 
     def _parse_basic_data(self, basic_data: bytes) -> dict[str, Any]:
