@@ -26,7 +26,7 @@ COMMAND_HEADER = "57"
 COMMAND_GET_CK_IV = f"{COMMAND_HEADER}0f2103"
 COMMAND_LOCK_INFO = f"{COMMAND_HEADER}0f4f8101"
 COMMAND_UNLOCK = f"{COMMAND_HEADER}0f4e01011080"
-COMMAND_NOT_FULLY_UNLOCK = f"{COMMAND_HEADER}0f4e010110a0"
+COMMAND_UNLOCK_WITHOUT_UNLATCH = f"{COMMAND_HEADER}0f4e010110a0"
 COMMAND_LOCK = f"{COMMAND_HEADER}0f4e01011000"
 COMMAND_ENABLE_NOTIFICATIONS = f"{COMMAND_HEADER}0e01001e00008101"
 COMMAND_DISABLE_NOTIFICATIONS = f"{COMMAND_HEADER}0e00"
@@ -170,10 +170,10 @@ class SwitchbotLock(SwitchbotDevice):
             COMMAND_UNLOCK, {LockStatus.UNLOCKED, LockStatus.UNLOCKING}
         )
 
-    async def not_fully_unlock(self) -> bool:
+    async def unlock_without_unlatch(self) -> bool:
         """Send unlock command. This command will not unlatch the door."""
         return await self._lock_unlock(
-            COMMAND_NOT_FULLY_UNLOCK, {LockStatus.UNLOCKED, LockStatus.UNLOCKING, LockStatus.NOT_FULLY_LOCKED}
+            COMMAND_UNLOCK_WITHOUT_UNLATCH, {LockStatus.UNLOCKED, LockStatus.UNLOCKING, LockStatus.NOT_FULLY_LOCKED}
         )
 
     def _parse_basic_data(self, basic_data: bytes) -> dict[str, Any]:
