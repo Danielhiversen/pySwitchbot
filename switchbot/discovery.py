@@ -93,7 +93,9 @@ class GetSwitchbotDevices:
         """Return all WoCurtain/Curtains devices with services data."""
         regular_curtains = await self._get_devices_by_model("c")
         pairing_curtains = await self._get_devices_by_model("C")
-        return {**regular_curtains, **pairing_curtains}
+        regular_curtains3 = await self._get_devices_by_model("{")
+        pairing_curtains3 = await self._get_devices_by_model("[")
+        return {**regular_curtains, **pairing_curtains, **regular_curtains3, **pairing_curtains3}
 
     async def get_bots(self) -> dict[str, SwitchBotAdvertisement]:
         """Return all WoHand/Bot devices with services data."""

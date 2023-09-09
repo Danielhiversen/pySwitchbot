@@ -77,6 +77,12 @@ SUPPORTED_TYPES: dict[str, SwitchbotSupportedType] = {
         "func": process_wocurtain,
         "manufacturer_id": 2409,
     },
+    "{": {
+        "modelName": SwitchbotModel.CURTAIN,
+        "modelFriendlyName": "Curtain 3",
+        "func": process_wocurtain,
+        "manufacturer_id": 2409,
+    },
     "w": {
         "modelName": SwitchbotModel.IO_METER,
         "modelFriendlyName": "Indoor/Outdoor Meter",
