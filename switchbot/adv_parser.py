@@ -71,15 +71,15 @@ SUPPORTED_TYPES: dict[str, SwitchbotSupportedType] = {
         "manufacturer_id": 2409,
         "manufacturer_data_length": 16,
     },
-    "c": {
-        "modelName": SwitchbotModel.CURTAIN,
-        "modelFriendlyName": "Curtain",
-        "func": process_wocurtain,
-        "manufacturer_id": 2409,
-    },
     "{": {
         "modelName": SwitchbotModel.CURTAIN,
         "modelFriendlyName": "Curtain 3",
+        "func": process_wocurtain,
+        "manufacturer_id": 2409,
+    },
+    "c": {
+        "modelName": SwitchbotModel.CURTAIN,
+        "modelFriendlyName": "Curtain",
         "func": process_wocurtain,
         "manufacturer_id": 2409,
     },

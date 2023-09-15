@@ -322,6 +322,71 @@ def test_parse_advertisement_data_curtain_fully_open():
     )
 
 
+def test_parse_advertisement_data_curtain3():
+    """Test parse_advertisement_data for curtain 3."""
+    ble_device = generate_ble_device("aa:bb:cc:dd:ee:ff", "any")
+    adv_data = generate_advertisement_data(
+        manufacturer_data={2409: b"\xaa\xbb\xcc\xdd\xee\xff\xf7\x07\x00\x11\x04\x00\x49"},
+        service_data={"0000fd3d-0000-1000-8000-00805f9b34fb": b"{\xc0\x49\x00\x11\x04"},
+        rssi=-80,
+    )
+
+    result = parse_advertisement_data(ble_device, adv_data)
+    assert result == SwitchBotAdvertisement(
+        address="aa:bb:cc:dd:ee:ff",
+        data={
+            "rawAdvData": b"{\xc0\x49\x00\x11\x04",
+            "data": {
+                "calibration": True,
+                "battery": 73,
+                "inMotion": False,
+                "position": 100,
+                "lightLevel": 1,
+                "deviceChain": 1,
+            },
+            "isEncrypted": False,
+            "model": "{",
+            "modelFriendlyName": "Curtain 3",
+            "modelName": SwitchbotModel.CURTAIN,
+        },
+        device=ble_device,
+        rssi=-80,
+        active=True,
+    )
+
+
+def test_parse_advertisement_data_curtain3_passive():
+    """Test parse_advertisement_data for curtain passive."""
+    ble_device = generate_ble_device("aa:bb:cc:dd:ee:ff", "any")
+    adv_data = generate_advertisement_data(
+        manufacturer_data={2409: b"\xaa\xbb\xcc\xdd\xee\xff\xf7\x07\x00\x11\x04\x00\x49"},
+        service_data={},
+        rssi=-80,
+    )
+    result = parse_advertisement_data(ble_device, adv_data, SwitchbotModel.CURTAIN)
+    assert result == SwitchBotAdvertisement(
+        address="aa:bb:cc:dd:ee:ff",
+        data={
+            "rawAdvData": None,
+            "data": {
+                "calibration": None,
+                "battery": 73,
+                "inMotion": False,
+                "position": 100,
+                "lightLevel": 1,
+                "deviceChain": 1,
+            },
+            "isEncrypted": False,
+            "model": "c",
+            "modelFriendlyName": "Curtain",
+            "modelName": SwitchbotModel.CURTAIN,
+        },
+        device=ble_device,
+        rssi=-80,
+        active=False,
+    )
+
+
 def test_parse_advertisement_data_contact():
     """Test parse_advertisement_data for the contact sensor."""
     ble_device = generate_ble_device("aa:bb:cc:dd:ee:ff", "any")
