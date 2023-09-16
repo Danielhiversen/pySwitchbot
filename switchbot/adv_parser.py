@@ -49,7 +49,6 @@ SUPPORTED_TYPES: dict[str, SwitchbotSupportedType] = {
         "modelFriendlyName": "Contact Sensor",
         "func": process_wocontact,
         "manufacturer_id": 2409,
-        "manufacturer_data_length": 13,
     },
     "H": {
         "modelName": SwitchbotModel.BOT,
