@@ -593,28 +593,10 @@ def test_contact_sensor_mfr_no_service_data():
         rssi=-70,
     )
     result = parse_advertisement_data(ble_device, adv_data)
-    assert result == SwitchBotAdvertisement(
-        address="aa:bb:cc:dd:ee:ff",
-        data={
-            "data": {
-                "battery": None,
-                "button_count": 4,
-                "contact_open": True,
-                "contact_timeout": True,
-                "is_light": False,
-                "motion_detected": False,
-                "tested": None,
-            },
-            "isEncrypted": False,
-            "model": "d",
-            "modelFriendlyName": "Contact Sensor",
-            "modelName": SwitchbotModel.CONTACT_SENSOR,
-            "rawAdvData": None,
-        },
-        device=ble_device,
-        rssi=-70,
-        active=False,
-    )
+    # Passive detection of contact sensor is not supported
+    # anymore since the Switchbot Curtain v3 was released
+    # which uses the heuristics for the contact sensor.
+    assert result is None
 
 
 def test_contact_sensor_srv():
