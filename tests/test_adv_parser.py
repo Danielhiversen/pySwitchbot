@@ -120,6 +120,38 @@ def test_parse_advertisement_data_curtain_passive():
     )
 
 
+def test_parse_advertisement_data_curtain_passive_12_bytes():
+    """Test parse_advertisement_data for curtain passive."""
+    ble_device = generate_ble_device("aa:bb:cc:dd:ee:ff", "any")
+    adv_data = generate_advertisement_data(
+        manufacturer_data={2409: b"\xe7\xabF\xac\x8f\x92|\x0f\x00\x11\x04\x00"},
+        service_data={},
+        rssi=-80,
+    )
+    result = parse_advertisement_data(ble_device, adv_data, SwitchbotModel.CURTAIN)
+    assert result == SwitchBotAdvertisement(
+        address="aa:bb:cc:dd:ee:ff",
+        data={
+            "rawAdvData": None,
+            "data": {
+                "calibration": None,
+                "battery": None,
+                "inMotion": False,
+                "position": 100,
+                "lightLevel": 1,
+                "deviceChain": 1,
+            },
+            "isEncrypted": False,
+            "model": "c",
+            "modelFriendlyName": "Curtain",
+            "modelName": SwitchbotModel.CURTAIN,
+        },
+        device=ble_device,
+        rssi=-80,
+        active=False,
+    )
+
+
 def test_parse_advertisement_data_curtain_position_zero():
     """Test parse_advertisement_data for curtain position zero."""
     ble_device = generate_ble_device("aa:bb:cc:dd:ee:ff", "any")

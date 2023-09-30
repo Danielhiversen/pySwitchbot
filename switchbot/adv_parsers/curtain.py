@@ -6,7 +6,7 @@ def process_wocurtain(
     data: bytes | None, mfr_data: bytes | None, reverse: bool = True
 ) -> dict[str, bool | int]:
     """Process woCurtain/Curtain services data."""
-    if mfr_data and len(mfr_data) >= 12: # Curtain 3
+    if mfr_data and len(mfr_data) >= 13: # Curtain 3
         device_data = mfr_data[8:11]
         battery_data = mfr_data[12]
     elif mfr_data and len(mfr_data) >= 11:
