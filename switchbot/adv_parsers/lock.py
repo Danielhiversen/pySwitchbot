@@ -27,4 +27,5 @@ def process_wolock(data: bytes | None, mfr_data: bytes | None) -> dict[str, bool
         "unclosed_alarm": bool(mfr_data[8] & 0b00100000),
         "unlocked_alarm": bool(mfr_data[8] & 0b00010000),
         "auto_lock_paused": bool(mfr_data[8] & 0b00000010),
+        "night_latch": bool(mfr_data[9] & 0b00000001) if len(mfr_data) > 9 else False,
     }

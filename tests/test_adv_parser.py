@@ -1,3 +1,5 @@
+from __future__ import annotations
+
 from typing import Any
 
 from bleak.backends.device import BLEDevice
@@ -17,6 +19,34 @@ ADVERTISEMENT_DATA_DEFAULTS = {
     "tx_power": -127,
 }
 
+BLE_DEVICE_DEFAULTS = {
+    "name": None,
+    "rssi": -127,
+    "details": None,
+}
+
+
+def generate_ble_device(
+    address: str | None = None,
+    name: str | None = None,
+    details: Any | None = None,
+    rssi: int | None = None,
+    **kwargs: Any,
+) -> BLEDevice:
+    """Generate a BLEDevice with defaults."""
+    new = kwargs.copy()
+    if address is not None:
+        new["address"] = address
+    if name is not None:
+        new["name"] = name
+    if details is not None:
+        new["details"] = details
+    if rssi is not None:
+        new["rssi"] = rssi
+    for key, value in BLE_DEVICE_DEFAULTS.items():
+        new.setdefault(key, value)
+    return BLEDevice(**new)
+
 
 def generate_advertisement_data(**kwargs: Any) -> AdvertisementData:
     """Generate advertisement data with defaults."""
@@ -28,7 +58,7 @@ def generate_advertisement_data(**kwargs: Any) -> AdvertisementData:
 
 def test_parse_advertisement_data_curtain():
     """Test parse_advertisement_data for curtain."""
-    ble_device = BLEDevice("aa:bb:cc:dd:ee:ff", "any")
+    ble_device = generate_ble_device("aa:bb:cc:dd:ee:ff", "any")
     adv_data = generate_advertisement_data(
         manufacturer_data={2409: b"\xe7\xabF\xac\x8f\x92|\x0f\x00\x11\x04"},
         service_data={"0000fd3d-0000-1000-8000-00805f9b34fb": b"c\xc0X\x00\x11\x04"},
@@ -60,7 +90,7 @@ def test_parse_advertisement_data_curtain():
 
 def test_parse_advertisement_data_curtain_passive():
     """Test parse_advertisement_data for curtain passive."""
-    ble_device = BLEDevice("aa:bb:cc:dd:ee:ff", "any")
+    ble_device = generate_ble_device("aa:bb:cc:dd:ee:ff", "any")
     adv_data = generate_advertisement_data(
         manufacturer_data={2409: b"\xe7\xabF\xac\x8f\x92|\x0f\x00\x11\x04"},
         service_data={},
@@ -90,9 +120,41 @@ def test_parse_advertisement_data_curtain_passive():
     )
 
 
+def test_parse_advertisement_data_curtain_passive_12_bytes():
+    """Test parse_advertisement_data for curtain passive."""
+    ble_device = generate_ble_device("aa:bb:cc:dd:ee:ff", "any")
+    adv_data = generate_advertisement_data(
+        manufacturer_data={2409: b"\xe7\xabF\xac\x8f\x92|\x0f\x00\x11\x04\x00"},
+        service_data={},
+        rssi=-80,
+    )
+    result = parse_advertisement_data(ble_device, adv_data, SwitchbotModel.CURTAIN)
+    assert result == SwitchBotAdvertisement(
+        address="aa:bb:cc:dd:ee:ff",
+        data={
+            "rawAdvData": None,
+            "data": {
+                "calibration": None,
+                "battery": None,
+                "inMotion": False,
+                "position": 100,
+                "lightLevel": 1,
+                "deviceChain": 1,
+            },
+            "isEncrypted": False,
+            "model": "c",
+            "modelFriendlyName": "Curtain",
+            "modelName": SwitchbotModel.CURTAIN,
+        },
+        device=ble_device,
+        rssi=-80,
+        active=False,
+    )
+
+
 def test_parse_advertisement_data_curtain_position_zero():
     """Test parse_advertisement_data for curtain position zero."""
-    ble_device = BLEDevice("aa:bb:cc:dd:ee:ff", "any")
+    ble_device = generate_ble_device("aa:bb:cc:dd:ee:ff", "any")
     adv_data = generate_advertisement_data(
         local_name="WoCurtain",
         manufacturer_data={89: b"\xc1\xc7'}U\xab"},
@@ -130,7 +192,7 @@ def test_parse_advertisement_data_curtain_position_zero():
 
 def test_parse_advertisement_data_curtain_firmware_six_position_100():
     """Test parse_advertisement_data with firmware six for curtain position 100."""
-    ble_device = BLEDevice("aa:bb:cc:dd:ee:ff", "any")
+    ble_device = generate_ble_device("aa:bb:cc:dd:ee:ff", "any")
     adv_data = generate_advertisement_data(
         local_name="WoCurtain",
         manufacturer_data={
@@ -174,7 +236,7 @@ def test_parse_advertisement_data_curtain_firmware_six_position_100():
 
 def test_parse_advertisement_data_curtain_firmware_six_position_100_other_rssi():
     """Test parse_advertisement_data with firmware six for curtain position 100 other rssi."""
-    ble_device = BLEDevice("aa:bb:cc:dd:ee:ff", "any")
+    ble_device = generate_ble_device("aa:bb:cc:dd:ee:ff", "any")
     adv_data = generate_advertisement_data(
         local_name="WoCurtain",
         manufacturer_data={
@@ -218,7 +280,7 @@ def test_parse_advertisement_data_curtain_firmware_six_position_100_other_rssi()
 
 def test_parse_advertisement_data_curtain_fully_closed():
     """Test parse_advertisement_data with firmware six fully closed."""
-    ble_device = BLEDevice("aa:bb:cc:dd:ee:ff", "any")
+    ble_device = generate_ble_device("aa:bb:cc:dd:ee:ff", "any")
     adv_data = generate_advertisement_data(
         local_name="WoCurtain",
         manufacturer_data={2409: b"\xc1\xc7'}U\xab\"\x0fd\x11\x04"},
@@ -256,7 +318,7 @@ def test_parse_advertisement_data_curtain_fully_closed():
 
 def test_parse_advertisement_data_curtain_fully_open():
     """Test parse_advertisement_data with firmware six fully open."""
-    ble_device = BLEDevice("aa:bb:cc:dd:ee:ff", "any")
+    ble_device = generate_ble_device("aa:bb:cc:dd:ee:ff", "any")
     adv_data = generate_advertisement_data(
         local_name="WoCurtain",
         manufacturer_data={2409: b"\xc1\xc7'}U\xab%\x0f\x00\x11\x04"},
@@ -292,9 +354,74 @@ def test_parse_advertisement_data_curtain_fully_open():
     )
 
 
+def test_parse_advertisement_data_curtain3():
+    """Test parse_advertisement_data for curtain 3."""
+    ble_device = generate_ble_device("aa:bb:cc:dd:ee:ff", "any")
+    adv_data = generate_advertisement_data(
+        manufacturer_data={2409: b"\xaa\xbb\xcc\xdd\xee\xff\xf7\x07\x00\x11\x04\x00\x49"},
+        service_data={"0000fd3d-0000-1000-8000-00805f9b34fb": b"{\xc0\x49\x00\x11\x04"},
+        rssi=-80,
+    )
+
+    result = parse_advertisement_data(ble_device, adv_data)
+    assert result == SwitchBotAdvertisement(
+        address="aa:bb:cc:dd:ee:ff",
+        data={
+            "rawAdvData": b"{\xc0\x49\x00\x11\x04",
+            "data": {
+                "calibration": True,
+                "battery": 73,
+                "inMotion": False,
+                "position": 100,
+                "lightLevel": 1,
+                "deviceChain": 1,
+            },
+            "isEncrypted": False,
+            "model": "{",
+            "modelFriendlyName": "Curtain 3",
+            "modelName": SwitchbotModel.CURTAIN,
+        },
+        device=ble_device,
+        rssi=-80,
+        active=True,
+    )
+
+
+def test_parse_advertisement_data_curtain3_passive():
+    """Test parse_advertisement_data for curtain passive."""
+    ble_device = generate_ble_device("aa:bb:cc:dd:ee:ff", "any")
+    adv_data = generate_advertisement_data(
+        manufacturer_data={2409: b"\xaa\xbb\xcc\xdd\xee\xff\xf7\x07\x00\x11\x04\x00\x49"},
+        service_data={},
+        rssi=-80,
+    )
+    result = parse_advertisement_data(ble_device, adv_data, SwitchbotModel.CURTAIN)
+    assert result == SwitchBotAdvertisement(
+        address="aa:bb:cc:dd:ee:ff",
+        data={
+            "rawAdvData": None,
+            "data": {
+                "calibration": None,
+                "battery": 73,
+                "inMotion": False,
+                "position": 100,
+                "lightLevel": 1,
+                "deviceChain": 1,
+            },
+            "isEncrypted": False,
+            "model": "c",
+            "modelFriendlyName": "Curtain",
+            "modelName": SwitchbotModel.CURTAIN,
+        },
+        device=ble_device,
+        rssi=-80,
+        active=False,
+    )
+
+
 def test_parse_advertisement_data_contact():
     """Test parse_advertisement_data for the contact sensor."""
-    ble_device = BLEDevice("aa:bb:cc:dd:ee:ff", "any")
+    ble_device = generate_ble_device("aa:bb:cc:dd:ee:ff", "any")
     adv_data = generate_advertisement_data(
         manufacturer_data={2409: b"\xe7\xabF\xac\x8f\x92|\x0f\x00\x11\x04"},
         service_data={
@@ -329,7 +456,7 @@ def test_parse_advertisement_data_contact():
 
 def test_parse_advertisement_data_empty():
     """Test parse_advertisement_data with empty data does not blow up."""
-    ble_device = BLEDevice("aa:bb:cc:dd:ee:ff", "any")
+    ble_device = generate_ble_device("aa:bb:cc:dd:ee:ff", "any")
     adv_data = generate_advertisement_data(
         manufacturer_data={2403: b"\xe7\xabF\xac\x8f\x92|\x0f\x00\x11\x04"},
         service_data={"0000fd3d-0000-1000-8000-00805f9b34fb": b""},
@@ -340,7 +467,7 @@ def test_parse_advertisement_data_empty():
 
 def test_new_bot_firmware():
     """Test parsing adv data from new bot firmware."""
-    ble_device = BLEDevice("aa:bb:cc:dd:ee:ff", "any")
+    ble_device = generate_ble_device("aa:bb:cc:dd:ee:ff", "any")
     adv_data = generate_advertisement_data(
         manufacturer_data={89: b"\xd8.\xad\xcd\r\x85"},
         service_data={"00000d00-0000-1000-8000-00805f9b34fb": b"H\x10\xe1"},
@@ -366,7 +493,7 @@ def test_new_bot_firmware():
 
 def test_parse_advertisement_data_curtain_firmware_six_fully_closed():
     """Test parse_advertisement_data with firmware six fully closed."""
-    ble_device = BLEDevice("aa:bb:cc:dd:ee:ff", "any")
+    ble_device = generate_ble_device("aa:bb:cc:dd:ee:ff", "any")
     adv_data = generate_advertisement_data(
         local_name="WoCurtain",
         manufacturer_data={
@@ -410,7 +537,7 @@ def test_parse_advertisement_data_curtain_firmware_six_fully_closed():
 
 def test_parse_advertisement_data_curtain_firmware_six_fully_open():
     """Test parse_advertisement_data with firmware six fully open."""
-    ble_device = BLEDevice("aa:bb:cc:dd:ee:ff", "any")
+    ble_device = generate_ble_device("aa:bb:cc:dd:ee:ff", "any")
     adv_data = generate_advertisement_data(
         local_name="WoCurtain",
         manufacturer_data={
@@ -454,7 +581,7 @@ def test_parse_advertisement_data_curtain_firmware_six_fully_open():
 
 def test_contact_sensor_mfr():
     """Test parsing adv data from new bot firmware."""
-    ble_device = BLEDevice("aa:bb:cc:dd:ee:ff", "any")
+    ble_device = generate_ble_device("aa:bb:cc:dd:ee:ff", "any")
     adv_data = generate_advertisement_data(
         manufacturer_data={2409: b"\xcb9\xcd\xc4=FA,\x00F\x01\x8f\xc4"},
         service_data={
@@ -490,7 +617,7 @@ def test_contact_sensor_mfr():
 
 def test_contact_sensor_mfr_no_service_data():
     """Test contact sensor with passive data only."""
-    ble_device = BLEDevice("aa:bb:cc:dd:ee:ff", "any")
+    ble_device = generate_ble_device("aa:bb:cc:dd:ee:ff", "any")
     adv_data = generate_advertisement_data(
         manufacturer_data={2409: b"\xcb9\xcd\xc4=FA,\x00F\x01\x8f\xc4"},
         service_data={},
@@ -498,33 +625,15 @@ def test_contact_sensor_mfr_no_service_data():
         rssi=-70,
     )
     result = parse_advertisement_data(ble_device, adv_data)
-    assert result == SwitchBotAdvertisement(
-        address="aa:bb:cc:dd:ee:ff",
-        data={
-            "data": {
-                "battery": None,
-                "button_count": 4,
-                "contact_open": False,
-                "contact_timeout": False,
-                "is_light": False,
-                "motion_detected": False,
-                "tested": None,
-            },
-            "isEncrypted": False,
-            "model": "d",
-            "modelFriendlyName": "Contact Sensor",
-            "modelName": SwitchbotModel.CONTACT_SENSOR,
-            "rawAdvData": None,
-        },
-        device=ble_device,
-        rssi=-70,
-        active=False,
-    )
+    # Passive detection of contact sensor is not supported
+    # anymore since the Switchbot Curtain v3 was released
+    # which uses the heuristics for the contact sensor.
+    assert result is None
 
 
 def test_contact_sensor_srv():
     """Test parsing adv data from new bot firmware."""
-    ble_device = BLEDevice("aa:bb:cc:dd:ee:ff", "any")
+    ble_device = generate_ble_device("aa:bb:cc:dd:ee:ff", "any")
     adv_data = generate_advertisement_data(
         service_data={
             "0000fd3d-0000-1000-8000-00805f9b34fb": b"d\x00\xda\x04\x00F\x01\x8f\xc4"
@@ -559,7 +668,7 @@ def test_contact_sensor_srv():
 
 def test_contact_sensor_open():
     """Test parsing mfr adv data from new bot firmware."""
-    ble_device = BLEDevice("aa:bb:cc:dd:ee:ff", "any")
+    ble_device = generate_ble_device("aa:bb:cc:dd:ee:ff", "any")
     adv_data = generate_advertisement_data(
         manufacturer_data={2409: b"\xcb9\xcd\xc4=F\x84\x9c\x00\x17\x00QD"},
         service_data={
@@ -595,7 +704,7 @@ def test_contact_sensor_open():
 
 def test_contact_sensor_closed():
     """Test parsing mfr adv data from new bot firmware."""
-    ble_device = BLEDevice("aa:bb:cc:dd:ee:ff", "any")
+    ble_device = generate_ble_device("aa:bb:cc:dd:ee:ff", "any")
     adv_data = generate_advertisement_data(
         manufacturer_data={2409: b"\xcb9\xcd\xc4=F\x89\x8c\x00+\x00\x19\x84"},
         service_data={
@@ -631,7 +740,7 @@ def test_contact_sensor_closed():
 
 def test_switchbot_passive():
     """Test parsing switchbot as passive."""
-    ble_device = BLEDevice("aa:bb:cc:dd:ee:ff", "any")
+    ble_device = generate_ble_device("aa:bb:cc:dd:ee:ff", "any")
     adv_data = generate_advertisement_data(
         manufacturer_data={89: bytes.fromhex("d51cfb397856")},
         service_data={},
@@ -661,7 +770,7 @@ def test_switchbot_passive():
 
 def test_bulb_active():
     """Test parsing bulb as active."""
-    ble_device = BLEDevice("aa:bb:cc:dd:ee:ff", "any")
+    ble_device = generate_ble_device("aa:bb:cc:dd:ee:ff", "any")
     adv_data = generate_advertisement_data(
         manufacturer_data={2409: b"\x84\xf7\x03\xb4\xcbz\x03\xe4!\x00\x00"},
         service_data={"0000fd3d-0000-1000-8000-00805f9b34fb": b"u\x00d"},
@@ -696,7 +805,7 @@ def test_bulb_active():
 
 def test_lightstrip_passive():
     """Test parsing lightstrip as passive."""
-    ble_device = BLEDevice("aa:bb:cc:dd:ee:ff", "any")
+    ble_device = generate_ble_device("aa:bb:cc:dd:ee:ff", "any")
     adv_data = generate_advertisement_data(
         manufacturer_data={
             2409: b"`U\xf9(\xe5\x96\x00d\x02\xb0\x00\x00\x00\x00\x00\x00"
@@ -733,7 +842,7 @@ def test_lightstrip_passive():
 
 def test_wosensor_passive_and_active():
     """Test parsing wosensor as passive with active data as well."""
-    ble_device = BLEDevice("aa:bb:cc:dd:ee:ff", "any")
+    ble_device = generate_ble_device("aa:bb:cc:dd:ee:ff", "any")
     adv_data = generate_advertisement_data(
         manufacturer_data={2409: b"\xd7\xc1}]\xebC\xde\x03\x06\x985"},
         service_data={"0000fd3d-0000-1000-8000-00805f9b34fb": b"T\x00\xe4\x06\x985"},
@@ -765,7 +874,7 @@ def test_wosensor_passive_and_active():
 
 def test_wosensor_active():
     """Test parsing wosensor with active data as well."""
-    ble_device = BLEDevice("aa:bb:cc:dd:ee:ff", "any")
+    ble_device = generate_ble_device("aa:bb:cc:dd:ee:ff", "any")
     adv_data = generate_advertisement_data(
         manufacturer_data={},
         service_data={"0000fd3d-0000-1000-8000-00805f9b34fb": b"T\x00\xe4\x06\x985"},
@@ -797,7 +906,7 @@ def test_wosensor_active():
 
 def test_wosensor_passive_only():
     """Test parsing wosensor with only passive data."""
-    ble_device = BLEDevice("aa:bb:cc:dd:ee:ff", "any")
+    ble_device = generate_ble_device("aa:bb:cc:dd:ee:ff", "any")
     adv_data = generate_advertisement_data(
         manufacturer_data={2409: b"\xd7\xc1}]\xebC\xde\x03\x06\x985"},
         service_data={},
@@ -827,9 +936,73 @@ def test_wosensor_passive_only():
     )
 
 
+def test_woiosensor_passive_and_active():
+    """Test parsing woiosensor as passive with active data as well."""
+    ble_device = generate_ble_device("aa:bb:cc:dd:ee:ff", "any")
+    adv_data = generate_advertisement_data(
+        manufacturer_data={2409: b"\xaa\xbb\xcc\xdd\xee\xff\xe0\x0f\x06\x985\x00"},
+        service_data={"0000fd3d-0000-1000-8000-00805f9b34fb": b"w\x00\xe4"},
+        tx_power=-127,
+        rssi=-50,
+    )
+    result = parse_advertisement_data(ble_device, adv_data)
+    assert result == SwitchBotAdvertisement(
+        address="aa:bb:cc:dd:ee:ff",
+        data={
+            "data": {
+                "battery": 100,
+                "fahrenheit": False,
+                "humidity": 53,
+                "temp": {"c": 24.6, "f": 76.28},
+                "temperature": 24.6,
+            },
+            "isEncrypted": False,
+            "model": "w",
+            "modelFriendlyName": "Indoor/Outdoor Meter",
+            "modelName": SwitchbotModel.IO_METER,
+            "rawAdvData": b"w\x00\xe4",
+        },
+        device=ble_device,
+        rssi=-50,
+        active=True,
+    )
+
+
+def test_woiosensor_passive_only():
+    """Test parsing woiosensor with only passive data."""
+    ble_device = generate_ble_device("aa:bb:cc:dd:ee:ff", "any")
+    adv_data = generate_advertisement_data(
+        manufacturer_data={2409: b"\xaa\xbb\xcc\xdd\xee\xff\xe0\x0f\x06\x985\x00"},
+        service_data={},
+        tx_power=-127,
+        rssi=-50,
+    )
+    result = parse_advertisement_data(ble_device, adv_data, SwitchbotModel.IO_METER)
+    assert result == SwitchBotAdvertisement(
+        address="aa:bb:cc:dd:ee:ff",
+        data={
+            "data": {
+                "battery": None,
+                "fahrenheit": False,
+                "humidity": 53,
+                "temp": {"c": 24.6, "f": 76.28},
+                "temperature": 24.6,
+            },
+            "isEncrypted": False,
+            "model": "w",
+            "modelFriendlyName": "Indoor/Outdoor Meter",
+            "modelName": SwitchbotModel.IO_METER,
+            "rawAdvData": None,
+        },
+        device=ble_device,
+        rssi=-50,
+        active=False,
+    )
+
+
 def test_motion_sensor_clear():
     """Test parsing motion sensor with clear data."""
-    ble_device = BLEDevice("aa:bb:cc:dd:ee:ff", "any")
+    ble_device = generate_ble_device("aa:bb:cc:dd:ee:ff", "any")
     adv_data = generate_advertisement_data(
         manufacturer_data={2409: b"\xc0!\x9a\xe8\xbcIj\x1c\x00f"},
         service_data={"0000fd3d-0000-1000-8000-00805f9b34fb": b"s\x00\xe2\x00f\x01"},
@@ -866,7 +1039,7 @@ def test_motion_sensor_clear():
 
 def test_motion_sensor_clear_passive():
     """Test parsing motion sensor with clear data."""
-    ble_device = BLEDevice("aa:bb:cc:dd:ee:ff", "any")
+    ble_device = generate_ble_device("aa:bb:cc:dd:ee:ff", "any")
     adv_data = generate_advertisement_data(
         manufacturer_data={2409: b"\xc0!\x9a\xe8\xbcIj\x1c\x00f"},
         service_data={},
@@ -903,7 +1076,7 @@ def test_motion_sensor_clear_passive():
 
 def test_motion_sensor_motion():
     """Test parsing motion sensor with motion data."""
-    ble_device = BLEDevice("aa:bb:cc:dd:ee:ff", "any")
+    ble_device = generate_ble_device("aa:bb:cc:dd:ee:ff", "any")
     adv_data = generate_advertisement_data(
         manufacturer_data={2409: b"\xc0!\x9a\xe8\xbcIi\\\x008"},
         service_data={"0000fd3d-0000-1000-8000-00805f9b34fb": b"s@\xe2\x008\x01"},
@@ -940,7 +1113,7 @@ def test_motion_sensor_motion():
 
 def test_motion_sensor_motion_passive():
     """Test parsing motion sensor with motion data."""
-    ble_device = BLEDevice("aa:bb:cc:dd:ee:ff", "any")
+    ble_device = generate_ble_device("aa:bb:cc:dd:ee:ff", "any")
     adv_data = generate_advertisement_data(
         manufacturer_data={2409: b"\xc0!\x9a\xe8\xbcIi\\\x008"},
         service_data={},
@@ -977,7 +1150,7 @@ def test_motion_sensor_motion_passive():
 
 def test_motion_sensor_is_light_passive():
     """Test parsing motion sensor with motion data."""
-    ble_device = BLEDevice("aa:bb:cc:dd:ee:ff", "any")
+    ble_device = generate_ble_device("aa:bb:cc:dd:ee:ff", "any")
     adv_data = generate_advertisement_data(
         manufacturer_data={2409: b"\xc0!\x9a\xe8\xbcIs,\x04g"},
         service_data={"0000fd3d-0000-1000-8000-00805f9b34fb": b"s\x00\xe2\x04g\x02"},
@@ -1014,7 +1187,7 @@ def test_motion_sensor_is_light_passive():
 
 def test_motion_sensor_is_light_active():
     """Test parsing motion sensor with motion data."""
-    ble_device = BLEDevice("aa:bb:cc:dd:ee:ff", "any")
+    ble_device = generate_ble_device("aa:bb:cc:dd:ee:ff", "any")
     adv_data = generate_advertisement_data(
         manufacturer_data={},
         service_data={"0000fd3d-0000-1000-8000-00805f9b34fb": b"s\x00\xe2\x04g\x02"},
@@ -1050,7 +1223,7 @@ def test_motion_sensor_is_light_active():
 
 
 def test_motion_with_light_detected():
-    ble_device = BLEDevice("aa:bb:cc:dd:ee:ff", "any")
+    ble_device = generate_ble_device("aa:bb:cc:dd:ee:ff", "any")
     adv_data = generate_advertisement_data(
         manufacturer_data={2409: b"\xc0!\x9a\xe8\xbcIvl\x00,"},
         service_data={"0000fd3d-0000-1000-8000-00805f9b34fb": b"s@\xe2\x00,\x02"},
@@ -1087,7 +1260,7 @@ def test_motion_with_light_detected():
 
 def test_motion_sensor_motion_passive():
     """Test parsing motion sensor with motion data."""
-    ble_device = BLEDevice("aa:bb:cc:dd:ee:ff", "any")
+    ble_device = generate_ble_device("aa:bb:cc:dd:ee:ff", "any")
     adv_data = generate_advertisement_data(
         manufacturer_data={2409: b"\xc0!\x9a\xe8\xbcIi\\\x008"},
         service_data={},
@@ -1124,7 +1297,7 @@ def test_motion_sensor_motion_passive():
 
 def test_parsing_lock_active():
     """Test parsing lock with active data."""
-    ble_device = BLEDevice("aa:bb:cc:dd:ee:ff", "any")
+    ble_device = generate_ble_device("aa:bb:cc:dd:ee:ff", "any")
     adv_data = generate_advertisement_data(
         manufacturer_data={2409: b"\xf1\t\x9fE\x1a]\x07\x83\x00 "},
         service_data={"0000fd3d-0000-1000-8000-00805f9b34fb": b"o\x80d"},
@@ -1140,6 +1313,7 @@ def test_parsing_lock_active():
                 "calibration": True,
                 "door_open": False,
                 "double_lock_mode": False,
+                "night_latch": False,
                 "status": LockStatus.LOCKED,
                 "unclosed_alarm": False,
                 "unlocked_alarm": False,
@@ -1159,7 +1333,7 @@ def test_parsing_lock_active():
 
 def test_parsing_lock_passive():
     """Test parsing lock with active data."""
-    ble_device = BLEDevice("aa:bb:cc:dd:ee:ff", "any")
+    ble_device = generate_ble_device("aa:bb:cc:dd:ee:ff", "any")
     adv_data = generate_advertisement_data(
         manufacturer_data={2409: b"\xf1\t\x9fE\x1a]\x07\x83\x00 "}, rssi=-67
     )
@@ -1173,6 +1347,76 @@ def test_parsing_lock_passive():
                 "calibration": True,
                 "door_open": False,
                 "double_lock_mode": False,
+                "night_latch": False,
+                "status": LockStatus.LOCKED,
+                "unclosed_alarm": False,
+                "unlocked_alarm": False,
+                "update_from_secondary_lock": False,
+            },
+            "isEncrypted": False,
+            "model": "o",
+            "modelFriendlyName": "Lock",
+            "modelName": SwitchbotModel.LOCK,
+            "rawAdvData": None,
+        },
+        device=ble_device,
+        rssi=-67,
+        active=False,
+    )
+
+def test_parsing_lock_active_old_firmware():
+    """Test parsing lock with active data. Old firmware."""
+    ble_device = generate_ble_device("aa:bb:cc:dd:ee:ff", "any")
+    adv_data = generate_advertisement_data(
+        manufacturer_data={2409: b"\xf1\t\x9fE\x1a]\x07\x83\x00"},
+        service_data={"0000fd3d-0000-1000-8000-00805f9b34fb": b"o\x80d"},
+        rssi=-67,
+    )
+    result = parse_advertisement_data(ble_device, adv_data)
+    assert result == SwitchBotAdvertisement(
+        address="aa:bb:cc:dd:ee:ff",
+        data={
+            "data": {
+                "auto_lock_paused": False,
+                "battery": 100,
+                "calibration": True,
+                "door_open": False,
+                "double_lock_mode": False,
+                "night_latch": False,
+                "status": LockStatus.LOCKED,
+                "unclosed_alarm": False,
+                "unlocked_alarm": False,
+                "update_from_secondary_lock": False,
+            },
+            "isEncrypted": False,
+            "model": "o",
+            "modelFriendlyName": "Lock",
+            "modelName": SwitchbotModel.LOCK,
+            "rawAdvData": b"o\x80d",
+        },
+        device=ble_device,
+        rssi=-67,
+        active=True,
+    )
+
+
+def test_parsing_lock_passive_old_firmware():
+    """Test parsing lock with active data. Old firmware."""
+    ble_device = generate_ble_device("aa:bb:cc:dd:ee:ff", "any")
+    adv_data = generate_advertisement_data(
+        manufacturer_data={2409: b"\xf1\t\x9fE\x1a]\x07\x83\x00"}, rssi=-67
+    )
+    result = parse_advertisement_data(ble_device, adv_data, SwitchbotModel.LOCK)
+    assert result == SwitchBotAdvertisement(
+        address="aa:bb:cc:dd:ee:ff",
+        data={
+            "data": {
+                "auto_lock_paused": False,
+                "battery": None,
+                "calibration": True,
+                "door_open": False,
+                "double_lock_mode": False,
+                "night_latch": False,
                 "status": LockStatus.LOCKED,
                 "unclosed_alarm": False,
                 "unlocked_alarm": False,

@@ -11,7 +11,6 @@ from typing import Any, Callable, TypeVar, cast
 from uuid import UUID
 
 import async_timeout
-from bleak import BleakError
 from bleak.backends.device import BLEDevice
 from bleak.backends.service import BleakGATTCharacteristic, BleakGATTServiceCollection
 from bleak.exc import BleakDBusError
@@ -40,6 +39,7 @@ DEVICE_SET_EXTENDED_KEY = REQ_HEADER
 # Base key when encryption is set
 KEY_PASSWORD_PREFIX = "571"
 
+DBUS_ERROR_BACKOFF_TIME = 0.25
 
 # How long to hold the connection
 # to wait for additional commands for
@@ -48,7 +48,6 @@ DISCONNECT_DELAY = 8.5
 
 
 class ColorMode(Enum):
-
     OFF = 0
     COLOR_TEMP = 1
     RGB = 2
@@ -144,6 +143,7 @@ class SwitchbotBaseDevice:
         self._callbacks: list[Callable[[], None]] = []
         self._notify_future: asyncio.Future[bytearray] | None = None
         self._last_full_update: float = -PASSIVE_POLL_INTERVAL
+        self._timed_disconnect_task: asyncio.Task[None] | None = None
 
     def advertisement_changed(self, advertisement: SwitchBotAdvertisement) -> bool:
         """Check if the advertisement has changed."""
@@ -253,11 +253,21 @@ class SwitchbotBaseDevice:
                 self.rssi,
             )
         if self._client and self._client.is_connected:
+            _LOGGER.debug(
+                "%s: Already connected before obtaining lock, resetting timer; RSSI: %s",
+                self.name,
+                self.rssi,
+            )
             self._reset_disconnect_timer()
             return
         async with self._connect_lock:
             # Check again while holding the lock
             if self._client and self._client.is_connected:
+                _LOGGER.debug(
+                    "%s: Already connected after obtaining lock, resetting timer; RSSI: %s",
+                    self.name,
+                    self.rssi,
+                )
                 self._reset_disconnect_timer()
                 return
             _LOGGER.debug("%s: Connecting; RSSI: %s", self.name, self.rssi)
@@ -287,6 +297,11 @@ class SwitchbotBaseDevice:
                 await self._execute_disconnect_with_lock()
                 raise
 
+            _LOGGER.debug(
+                "%s: Starting notify and disconnect timer; RSSI: %s",
+                self.name,
+                self.rssi,
+            )
             self._reset_disconnect_timer()
             await self._start_notify()
 
@@ -319,6 +334,7 @@ class SwitchbotBaseDevice:
             self.name,
             self.rssi,
         )
+        self._cancel_disconnect_timer()
 
     def _disconnect_from_timer(self):
         """Disconnect from device."""
@@ -331,7 +347,9 @@ class SwitchbotBaseDevice:
             self._reset_disconnect_timer()
             return
         self._cancel_disconnect_timer()
-        asyncio.create_task(self._execute_timed_disconnect())
+        self._timed_disconnect_task = asyncio.create_task(
+            self._execute_timed_disconnect()
+        )
 
     def _cancel_disconnect_timer(self):
         """Cancel disconnect timer."""
@@ -375,12 +393,21 @@ class SwitchbotBaseDevice:
         self._client = None
         self._read_char = None
         self._write_char = None
-        if client and client.is_connected:
-            _LOGGER.debug("%s: Disconnecting", self.name)
-            await client.disconnect()
-            _LOGGER.debug("%s: Disconnect completed", self.name)
-        else:
+        if not client:
             _LOGGER.debug("%s: Already disconnected", self.name)
+            return
+        _LOGGER.debug("%s: Disconnecting", self.name)
+        try:
+            await client.disconnect()
+        except BLEAK_RETRY_EXCEPTIONS as ex:
+            _LOGGER.warning(
+                "%s: Error disconnecting: %s; RSSI: %s",
+                self.name,
+                ex,
+                self.rssi,
+            )
+        else:
+            _LOGGER.debug("%s: Disconnect completed successfully", self.name)
 
     async def _send_command_locked(self, key: str, command: bytes) -> bytes:
         """Send command to device and read response."""
@@ -389,17 +416,17 @@ class SwitchbotBaseDevice:
             return await self._execute_command_locked(key, command)
         except BleakDBusError as ex:
             # Disconnect so we can reset state and try again
-            await asyncio.sleep(0.25)
+            await asyncio.sleep(DBUS_ERROR_BACKOFF_TIME)
             _LOGGER.debug(
                 "%s: RSSI: %s; Backing off %ss; Disconnecting due to error: %s",
                 self.name,
                 self.rssi,
-                0.25,
+                DBUS_ERROR_BACKOFF_TIME,
                 ex,
             )
             await self._execute_forced_disconnect()
             raise
-        except BleakError as ex:
+        except BLEAK_RETRY_EXCEPTIONS as ex:
             # Disconnect so we can reset state and try again
             _LOGGER.debug(
                 "%s: RSSI: %s; Disconnecting due to error: %s", self.name, self.rssi, ex

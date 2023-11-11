@@ -83,9 +83,19 @@ class GetSwitchbotDevices:
             if adv.data.get("model") == model
         }
 
+    async def get_blind_tilts(self) -> dict[str, SwitchBotAdvertisement]:
+        """Return all WoBlindTilt/BlindTilts devices with services data."""
+        regular_blinds = await self._get_devices_by_model("x")
+        pairing_blinds = await self._get_devices_by_model("X")
+        return {**regular_blinds, **pairing_blinds}
+
     async def get_curtains(self) -> dict[str, SwitchBotAdvertisement]:
         """Return all WoCurtain/Curtains devices with services data."""
-        return await self._get_devices_by_model("c")
+        regular_curtains = await self._get_devices_by_model("c")
+        pairing_curtains = await self._get_devices_by_model("C")
+        regular_curtains3 = await self._get_devices_by_model("{")
+        pairing_curtains3 = await self._get_devices_by_model("[")
+        return {**regular_curtains, **pairing_curtains, **regular_curtains3, **pairing_curtains3}
 
     async def get_bots(self) -> dict[str, SwitchBotAdvertisement]:
         """Return all WoHand/Bot devices with services data."""
@@ -95,7 +105,8 @@ class GetSwitchbotDevices:
         """Return all WoSensorTH/Temp sensor devices with services data."""
         base_meters = await self._get_devices_by_model("T")
         plus_meters = await self._get_devices_by_model("i")
-        return {**base_meters, **plus_meters}
+        io_meters = await self._get_devices_by_model("w")
+        return {**base_meters, **plus_meters, **io_meters}
 
     async def get_contactsensors(self) -> dict[str, SwitchBotAdvertisement]:
         """Return all WoContact/Contact sensor devices with services data."""

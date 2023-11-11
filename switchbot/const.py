@@ -27,7 +27,6 @@ class SwitchbotAccountConnectionError(RuntimeError):
 
 
 class SwitchbotModel(StrEnum):
-
     BOT = "WoHand"
     CURTAIN = "WoCurtain"
     HUMIDIFIER = "WoHumi"
@@ -35,10 +34,12 @@ class SwitchbotModel(StrEnum):
     CONTACT_SENSOR = "WoContact"
     LIGHT_STRIP = "WoStrip"
     METER = "WoSensorTH"
+    IO_METER = "WoIOSensorTH"
     MOTION_SENSOR = "WoPresence"
     COLOR_BULB = "WoBulb"
     CEILING_LIGHT = "WoCeiling"
     LOCK = "WoLock"
+    BLIND_TILT = "WoBlindTilt"
 
 
 class LockStatus(Enum):
