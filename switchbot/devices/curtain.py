@@ -69,14 +69,14 @@ class SwitchbotCurtain(SwitchbotDevice):
 
     @update_after_operation
     async def open(self, speed="ff") -> bool:
-        """Send open command."""
+        """Send open command. Speed 00 or ff - normal, 01 - slow"""
         return await self._send_multiple_commands(
             [key + (speed + "00") * (i == 1) for i, key in enumerate(OPEN_KEYS)]
         )
 
     @update_after_operation
     async def close(self, speed="ff") -> bool:
-        """Send close command."""
+        """Send close command. Speed 00 or ff - normal, 01 - slow"""
         return await self._send_multiple_commands(
             [key + (speed + "64") * (i == 1) for i, key in enumerate(CLOSE_KEYS)]
         )
@@ -88,7 +88,7 @@ class SwitchbotCurtain(SwitchbotDevice):
 
     @update_after_operation
     async def set_position(self, position: int, speed="ff") -> bool:
-        """Send position command (0-100) to device."""
+        """Send position command (0-100) to device. Speed 00 or ff - normal, 01 - slow"""
         position = (100 - position) if self._reverse else position
         hex_position = "%0.2X" % position
         return await self._send_multiple_commands(
