@@ -15,15 +15,15 @@ CURTAIN_COMMAND = "4501"
 # Second byte [00] is a command (00 - open, 64 - close)
 OPEN_KEYS = [
     f"{REQ_HEADER}{CURTAIN_COMMAND}010100",
-    f"{REQ_HEADER}{CURTAIN_COMMAND}05", # +speed + "00"
+    f"{REQ_HEADER}{CURTAIN_COMMAND}05",  # +speed + "00"
 ]
 CLOSE_KEYS = [
     f"{REQ_HEADER}{CURTAIN_COMMAND}010164",
-    f"{REQ_HEADER}{CURTAIN_COMMAND}05", # +speed + "64"
+    f"{REQ_HEADER}{CURTAIN_COMMAND}05",  # +speed + "64"
 ]
 POSITION_KEYS = [
     f"{REQ_HEADER}{CURTAIN_COMMAND}0101",
-    f"{REQ_HEADER}{CURTAIN_COMMAND}05", # +speed
+    f"{REQ_HEADER}{CURTAIN_COMMAND}05",  # +speed
 ]  # +actual_position
 STOP_KEYS = [f"{REQ_HEADER}{CURTAIN_COMMAND}0001", f"{REQ_HEADER}{CURTAIN_COMMAND}00ff"]
 
@@ -68,19 +68,19 @@ class SwitchbotCurtain(SwitchbotDevice):
         return final_result
 
     @update_after_operation
-    async def open(self, speed:int = 255) -> bool:
+    async def open(self, speed: int = 255) -> bool:
         """Send open command. Speed 255 - normal, 1 - slow"""
-        hex_speed = "%0.2X" % speed
         return await self._send_multiple_commands(
-            [key + (hex_speed + "00") * (i == 1) for i, key in enumerate(OPEN_KEYS)]
+            OPEN_KEYS[0],
+            f"{OPEN_KEYS[1]}{speed:02X}00",
         )
 
     @update_after_operation
-    async def close(self, speed:int = 255) -> bool:
+    async def close(self, speed: int = 255) -> bool:
         """Send close command. Speed 255 - normal, 1 - slow"""
-        hex_speed = "%0.2X" % speed
         return await self._send_multiple_commands(
-            [key + (hex_speed + "64") * (i == 1) for i, key in enumerate(CLOSE_KEYS)]
+            CLOSE_KEYS[0],
+            f"{CLOSE_KEYS[1]}{speed:02X}64",
         )
 
     @update_after_operation
@@ -89,13 +89,12 @@ class SwitchbotCurtain(SwitchbotDevice):
         return await self._send_multiple_commands(STOP_KEYS)
 
     @update_after_operation
-    async def set_position(self, position: int, speed:int = 255) -> bool:
+    async def set_position(self, position: int, speed: int = 255) -> bool:
         """Send position command (0-100) to device. Speed 255 - normal, 1 - slow"""
         position = (100 - position) if self._reverse else position
-        hex_position = "%0.2X" % position
-        hex_speed = "%0.2X" % speed
         return await self._send_multiple_commands(
-            [key + hex_speed * (i == 1) + hex_position for i, key in enumerate(POSITION_KEYS)]
+            f"{POSITION_KEYS[0]}{position:02X}",
+            f"{POSITION_KEYS[1]}{speed:02X}{position:02X}",
         )
 
     def get_position(self) -> Any:
