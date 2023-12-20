@@ -71,16 +71,16 @@ class SwitchbotCurtain(SwitchbotDevice):
     async def open(self, speed: int = 255) -> bool:
         """Send open command. Speed 255 - normal, 1 - slow"""
         return await self._send_multiple_commands(
-            OPEN_KEYS[0],
-            f"{OPEN_KEYS[1]}{speed:02X}00",
+            [OPEN_KEYS[0],
+            f"{OPEN_KEYS[1]}{speed:02X}00"]
         )
 
     @update_after_operation
     async def close(self, speed: int = 255) -> bool:
         """Send close command. Speed 255 - normal, 1 - slow"""
         return await self._send_multiple_commands(
-            CLOSE_KEYS[0],
-            f"{CLOSE_KEYS[1]}{speed:02X}64",
+            [CLOSE_KEYS[0],
+            f"{CLOSE_KEYS[1]}{speed:02X}64"]
         )
 
     @update_after_operation
@@ -93,8 +93,8 @@ class SwitchbotCurtain(SwitchbotDevice):
         """Send position command (0-100) to device. Speed 255 - normal, 1 - slow"""
         position = (100 - position) if self._reverse else position
         return await self._send_multiple_commands(
-            f"{POSITION_KEYS[0]}{position:02X}",
-            f"{POSITION_KEYS[1]}{speed:02X}{position:02X}",
+            [f"{POSITION_KEYS[0]}{position:02X}",
+            f"{POSITION_KEYS[1]}{speed:02X}{position:02X}"]
         )
 
     def get_position(self) -> Any:
