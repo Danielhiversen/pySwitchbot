@@ -10,7 +10,6 @@ from enum import Enum
 from typing import Any, Callable, TypeVar, cast
 from uuid import UUID
 
-import async_timeout
 from bleak.backends.device import BLEDevice
 from bleak.backends.service import BleakGATTCharacteristic, BleakGATTServiceCollection
 from bleak.exc import BleakDBusError
@@ -107,6 +106,12 @@ def _merge_data(old_data: dict[str, Any], new_data: dict[str, Any]) -> dict[str,
         if value is not None or key not in old_data:
             merged[key] = value
     return merged
+
+
+def _handle_timeout(fut: asyncio.Future[None]) -> None:
+    """Handle a timeout."""
+    if not fut.done():
+        fut.set_exception(asyncio.TimeoutError)
 
 
 class SwitchbotBaseDevice:
@@ -451,16 +456,28 @@ class SwitchbotBaseDevice:
         assert self._client is not None
         assert self._read_char is not None
         assert self._write_char is not None
-        self._notify_future = asyncio.Future()
+        self._notify_future = self.loop.create_future()
         client = self._client
 
         _LOGGER.debug("%s: Sending command: %s", self.name, key)
         await client.write_gatt_char(self._write_char, command, False)
 
-        async with async_timeout.timeout(5):
+        timeout = 5
+        timeout_handle = self.loop.call_at(
+            self.loop.time() + timeout, _handle_timeout, self._notify_future
+        )
+        timeout_expired = False
+        try:
             notify_msg = await self._notify_future
+        except asyncio.TimeoutError:
+            timeout_expired = True
+            raise
+        finally:
+            if not timeout_expired:
+                timeout_handle.cancel()
+            self._notify_future = None
+
         _LOGGER.debug("%s: Notification received: %s", self.name, notify_msg.hex())
-        self._notify_future = None
 
         if notify_msg == b"\x07":
             _LOGGER.error("Password required")
