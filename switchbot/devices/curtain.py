@@ -67,11 +67,7 @@ class SwitchbotCurtain(SwitchbotDevice):
         _new_data = replace(
             advertisement, data=self._sb_adv_data.data | {"data": data}
         )
-        self._update_motion_direction(_new_data["inMotion"], self._get_adv_value("position"), _new_data["position"])
-        if _new_data["inMotion"] == True:
-            pass
-        else:
-            self._is_closing = self._is_opening = False
+        self._update_motion_direction(_new_data.data["data"].get("inMotion"), self._get_adv_value("position"), _new_data.data["data"].get("position"))
         super()._set_parsed_data(advertisement, data)
 
     async def _send_multiple_commands(self, keys: list[str]) -> bool:
