@@ -152,8 +152,10 @@ class SwitchbotCurtain(SwitchbotDevice):
             "timers": _data[7],
         }
     
-    def _update_motion_direction(self, in_motion: bool, previous_position: int, new_position: int) -> None:
+    def _update_motion_direction(self, in_motion: bool, previous_position: int|None, new_position: int) -> None:
         """Update opening/closing status based on movement."""
+        if previous_position is None:
+            return
         if in_motion == True:
             if new_position != previous_position:
                 self._is_opening = new_position > previous_position
