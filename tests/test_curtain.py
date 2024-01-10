@@ -9,6 +9,8 @@ from switchbot.devices import curtain
 
 from test_adv_parser import generate_ble_device
 
+from unittest.mock import Mock
+
 
 def set_advertisement_data(ble_device: BLEDevice, in_motion: bool, position: int):
     """Set advertisement data with defaults."""
@@ -93,7 +95,7 @@ def test_device_passive_closing_then_stop(reverse_mode):
 
 @pytest.mark.asyncio
 @pytest.mark.parametrize("reverse_mode", [(True),(False)])
-async def test_device_active_not_in_motion(mocker, reverse_mode):
+async def test_device_active_not_in_motion(reverse_mode):
     """Test active not in motion."""
     ble_device = generate_ble_device("aa:bb:cc:dd:ee:ff", "any")
     curtain_device = curtain.SwitchbotCurtain(ble_device, reverse_mode=reverse_mode)
@@ -103,7 +105,7 @@ async def test_device_active_not_in_motion(mocker, reverse_mode):
     async def custom_implementation():
         return basic_info
 
-    mocker.patch.object(curtain_device, '_get_basic_info', side_effect=custom_implementation)
+    curtain_device._get_basic_info = Mock(side_effect=custom_implementation)
 
     await curtain_device.get_basic_info()
 
@@ -112,7 +114,7 @@ async def test_device_active_not_in_motion(mocker, reverse_mode):
 
 @pytest.mark.asyncio
 @pytest.mark.parametrize("reverse_mode", [(True),(False)])
-async def test_device_active_opening(mocker, reverse_mode):
+async def test_device_active_opening(reverse_mode):
     """Test active opening."""
     ble_device = generate_ble_device("aa:bb:cc:dd:ee:ff", "any")
     curtain_device = curtain.SwitchbotCurtain(ble_device, reverse_mode=reverse_mode)
@@ -122,7 +124,7 @@ async def test_device_active_opening(mocker, reverse_mode):
     async def custom_implementation():
         return basic_info
 
-    mocker.patch.object(curtain_device, '_get_basic_info', side_effect=custom_implementation)
+    curtain_device._get_basic_info = Mock(side_effect=custom_implementation)
 
     await curtain_device.get_basic_info()
 
@@ -131,7 +133,7 @@ async def test_device_active_opening(mocker, reverse_mode):
 
 @pytest.mark.asyncio
 @pytest.mark.parametrize("reverse_mode", [(True),(False)])
-async def test_device_active_closing(mocker, reverse_mode):
+async def test_device_active_closing(reverse_mode):
     """Test active closing."""
     ble_device = generate_ble_device("aa:bb:cc:dd:ee:ff", "any")
     curtain_device = curtain.SwitchbotCurtain(ble_device, reverse_mode=reverse_mode)
@@ -141,7 +143,7 @@ async def test_device_active_closing(mocker, reverse_mode):
     async def custom_implementation():
         return basic_info
 
-    mocker.patch.object(curtain_device, '_get_basic_info', side_effect=custom_implementation)
+    curtain_device._get_basic_info = Mock(side_effect=custom_implementation)
 
     await curtain_device.get_basic_info()
 
@@ -150,7 +152,7 @@ async def test_device_active_closing(mocker, reverse_mode):
 
 @pytest.mark.asyncio
 @pytest.mark.parametrize("reverse_mode", [(True),(False)])
-async def test_device_active_opening_then_stop(mocker, reverse_mode):
+async def test_device_active_opening_then_stop(reverse_mode):
     """Test active stopped after opening."""
     ble_device = generate_ble_device("aa:bb:cc:dd:ee:ff", "any")
     curtain_device = curtain.SwitchbotCurtain(ble_device, reverse_mode=reverse_mode)
@@ -160,7 +162,7 @@ async def test_device_active_opening_then_stop(mocker, reverse_mode):
     async def custom_implementation():
         return basic_info
 
-    mocker.patch.object(curtain_device, '_get_basic_info', side_effect=custom_implementation)
+    curtain_device._get_basic_info = Mock(side_effect=custom_implementation)
 
     await curtain_device.get_basic_info()
 
@@ -173,7 +175,7 @@ async def test_device_active_opening_then_stop(mocker, reverse_mode):
 
 @pytest.mark.asyncio
 @pytest.mark.parametrize("reverse_mode", [(True),(False)])
-async def test_device_active_closing_then_stop(mocker, reverse_mode):
+async def test_device_active_closing_then_stop(reverse_mode):
     """Test active stopped after closing."""
     ble_device = generate_ble_device("aa:bb:cc:dd:ee:ff", "any")
     curtain_device = curtain.SwitchbotCurtain(ble_device, reverse_mode=reverse_mode)
@@ -183,7 +185,7 @@ async def test_device_active_closing_then_stop(mocker, reverse_mode):
     async def custom_implementation():
         return basic_info
 
-    mocker.patch.object(curtain_device, '_get_basic_info', side_effect=custom_implementation)
+    curtain_device._get_basic_info = Mock(side_effect=custom_implementation)
 
     await curtain_device.get_basic_info()
 

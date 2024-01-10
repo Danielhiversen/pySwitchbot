@@ -1,6 +1,5 @@
 pytest-asyncio
 pytest-cov
-pytest-mock
 bleak>=0.17.0
 bleak-retry-connector>=3.4.0
 cryptography>=38.0.3
