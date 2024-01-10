@@ -64,10 +64,10 @@ class SwitchbotCurtain(SwitchbotDevice):
         self, advertisement: SwitchBotAdvertisement, data: dict[str, Any]
     ) -> None:
         """Set data."""
-        _new_data = replace(
-            advertisement, data=self._sb_adv_data.data | {"data": data}
-        )
-        self._update_motion_direction(_new_data.data["data"].get("inMotion"), self._get_adv_value("position"), _new_data.data["data"].get("position"))
+        in_motion = data["inMotion"]
+        previous_position = self._get_adv_value("position")
+        new_position = data["position"]
+        self._update_motion_direction(in_motion, previous_position, new_position)
         super()._set_parsed_data(advertisement, data)
 
     async def _send_multiple_commands(self, keys: list[str]) -> bool:
@@ -156,12 +156,13 @@ class SwitchbotCurtain(SwitchbotDevice):
         """Update opening/closing status based on movement."""
         if previous_position is None:
             return
-        if in_motion == True:
-            if new_position != previous_position:
-                self._is_opening = new_position > previous_position
-                self._is_closing = new_position < previous_position
-        else:
+        if in_motion is False:
             self._is_closing = self._is_opening = False
+            return
+        
+        if new_position != previous_position:
+            self._is_opening = new_position > previous_position
+            self._is_closing = new_position < previous_position
 
     async def get_extended_info_summary(self) -> dict[str, Any] | None:
         """Get basic info for all devices in chain."""
@@ -248,10 +249,11 @@ class SwitchbotCurtain(SwitchbotDevice):
         # To get actual light level call update() first.
         return self._get_adv_value("calibration")
 
+    @property
     def is_opening(self) -> Any:
         """Return True if the curtain is opening."""
         return self._is_opening
-    
+    @property
     def is_closing(self) -> Any:
         """Return True if the curtain is closing."""
         return self._is_closing
