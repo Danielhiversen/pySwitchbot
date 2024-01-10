@@ -249,11 +249,10 @@ class SwitchbotCurtain(SwitchbotDevice):
         # To get actual light level call update() first.
         return self._get_adv_value("calibration")
 
-    @property
-    def is_opening(self) -> Any:
+    def is_opening(self) -> bool:
         """Return True if the curtain is opening."""
         return self._is_opening
-    @property
-    def is_closing(self) -> Any:
+    
+    def is_closing(self) -> bool:
         """Return True if the curtain is closing."""
         return self._is_closing
