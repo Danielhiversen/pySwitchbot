@@ -358,7 +358,9 @@ def test_parse_advertisement_data_curtain3():
     """Test parse_advertisement_data for curtain 3."""
     ble_device = generate_ble_device("aa:bb:cc:dd:ee:ff", "any")
     adv_data = generate_advertisement_data(
-        manufacturer_data={2409: b"\xaa\xbb\xcc\xdd\xee\xff\xf7\x07\x00\x11\x04\x00\x49"},
+        manufacturer_data={
+            2409: b"\xaa\xbb\xcc\xdd\xee\xff\xf7\x07\x00\x11\x04\x00\x49"
+        },
         service_data={"0000fd3d-0000-1000-8000-00805f9b34fb": b"{\xc0\x49\x00\x11\x04"},
         rssi=-80,
     )
@@ -391,7 +393,9 @@ def test_parse_advertisement_data_curtain3_passive():
     """Test parse_advertisement_data for curtain passive."""
     ble_device = generate_ble_device("aa:bb:cc:dd:ee:ff", "any")
     adv_data = generate_advertisement_data(
-        manufacturer_data={2409: b"\xaa\xbb\xcc\xdd\xee\xff\xf7\x07\x00\x11\x04\x00\x49"},
+        manufacturer_data={
+            2409: b"\xaa\xbb\xcc\xdd\xee\xff\xf7\x07\x00\x11\x04\x00\x49"
+        },
         service_data={},
         rssi=-80,
     )
@@ -1363,6 +1367,7 @@ def test_parsing_lock_passive():
         rssi=-67,
         active=False,
     )
+
 
 def test_parsing_lock_active_old_firmware():
     """Test parsing lock with active data. Old firmware."""
