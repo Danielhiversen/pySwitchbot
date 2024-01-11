@@ -24,6 +24,6 @@ jobs:
         python -m pip install --upgrade pip
         pip install -r requirements_dev.txt .
     - name: Tests
-      run: pytest --cov-report term-missing --cov-report=xml tests
+      run: pytest --cov=switchbot --cov-report=term-missing --cov-report=xml tests
     - name: Upload coverage to Codecov
       uses: codecov/codecov-action@v3
