@@ -1,6 +1,5 @@
 """Library to handle connection with Switchbot."""
 from __future__ import annotations
-from dataclasses import replace
 
 import logging
 from typing import Any
@@ -132,8 +131,10 @@ class SwitchbotCurtain(SwitchbotDevice):
         _direction_adjusted_position = (100 - _position) if self._reverse else _position
         _previous_position = self._get_adv_value("position")
         _in_motion = bool(_data[5] & 0b01000011)
-        self._update_motion_direction(_in_motion, _previous_position, _direction_adjusted_position)
-        
+        self._update_motion_direction(
+            _in_motion, _previous_position, _direction_adjusted_position
+        )
+
         return {
             "battery": _data[1],
             "firmware": _data[2] / 10.0,
@@ -151,15 +152,17 @@ class SwitchbotCurtain(SwitchbotDevice):
             "position": _direction_adjusted_position,
             "timers": _data[7],
         }
-    
-    def _update_motion_direction(self, in_motion: bool, previous_position: int|None, new_position: int) -> None:
+
+    def _update_motion_direction(
+        self, in_motion: bool, previous_position: int | None, new_position: int
+    ) -> None:
         """Update opening/closing status based on movement."""
         if previous_position is None:
             return
         if in_motion is False:
             self._is_closing = self._is_opening = False
             return
-        
+
         if new_position != previous_position:
             self._is_opening = new_position > previous_position
             self._is_closing = new_position < previous_position
@@ -252,7 +255,7 @@ class SwitchbotCurtain(SwitchbotDevice):
     def is_opening(self) -> bool:
         """Return True if the curtain is opening."""
         return self._is_opening
-    
+
     def is_closing(self) -> bool:
         """Return True if the curtain is closing."""
         return self._is_closing
