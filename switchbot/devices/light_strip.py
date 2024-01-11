@@ -1,7 +1,6 @@
 from __future__ import annotations
 
 import logging
-from typing import Any
 
 from .base_light import SwitchbotSequenceBaseLight
 from .device import REQ_HEADER, ColorMode
