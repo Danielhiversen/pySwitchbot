@@ -44,8 +44,8 @@ def test_device_passive_not_in_motion(reverse_mode):
     curtain_device = curtain.SwitchbotCurtain(ble_device, reverse_mode=reverse_mode)
     curtain_device.update_from_advertisement(set_advertisement_data(ble_device, False, 0))
 
-    assert curtain_device.is_opening() == False
-    assert curtain_device.is_closing() == False
+    assert curtain_device.is_opening() is False
+    assert curtain_device.is_closing() is False
 
 @pytest.mark.parametrize("reverse_mode", [(True),(False)])
 def test_device_passive_opening(reverse_mode):
@@ -55,8 +55,8 @@ def test_device_passive_opening(reverse_mode):
     curtain_device.update_from_advertisement(set_advertisement_data(ble_device, True, 0))
     curtain_device.update_from_advertisement(set_advertisement_data(ble_device, True, 10))
 
-    assert curtain_device.is_opening() == True
-    assert curtain_device.is_closing() == False
+    assert curtain_device.is_opening() is True
+    assert curtain_device.is_closing() is False
 
 @pytest.mark.parametrize("reverse_mode", [(True),(False)])
 def test_device_passive_closing(reverse_mode):
@@ -66,8 +66,8 @@ def test_device_passive_closing(reverse_mode):
     curtain_device.update_from_advertisement(set_advertisement_data(ble_device, True, 100))
     curtain_device.update_from_advertisement(set_advertisement_data(ble_device, True, 90))
 
-    assert curtain_device.is_opening() == False
-    assert curtain_device.is_closing() == True
+    assert curtain_device.is_opening() is False
+    assert curtain_device.is_closing() is True
 
 @pytest.mark.parametrize("reverse_mode", [(True),(False)])
 def test_device_passive_opening_then_stop(reverse_mode):
@@ -78,8 +78,8 @@ def test_device_passive_opening_then_stop(reverse_mode):
     curtain_device.update_from_advertisement(set_advertisement_data(ble_device, True, 10))
     curtain_device.update_from_advertisement(set_advertisement_data(ble_device, False, 10))
 
-    assert curtain_device.is_opening() == False
-    assert curtain_device.is_closing() == False
+    assert curtain_device.is_opening() is False
+    assert curtain_device.is_closing() is False
 
 @pytest.mark.parametrize("reverse_mode", [(True),(False)])
 def test_device_passive_closing_then_stop(reverse_mode):
@@ -90,8 +90,8 @@ def test_device_passive_closing_then_stop(reverse_mode):
     curtain_device.update_from_advertisement(set_advertisement_data(ble_device, True, 90))
     curtain_device.update_from_advertisement(set_advertisement_data(ble_device, False, 90))
 
-    assert curtain_device.is_opening() == False
-    assert curtain_device.is_closing() == False
+    assert curtain_device.is_opening() is False
+    assert curtain_device.is_closing() is False
 
 @pytest.mark.asyncio
 @pytest.mark.parametrize("reverse_mode", [(True),(False)])
@@ -109,8 +109,8 @@ async def test_device_active_not_in_motion(reverse_mode):
 
     await curtain_device.get_basic_info()
 
-    assert curtain_device.is_opening() == False
-    assert curtain_device.is_closing() == False
+    assert curtain_device.is_opening() is False
+    assert curtain_device.is_closing() is False
 
 @pytest.mark.asyncio
 @pytest.mark.parametrize("reverse_mode", [(True),(False)])
@@ -128,8 +128,8 @@ async def test_device_active_opening(reverse_mode):
 
     await curtain_device.get_basic_info()
 
-    assert curtain_device.is_opening() == True
-    assert curtain_device.is_closing() == False
+    assert curtain_device.is_opening() is True
+    assert curtain_device.is_closing() is False
 
 @pytest.mark.asyncio
 @pytest.mark.parametrize("reverse_mode", [(True),(False)])
@@ -147,8 +147,8 @@ async def test_device_active_closing(reverse_mode):
 
     await curtain_device.get_basic_info()
 
-    assert curtain_device.is_opening() == False
-    assert curtain_device.is_closing() == True
+    assert curtain_device.is_opening() is False
+    assert curtain_device.is_closing() is True
 
 @pytest.mark.asyncio
 @pytest.mark.parametrize("reverse_mode", [(True),(False)])
@@ -170,8 +170,8 @@ async def test_device_active_opening_then_stop(reverse_mode):
 
     await curtain_device.get_basic_info()
 
-    assert curtain_device.is_opening() == False
-    assert curtain_device.is_closing() == False
+    assert curtain_device.is_opening() is False
+    assert curtain_device.is_closing() is False
 
 @pytest.mark.asyncio
 @pytest.mark.parametrize("reverse_mode", [(True),(False)])
@@ -193,5 +193,5 @@ async def test_device_active_closing_then_stop(reverse_mode):
 
     await curtain_device.get_basic_info()
 
-    assert curtain_device.is_opening() == False
-    assert curtain_device.is_closing() == False
+    assert curtain_device.is_opening() is False
+    assert curtain_device.is_closing() is False
