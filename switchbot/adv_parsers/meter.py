@@ -28,7 +28,7 @@ def process_wosensorth(data: bytes | None, mfr_data: bytes | None) -> dict[str, 
     _temp_f = (_temp_f * 10) / 10
     humidity = temp_data[2] & 0b01111111
 
-    if _temp_c == -0.0 and humidity == 0 and battery == 0:
+    if _temp_c == 0 and humidity == 0 and battery == 0:
         return {}
 
     _wosensorth_data = {
