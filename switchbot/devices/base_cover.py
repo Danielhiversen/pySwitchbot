@@ -28,7 +28,7 @@ COVER_EXT_ADV_KEY = f"{REQ_HEADER}460402"
 _LOGGER = logging.getLogger(__name__)
 
 
-class SwitchbotCoverDevice(SwitchbotDevice):
+class SwitchbotBaseCover(SwitchbotDevice):
     """Representation of a Switchbot Cover devices for both curtains and tilt blinds."""
 
     def __init__(self, *args: Any, **kwargs: Any) -> None:

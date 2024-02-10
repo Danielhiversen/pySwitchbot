@@ -6,7 +6,7 @@ from typing import Any
 
 from switchbot.models import SwitchBotAdvertisement
 
-from .cover_device import SwitchbotCoverDevice, COVER_COMMAND, COVER_EXT_SUM_KEY
+from .base_cover import SwitchbotBaseCover, COVER_COMMAND, COVER_EXT_SUM_KEY
 from .device import REQ_HEADER, update_after_operation
 
 
@@ -34,7 +34,7 @@ CURTAIN_EXT_CHAIN_INFO_KEY = f"{REQ_HEADER}468101"
 _LOGGER = logging.getLogger(__name__)
 
 
-class SwitchbotCurtain(SwitchbotCoverDevice):
+class SwitchbotCurtain(SwitchbotBaseCover):
     """Representation of a Switchbot Curtain."""
 
     def __init__(self, *args: Any, **kwargs: Any) -> None:

@@ -10,7 +10,7 @@ from switchbot.devices.device import (
     update_after_operation,
 )
 
-from .cover_device import COVER_COMMAND, COVER_EXT_SUM_KEY, SwitchbotCoverDevice
+from .base_cover import COVER_COMMAND, COVER_EXT_SUM_KEY, SwitchbotBaseCover
 
 _LOGGER = logging.getLogger(__name__)
 
@@ -29,7 +29,7 @@ CLOSE_UP_KEYS = [
 ]
 
 
-class SwitchbotBlindTilt(SwitchbotCoverDevice, SwitchbotSequenceDevice):
+class SwitchbotBlindTilt(SwitchbotBaseCover, SwitchbotSequenceDevice):
     """Representation of a Switchbot Blind Tilt."""
 
     # The position of the blind is saved returned with 0 = closed down, 50 = open and 100 = closed up.
