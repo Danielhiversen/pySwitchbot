@@ -14,13 +14,13 @@ def create_device_for_command_testing(position=50,calibration = True, reverse_mo
     ble_device = generate_ble_device("aa:bb:cc:dd:ee:ff", "any")
     curtain_device = blind_tilt.SwitchbotBlindTilt(ble_device, reverse_mode=reverse_mode)
     curtain_device.update_from_advertisement(
-        set_advertisement_data(ble_device, True, position, calibration)
+        make_advertisement_data(ble_device, True, position, calibration)
     )
     curtain_device._send_multiple_commands = AsyncMock()
     curtain_device.update = AsyncMock()
     return curtain_device
 
-def set_advertisement_data(ble_device: BLEDevice, in_motion: bool, position: int, calibration: bool = True):
+def make_advertisement_data(ble_device: BLEDevice, in_motion: bool, position: int, calibration: bool = True):
     """Set advertisement data with defaults."""
 
     return SwitchBotAdvertisement(
