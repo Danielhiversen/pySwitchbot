@@ -42,9 +42,8 @@ class SwitchbotBlindTilt(SwitchbotBaseCover, SwitchbotSequenceDevice):
 
     def __init__(self, *args: Any, **kwargs: Any) -> None:
         """Switchbot Blind Tilt/woBlindTilt constructor."""
-        super().__init__(*args, **kwargs)
-
         self._reverse: bool = kwargs.pop("reverse_mode", False)
+        super().__init__(self._reverse, *args, **kwargs)
 
     @update_after_operation
     async def open(self) -> bool:

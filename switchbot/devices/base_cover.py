@@ -31,10 +31,11 @@ _LOGGER = logging.getLogger(__name__)
 class SwitchbotBaseCover(SwitchbotDevice):
     """Representation of a Switchbot Cover devices for both curtains and tilt blinds."""
 
-    def __init__(self, *args: Any, **kwargs: Any) -> None:
+    def __init__(self, reverse: bool, *args: Any, **kwargs: Any) -> None:
         """Switchbot Cover device constructor."""
 
         super().__init__(*args, **kwargs)
+        self._reverse = reverse
         self._settings: dict[str, Any] = {}
         self.ext_info_sum: dict[str, Any] = {}
         self.ext_info_adv: dict[str, Any] = {}
