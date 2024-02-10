@@ -81,11 +81,7 @@ async def test_get_basic_info_returns_none_when_no_data():
 )
 async def test_get_basic_info(reverse_mode,data,result):
     blind_device = create_device_for_command_testing(reverse_mode=reverse_mode)
-
-    async def custom_implementation():
-        return data
-
-    blind_device._get_basic_info = Mock(side_effect=custom_implementation)
+    blind_device._get_basic_info = AsyncMock(return_value=data)
 
     info = await blind_device.get_basic_info()
     assert info["battery"] == result[0]
