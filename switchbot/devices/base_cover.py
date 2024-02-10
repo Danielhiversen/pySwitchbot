@@ -70,17 +70,14 @@ class SwitchbotBaseCover(SwitchbotDevice):
     @abstractmethod
     def get_position(self) -> Any:
         """Return current device position."""
-        pass
 
     @abstractmethod
     async def get_basic_info(self) -> dict[str, Any] | None:
         """Get device basic settings."""
-        pass
 
     @abstractmethod
     async def get_extended_info_summary(self) -> dict[str, Any] | None:
         """Get extended info for all devices in chain."""
-        pass
 
     async def get_extended_info_adv(self) -> dict[str, Any] | None:
         """Get advance page info for device chain."""
