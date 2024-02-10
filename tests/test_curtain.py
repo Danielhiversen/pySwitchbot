@@ -1,4 +1,3 @@
-from typing import Any
 from unittest.mock import AsyncMock, Mock
 
 import pytest
@@ -10,7 +9,7 @@ from switchbot.devices.base_cover import COVER_EXT_SUM_KEY
 
 from .test_adv_parser import generate_ble_device
 
-def create_device_for_command_testing(calibration = True, reverse_mode=False):
+def create_device_for_command_testing(calibration=True, reverse_mode=False):
     ble_device = generate_ble_device("aa:bb:cc:dd:ee:ff", "any")
     curtain_device = curtain.SwitchbotCurtain(ble_device, reverse_mode=reverse_mode)
     curtain_device.update_from_advertisement(
@@ -265,9 +264,11 @@ async def test_get_basic_info_returns_none_when_no_data():
 @pytest.mark.asyncio
 @pytest.mark.parametrize(
     "data,result", 
-    [(bytes([0,1,10,2,255,255,50,4]),[1,1,2,"right_to_left",1,1,50,4]), (bytes([0,1,10,2,0,0,50,4]),[1,1,2,"left_to_right",0,0,50,4])]
+    [(bytes([0, 1, 10, 2, 255, 255, 50, 4]),[1, 1, 2, "right_to_left", 1, 1, 50, 4]), 
+     (bytes([0, 1, 10, 2, 0, 0, 50, 4]),[1, 1, 2, "left_to_right", 0, 0, 50, 4])
+    ]
 )
-async def test_get_basic_info(data,result):
+async def test_get_basic_info(data, result):
     ble_device = generate_ble_device("aa:bb:cc:dd:ee:ff", "any")
     curtain_device = curtain.SwitchbotCurtain(ble_device)
     curtain_device.update_from_advertisement(

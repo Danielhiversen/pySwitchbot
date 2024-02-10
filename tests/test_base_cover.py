@@ -1,4 +1,3 @@
-from typing import Any
 from unittest.mock import AsyncMock, Mock
 
 import pytest
@@ -7,11 +6,10 @@ from bleak.backends.device import BLEDevice
 from switchbot import SwitchBotAdvertisement, SwitchbotModel
 from switchbot.devices import blind_tilt
 from switchbot.devices import base_cover
-from switchbot.devices.base_cover import COVER_EXT_SUM_KEY
 
 from .test_adv_parser import generate_ble_device
 
-def create_device_for_command_testing(position=50, calibration = True, reverse_mode=False):
+def create_device_for_command_testing(position=50, calibration=True):
     ble_device = generate_ble_device("aa:bb:cc:dd:ee:ff", "any")
     base_cover_device = base_cover.SwitchbotBaseCover(False, ble_device)
     base_cover_device.update_from_advertisement(
@@ -58,7 +56,6 @@ async def test_send_multiple_commands():
     await base_cover_device._send_multiple_commands(blind_tilt.OPEN_KEYS)
     assert base_cover_device._send_command.await_count == 2
 
-
 @pytest.mark.asyncio
 async def test_stop():
     base_cover_device = create_device_for_command_testing()
@@ -81,7 +78,7 @@ async def test_get_extended_info_adv_returns_none_when_bad_data(data_value):
 @pytest.mark.asyncio
 async def test_get_extended_info_adv_returns_single_device():
     base_cover_device = create_device_for_command_testing()
-    base_cover_device._send_command = AsyncMock(return_value=bytes([0,50,20,0,0,0,0]))
+    base_cover_device._send_command = AsyncMock(return_value=bytes([0, 50, 20, 0, 0, 0, 0]))
     ext_result = await base_cover_device.get_extended_info_adv()
     assert ext_result["device0"]["battery"] == 50
     assert ext_result["device0"]["firmware"] == 2
@@ -90,7 +87,7 @@ async def test_get_extended_info_adv_returns_single_device():
 @pytest.mark.asyncio
 async def test_get_extended_info_adv_returns_both_devices():
     base_cover_device = create_device_for_command_testing()
-    base_cover_device._send_command = AsyncMock(return_value=bytes([0,50,20,0,10,30,0]))
+    base_cover_device._send_command = AsyncMock(return_value=bytes([0, 50, 20, 0, 10, 30, 0]))
     ext_result = await base_cover_device.get_extended_info_adv()
     assert ext_result["device0"]["battery"] == 50
     assert ext_result["device0"]["firmware"] == 2
@@ -109,7 +106,7 @@ async def test_get_extended_info_adv_returns_both_devices():
 )
 async def test_get_extended_info_adv_returns_device1_charge_states(data_value, result):
     base_cover_device = create_device_for_command_testing()
-    base_cover_device._send_command = AsyncMock(return_value=bytes([0,50,20,data_value,10,30,0]))
+    base_cover_device._send_command = AsyncMock(return_value=bytes([0, 50, 20, data_value, 10, 30, 0]))
     ext_result = await base_cover_device.get_extended_info_adv()
     assert ext_result["device0"]["stateOfCharge"] == result
 
@@ -125,6 +122,6 @@ async def test_get_extended_info_adv_returns_device1_charge_states(data_value, r
 )
 async def test_get_extended_info_adv_returns_device1_charge_states(data_value, result):
     base_cover_device = create_device_for_command_testing()
-    base_cover_device._send_command = AsyncMock(return_value=bytes([0,50,20,0,10,30,data_value]))
+    base_cover_device._send_command = AsyncMock(return_value=bytes([0, 50, 20, 0, 10, 30, data_value]))
     ext_result = await base_cover_device.get_extended_info_adv()
     assert ext_result["device1"]["stateOfCharge"] == result

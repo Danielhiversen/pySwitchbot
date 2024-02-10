@@ -10,7 +10,7 @@ from switchbot.devices.base_cover import COVER_EXT_SUM_KEY
 
 from .test_adv_parser import generate_ble_device
 
-def create_device_for_command_testing(position=50,calibration = True, reverse_mode=False):
+def create_device_for_command_testing(position=50, calibration=True, reverse_mode=False):
     ble_device = generate_ble_device("aa:bb:cc:dd:ee:ff", "any")
     curtain_device = blind_tilt.SwitchbotBlindTilt(ble_device, reverse_mode=reverse_mode)
     curtain_device.update_from_advertisement(
@@ -53,8 +53,8 @@ async def test_open():
     blind_device._send_multiple_commands.assert_awaited_once_with(blind_tilt.OPEN_KEYS)
 
 @pytest.mark.asyncio
-@pytest.mark.parametrize("position,keys", [(5,blind_tilt.CLOSE_DOWN_KEYS), (55,blind_tilt.CLOSE_UP_KEYS)])
-async def test_close(position,keys):
+@pytest.mark.parametrize("position,keys", [(5, blind_tilt.CLOSE_DOWN_KEYS), (55, blind_tilt.CLOSE_UP_KEYS)])
+async def test_close(position, keys):
     blind_device = create_device_for_command_testing(position=position)
     await blind_device.close()
     blind_device._send_multiple_commands.assert_awaited_once_with(keys)
@@ -71,15 +71,15 @@ async def test_get_basic_info_returns_none_when_no_data():
 @pytest.mark.parametrize(
     "reverse_mode,data,result", 
     [
-        (False,bytes([0,1,10,2,255,255,50,4]),[1,1,1,1,1,True,False,False,True,50,4]), 
-        (False,bytes([0,1,10,2,0,0,50,4]),[1,1,0,0,0,False,False,False,False,50,4]),
-        (False,bytes([0,1,10,2,0,1,50,4]),[1,1,0,0,1,False,True,False,True,50,4]),
-        (True,bytes([0,1,10,2,255,255,50,4]),[1,1,1,1,1,True,False,True,False,50,4]),
-        (True,bytes([0,1,10,2,0,0,50,4]),[1,1,0,0,0,False,False,False,False,50,4]),
-        (True,bytes([0,1,10,2,0,1,50,4]),[1,1,0,0,1,False,True,False,True,50,4])
+        (False, bytes([0, 1, 10, 2, 255, 255, 50, 4]), [1, 1, 1, 1, 1, True, False, False, True, 50, 4]), 
+        (False, bytes([0, 1, 10, 2, 0, 0, 50, 4]), [1, 1, 0, 0, 0, False, False, False, False, 50, 4]),
+        (False, bytes([0, 1, 10, 2, 0, 1, 50, 4]), [1, 1, 0, 0, 1, False, True, False, True, 50, 4]),
+        (True, bytes([0, 1, 10, 2, 255, 255, 50, 4]), [1, 1, 1, 1, 1, True, False, True, False, 50, 4]),
+        (True, bytes([0, 1, 10, 2, 0, 0, 50, 4]), [1, 1, 0, 0, 0, False, False, False, False, 50, 4]),
+        (True, bytes([0, 1, 10, 2, 0, 1, 50, 4]), [1, 1, 0, 0, 1, False, True, False, True, 50, 4])
     ]
 )
-async def test_get_basic_info(reverse_mode,data,result):
+async def test_get_basic_info(reverse_mode, data, result):
     blind_device = create_device_for_command_testing(reverse_mode=reverse_mode)
     blind_device._get_basic_info = AsyncMock(return_value=data)
 
@@ -114,8 +114,8 @@ async def test_get_extended_info_summary_returns_none_when_bad_data(data_value):
     assert await blind_device.get_extended_info_summary() is None
 
 @pytest.mark.asyncio
-@pytest.mark.parametrize("data,result", [(bytes([0,0]),False), (bytes([0,255]),True)])
-async def test_get_extended_info_summary(data,result):
+@pytest.mark.parametrize("data,result", [(bytes([0,0]), False), (bytes([0,255]), True)])
+async def test_get_extended_info_summary(data, result):
     blind_device = create_device_for_command_testing()
     blind_device._send_command = AsyncMock(return_value=data)
     ext_result = await blind_device.get_extended_info_summary()
