@@ -10,27 +10,26 @@ from switchbot.devices.device import (
     update_after_operation,
 )
 
-from .curtain import CURTAIN_EXT_SUM_KEY, SwitchbotCurtain
+from .cover_device import COVER_COMMAND, COVER_EXT_SUM_KEY, SwitchbotCoverDevice
 
 _LOGGER = logging.getLogger(__name__)
 
 
-BLIND_COMMAND = "4501"
 OPEN_KEYS = [
-    f"{REQ_HEADER}{BLIND_COMMAND}010132",
-    f"{REQ_HEADER}{BLIND_COMMAND}05ff32",
+    f"{REQ_HEADER}{COVER_COMMAND}010132",
+    f"{REQ_HEADER}{COVER_COMMAND}05ff32",
 ]
 CLOSE_DOWN_KEYS = [
-    f"{REQ_HEADER}{BLIND_COMMAND}010100",
-    f"{REQ_HEADER}{BLIND_COMMAND}05ff00",
+    f"{REQ_HEADER}{COVER_COMMAND}010100",
+    f"{REQ_HEADER}{COVER_COMMAND}05ff00",
 ]
 CLOSE_UP_KEYS = [
-    f"{REQ_HEADER}{BLIND_COMMAND}010164",
-    f"{REQ_HEADER}{BLIND_COMMAND}05ff64",
+    f"{REQ_HEADER}{COVER_COMMAND}010164",
+    f"{REQ_HEADER}{COVER_COMMAND}05ff64",
 ]
 
 
-class SwitchbotBlindTilt(SwitchbotCurtain, SwitchbotSequenceDevice):
+class SwitchbotBlindTilt(SwitchbotCoverDevice, SwitchbotSequenceDevice):
     """Representation of a Switchbot Blind Tilt."""
 
     # The position of the blind is saved returned with 0 = closed down, 50 = open and 100 = closed up.
@@ -114,8 +113,8 @@ class SwitchbotBlindTilt(SwitchbotCurtain, SwitchbotSequenceDevice):
         }
 
     async def get_extended_info_summary(self) -> dict[str, Any] | None:
-        """Get basic info for all devices in chain."""
-        _data = await self._send_command(key=CURTAIN_EXT_SUM_KEY)
+        """Get extended info for all devices in chain."""
+        _data = await self._send_command(key=COVER_EXT_SUM_KEY)
 
         if not _data:
             _LOGGER.error("%s: Unsuccessful, no result from device", self.name)
