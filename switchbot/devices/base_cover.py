@@ -5,7 +5,6 @@ import logging
 from abc import abstractmethod
 from typing import Any
 
-from ..models import SwitchBotAdvertisement
 from .device import REQ_HEADER, SwitchbotDevice, update_after_operation
 
 # Cover keys
