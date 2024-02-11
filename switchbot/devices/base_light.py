@@ -12,7 +12,6 @@ from .device import ColorMode, SwitchbotDevice
 _LOGGER = logging.getLogger(__name__)
 
 
-
 class SwitchbotBaseLight(SwitchbotDevice):
     """Representation of a Switchbot light."""
 
