@@ -160,3 +160,39 @@ async def test_get_extended_info_summary(data, result):
     blind_device._send_command = AsyncMock(return_value=data)
     ext_result = await blind_device.get_extended_info_summary()
     assert ext_result["device0"]["light"] == result
+
+
+@pytest.mark.parametrize("reverse_mode", [(True), (False)])
+def test_device_passive_opening(reverse_mode):
+    """Test passive opening advertisement."""
+    ble_device = generate_ble_device("aa:bb:cc:dd:ee:ff", "any")
+    curtain_device = blind_tilt.SwitchbotBlindTilt(
+        ble_device, reverse_mode=reverse_mode
+    )
+    curtain_device.update_from_advertisement(
+        make_advertisement_data(ble_device, True, 0)
+    )
+    curtain_device.update_from_advertisement(
+        make_advertisement_data(ble_device, True, 10)
+    )
+
+    assert curtain_device.is_opening() is True
+    assert curtain_device.is_closing() is False
+
+
+@pytest.mark.parametrize("reverse_mode", [(True), (False)])
+def test_device_passive_closing(reverse_mode):
+    """Test passive closing advertisement."""
+    ble_device = generate_ble_device("aa:bb:cc:dd:ee:ff", "any")
+    curtain_device = blind_tilt.SwitchbotBlindTilt(
+        ble_device, reverse_mode=reverse_mode
+    )
+    curtain_device.update_from_advertisement(
+        make_advertisement_data(ble_device, True, 100)
+    )
+    curtain_device.update_from_advertisement(
+        make_advertisement_data(ble_device, True, 90)
+    )
+
+    assert curtain_device.is_opening() is False
+    assert curtain_device.is_closing() is True
