@@ -104,7 +104,7 @@ async def test_get_extended_info_adv_returns_both_devices():
                           (5, "charging_error")
                          ]
 )
-async def test_get_extended_info_adv_returns_device1_charge_states(data_value, result):
+async def test_get_extended_info_adv_returns_device0_charge_states(data_value, result):
     base_cover_device = create_device_for_command_testing()
     base_cover_device._send_command = AsyncMock(return_value=bytes([0, 50, 20, data_value, 10, 30, 0]))
     ext_result = await base_cover_device.get_extended_info_adv()
