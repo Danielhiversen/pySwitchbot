@@ -353,6 +353,29 @@ async def test_get_extended_info_summary_returns_none_when_bad_data(data_value):
     curtain_device._send_command = AsyncMock(return_value=data_value)
     assert await curtain_device.get_extended_info_summary() is None
 
+@pytest.mark.asyncio
+@pytest.mark.parametrize("data,result", [([0,0,0], [True, False, False, "right_to_left"]), ([255,255,0], [False, True, True, "left_to_right"])])
+async def test_get_extended_info_summary_returns_device0(data,result):
+    curtain_device = create_device_for_command_testing()
+    curtain_device._send_command = AsyncMock(return_value=bytes(data))
+    ext_result = await curtain_device.get_extended_info_summary()
+    assert ext_result["device0"]["openDirectionDefault"] == result[0]
+    assert ext_result["device0"]["touchToOpen"] == result[1]
+    assert ext_result["device0"]["light"] == result[2]
+    assert ext_result["device0"]["openDirection"] == result[3]
+    assert "device1" not in ext_result
+
+@pytest.mark.asyncio
+@pytest.mark.parametrize("data,result", [([0,0,1], [True, False, False, "right_to_left"]), ([255,255,255], [False, True, True, "left_to_right"])])
+async def test_get_extended_info_summary_returns_device1(data,result):
+    curtain_device = create_device_for_command_testing()
+    curtain_device._send_command = AsyncMock(return_value=bytes(data))
+    ext_result = await curtain_device.get_extended_info_summary()
+    assert ext_result["device1"]["openDirectionDefault"] == result[0]
+    assert ext_result["device1"]["touchToOpen"] == result[1]
+    assert ext_result["device1"]["light"] == result[2]
+    assert ext_result["device1"]["openDirection"] == result[3]
+
 def test_get_light_level():
     curtain_device = create_device_for_command_testing()
     assert curtain_device.get_light_level() == 1

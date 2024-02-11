@@ -165,18 +165,18 @@ class SwitchbotCurtain(SwitchbotBaseCover):
             "touchToOpen": bool(_data[1] & 0b01000000),
             "light": bool(_data[1] & 0b00100000),
             "openDirection": (
-                "left_to_right" if _data[1] & 0b00010000 == 1 else "right_to_left"
+                "left_to_right" if _data[1] & 0b00010000 else "right_to_left"
             ),
         }
 
         # if grouped curtain device present.
         if _data[2] != 0:
             self.ext_info_sum["device1"] = {
-                "openDirectionDefault": not bool(_data[1] & 0b10000000),
-                "touchToOpen": bool(_data[1] & 0b01000000),
-                "light": bool(_data[1] & 0b00100000),
+                "openDirectionDefault": not bool(_data[2] & 0b10000000),
+                "touchToOpen": bool(_data[2] & 0b01000000),
+                "light": bool(_data[2] & 0b00100000),
                 "openDirection": (
-                    "left_to_right" if _data[1] & 0b00010000 else "right_to_left"
+                    "left_to_right" if _data[2] & 0b00010000 else "right_to_left"
                 ),
             }
 
