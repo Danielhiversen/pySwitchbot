@@ -51,9 +51,24 @@ class SwitchbotBlindTilt(SwitchbotBaseCover, SwitchbotSequenceDevice):
     ) -> None:
         """Set data."""
         in_motion = data["inMotion"]
+        previous_tilt = self._get_adv_value("tilt")
+        new_tilt = data["tilt"]
+        self._update_motion_direction(in_motion, previous_tilt, new_tilt)
+        super()._set_parsed_data(advertisement, data)
+
+    def _update_motion_direction(
+        self, in_motion: bool, previous_tilt: int | None, new_tilt: int
+    ) -> None:
+        """Update opening/closing status based on movement."""
+        if previous_tilt is None:
+            return
         if in_motion is False:
             self._is_closing = self._is_opening = False
-        super()._set_parsed_data(advertisement, data)
+            return
+
+        if new_tilt != previous_tilt:
+            self._is_opening = new_tilt > previous_tilt
+            self._is_closing = new_tilt < previous_tilt
 
     @update_after_operation
     async def open(self) -> bool:
