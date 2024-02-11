@@ -4,8 +4,7 @@ from __future__ import annotations
 import logging
 from typing import Any
 
-from switchbot.models import SwitchBotAdvertisement
-
+from ..models import SwitchBotAdvertisement
 from .base_cover import COVER_COMMAND, COVER_EXT_SUM_KEY, SwitchbotBaseCover
 from .device import REQ_HEADER, update_after_operation
 
@@ -52,8 +51,6 @@ class SwitchbotCurtain(SwitchbotBaseCover):
         self._settings: dict[str, Any] = {}
         self.ext_info_sum: dict[str, Any] = {}
         self.ext_info_adv: dict[str, Any] = {}
-        self._is_opening: bool = False
-        self._is_closing: bool = False
 
     def _set_parsed_data(
         self, advertisement: SwitchBotAdvertisement, data: dict[str, Any]
@@ -181,25 +178,3 @@ class SwitchbotCurtain(SwitchbotBaseCover):
             }
 
         return self.ext_info_sum
-
-    def get_light_level(self) -> Any:
-        """Return cached light level."""
-        # To get actual light level call update() first.
-        return self._get_adv_value("lightLevel")
-
-    def is_reversed(self) -> bool:
-        """Return True if curtain position is opposite from SB data."""
-        return self._reverse
-
-    def is_calibrated(self) -> Any:
-        """Return True curtain is calibrated."""
-        # To get actual light level call update() first.
-        return self._get_adv_value("calibration")
-
-    def is_opening(self) -> bool:
-        """Return True if the curtain is opening."""
-        return self._is_opening
-
-    def is_closing(self) -> bool:
-        """Return True if the curtain is closing."""
-        return self._is_closing

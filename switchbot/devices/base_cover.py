@@ -5,6 +5,7 @@ import logging
 from abc import abstractmethod
 from typing import Any
 
+from ..models import SwitchBotAdvertisement
 from .device import REQ_HEADER, SwitchbotDevice, update_after_operation
 
 # Cover keys
@@ -38,6 +39,8 @@ class SwitchbotBaseCover(SwitchbotDevice):
         self._settings: dict[str, Any] = {}
         self.ext_info_sum: dict[str, Any] = {}
         self.ext_info_adv: dict[str, Any] = {}
+        self._is_opening: bool = False
+        self._is_closing: bool = False
 
     async def _send_multiple_commands(self, keys: list[str]) -> bool:
         """Send multiple commands to device.
@@ -115,3 +118,25 @@ class SwitchbotBaseCover(SwitchbotDevice):
             }
 
         return self.ext_info_adv
+
+    def get_light_level(self) -> Any:
+        """Return cached light level."""
+        # To get actual light level call update() first.
+        return self._get_adv_value("lightLevel")
+
+    def is_reversed(self) -> bool:
+        """Return True if curtain position is opposite from SB data."""
+        return self._reverse
+
+    def is_calibrated(self) -> Any:
+        """Return True curtain is calibrated."""
+        # To get actual light level call update() first.
+        return self._get_adv_value("calibration")
+
+    def is_opening(self) -> bool:
+        """Return True if the curtain is opening."""
+        return self._is_opening
+
+    def is_closing(self) -> bool:
+        """Return True if the curtain is closing."""
+        return self._is_closing

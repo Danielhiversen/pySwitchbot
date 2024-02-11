@@ -10,6 +10,7 @@ from switchbot.devices.device import (
     update_after_operation,
 )
 
+from ..models import SwitchBotAdvertisement
 from .base_cover import COVER_COMMAND, COVER_EXT_SUM_KEY, SwitchbotBaseCover
 
 _LOGGER = logging.getLogger(__name__)
@@ -45,19 +46,34 @@ class SwitchbotBlindTilt(SwitchbotBaseCover, SwitchbotSequenceDevice):
         self._reverse: bool = kwargs.pop("reverse_mode", False)
         super().__init__(self._reverse, *args, **kwargs)
 
+    def _set_parsed_data(
+        self, advertisement: SwitchBotAdvertisement, data: dict[str, Any]
+    ) -> None:
+        """Set data."""
+        in_motion = data["inMotion"]
+        if in_motion is False:
+            self._is_closing = self._is_opening = False
+        super()._set_parsed_data(advertisement, data)
+
     @update_after_operation
     async def open(self) -> bool:
         """Send open command."""
+        self._is_opening = True
+        self._is_closing = False
         return await self._send_multiple_commands(OPEN_KEYS)
 
     @update_after_operation
     async def close_up(self) -> bool:
         """Send close up command."""
+        self._is_opening = False
+        self._is_closing = True
         return await self._send_multiple_commands(CLOSE_UP_KEYS)
 
     @update_after_operation
     async def close_down(self) -> bool:
         """Send close down command."""
+        self._is_opening = False
+        self._is_closing = True
         return await self._send_multiple_commands(CLOSE_DOWN_KEYS)
 
     # The aim of this is to close to the nearest endpoint.
