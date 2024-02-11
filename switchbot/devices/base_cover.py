@@ -1,9 +1,8 @@
 """Library to handle connection with Switchbot."""
 from __future__ import annotations
 
-from abc import abstractmethod
-
 import logging
+from abc import abstractmethod
 from typing import Any
 
 from .device import REQ_HEADER, SwitchbotDevice, update_after_operation
@@ -67,7 +66,7 @@ class SwitchbotBaseCover(SwitchbotDevice):
                 f"{POSITION_KEYS[1]}{speed:02X}{position:02X}",
             ]
         )
-    
+
     @abstractmethod
     def get_position(self) -> Any:
         """Return current device position."""

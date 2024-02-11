@@ -1,16 +1,16 @@
 from __future__ import annotations
 
+import asyncio
 import logging
+import time
 from abc import abstractmethod
 from typing import Any
 
+from ..models import SwitchBotAdvertisement
 from .device import ColorMode, SwitchbotDevice
 
 _LOGGER = logging.getLogger(__name__)
-import asyncio
-import time
 
-from ..models import SwitchBotAdvertisement
 
 
 class SwitchbotBaseLight(SwitchbotDevice):

@@ -1,19 +1,13 @@
 """Library to handle connection with Switchbot."""
 from __future__ import annotations
 
-from bleak_retry_connector import (
-    close_stale_connections,
-    close_stale_connections_by_address,
-    get_device,
-)
+from bleak_retry_connector import (close_stale_connections,
+                                   close_stale_connections_by_address,
+                                   get_device)
 
 from .adv_parser import SwitchbotSupportedType, parse_advertisement_data
-from .const import (
-    LockStatus,
-    SwitchbotAccountConnectionError,
-    SwitchbotAuthenticationError,
-    SwitchbotModel,
-)
+from .const import (LockStatus, SwitchbotAccountConnectionError,
+                    SwitchbotAuthenticationError, SwitchbotModel)
 from .devices.base_light import SwitchbotBaseLight
 from .devices.blind_tilt import SwitchbotBlindTilt
 from .devices.bot import Switchbot

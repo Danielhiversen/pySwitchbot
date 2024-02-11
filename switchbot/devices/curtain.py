@@ -6,9 +6,8 @@ from typing import Any
 
 from switchbot.models import SwitchBotAdvertisement
 
-from .base_cover import SwitchbotBaseCover, COVER_COMMAND, COVER_EXT_SUM_KEY
+from .base_cover import COVER_COMMAND, COVER_EXT_SUM_KEY, SwitchbotBaseCover
 from .device import REQ_HEADER, update_after_operation
-
 
 # For second element of open and close arrs we should add two bytes i.e. ff00
 # First byte [ff] stands for speed (00 or ff - normal, 01 - slow) *
@@ -94,7 +93,9 @@ class SwitchbotCurtain(SwitchbotBaseCover):
     async def set_position(self, position: int, speed: int = 255) -> bool:
         """Send position command (0-100) to device. Speed 255 - normal, 1 - slow"""
         direction_adjusted_position = (100 - position) if self._reverse else position
-        self._update_motion_direction(True, self._get_adv_value("position"), direction_adjusted_position)
+        self._update_motion_direction(
+            True, self._get_adv_value("position"), direction_adjusted_position
+        )
         return await super().set_position(position, speed)
 
     def get_position(self) -> Any:
