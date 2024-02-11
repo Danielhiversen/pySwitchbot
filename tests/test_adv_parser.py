@@ -963,6 +963,7 @@ def test_wosensor_active_zero_data():
         active=True,
     )
 
+
 def test_woiosensor_passive_and_active():
     """Test parsing woiosensor as passive with active data as well."""
     ble_device = generate_ble_device("aa:bb:cc:dd:ee:ff", "any")
