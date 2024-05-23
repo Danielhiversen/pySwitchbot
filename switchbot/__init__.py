@@ -11,6 +11,7 @@ from .adv_parser import SwitchbotSupportedType, parse_advertisement_data
 from .const import (
     LockStatus,
     SwitchbotAccountConnectionError,
+    SwitchbotApiError,
     SwitchbotAuthenticationError,
     SwitchbotModel,
 )
@@ -36,6 +37,7 @@ __all__ = [
     "GetSwitchbotDevices",
     "SwitchBotAdvertisement",
     "SwitchbotAccountConnectionError",
+    "SwitchbotApiError",
     "SwitchbotAuthenticationError",
     "ColorMode",
     "LockStatus",
