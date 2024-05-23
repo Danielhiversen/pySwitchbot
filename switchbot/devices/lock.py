@@ -1,12 +1,12 @@
 """Library to handle connection with Switchbot Lock."""
 from __future__ import annotations
 
+import asyncio
 import logging
 import time
 from typing import Any
 
 import aiohttp
-import asyncio
 from bleak.backends.device import BLEDevice
 from cryptography.hazmat.primitives.ciphers import Cipher, algorithms, modes
 
@@ -85,7 +85,11 @@ class SwitchbotLock(SwitchbotDevice):
 
     @staticmethod
     async def api_request(
-            session: aiohttp.ClientSession, subdomain: str, path: str, data: dict = None, headers: dict = None
+        session: aiohttp.ClientSession,
+        subdomain: str,
+        path: str,
+        data: dict = None,
+        headers: dict = None,
     ) -> dict:
         url = f"https://{subdomain}.{SWITCHBOT_APP_API_BASE_URL}/{path}"
         async with session.post(url, json=data, headers=headers) as result:
@@ -107,12 +111,15 @@ class SwitchbotLock(SwitchbotDevice):
     def retrieve_encryption_key(device_mac: str, username: str, password: str):
         async def async_fn():
             async with aiohttp.ClientSession() as session:
-                return await SwitchbotLock.async_retrieve_encryption_key(session, device_mac, username, password)
+                return await SwitchbotLock.async_retrieve_encryption_key(
+                    session, device_mac, username, password
+                )
+
         return asyncio.run(async_fn())
 
     @staticmethod
     async def async_retrieve_encryption_key(
-            session: aiohttp.ClientSession, device_mac: str, username: str, password: str
+        session: aiohttp.ClientSession, device_mac: str, username: str, password: str
     ) -> dict:
         """Retrieve lock key from internal SwitchBot API."""
         device_mac = device_mac.replace(":", "").replace("-", "").upper()
