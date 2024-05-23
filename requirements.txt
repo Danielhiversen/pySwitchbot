@@ -1,4 +1,4 @@
+aiohttp>=3.9.5
 bleak>=0.17.0
 bleak-retry-connector>=2.9.0
 cryptography>=38.0.3
-requests>=2.28.1

@@ -1,12 +1,12 @@
 """Library to handle connection with Switchbot Lock."""
 from __future__ import annotations
 
-import json
 import logging
 import time
 from typing import Any
 
-import requests
+import aiohttp
+import asyncio
 from bleak.backends.device import BLEDevice
 from cryptography.hazmat.primitives.ciphers import Cipher, algorithms, modes
 
@@ -84,34 +84,34 @@ class SwitchbotLock(SwitchbotDevice):
         return lock_info is not None
 
     @staticmethod
-    def api_request(subdomain: str, path: str, data: dict, headers: dict = None):
-        result = requests.post(
-            url=f"https://{subdomain}.{SWITCHBOT_APP_API_BASE_URL}/{path}",
-            headers=headers,
-            json=data,
-            timeout=5,
-        )
+    async def api_request(subdomain: str, path: str, data: dict = None, headers: dict = None):
+        async with aiohttp.ClientSession(headers=headers, timeout=aiohttp.ClientTimeout(total=10)) as session:
+            url = f"https://{subdomain}.{SWITCHBOT_APP_API_BASE_URL}/{path}"
+            async with session.post(url, json=data) as result:
+                if result.status > 299:
+                    raise SwitchbotApiError(
+                        f"Unexpected status code returned by SwitchBot API: {result.status}"
+                    )
 
-        if result.status_code > 299:
-            raise SwitchbotApiError(
-                f"Unexpected status code returned by SwitchBot API: {result.status_code}"
-            )
+                response = await result.json()
+                if response["statusCode"] != 100:
+                    raise SwitchbotApiError(
+                        f"{response['message']}, status code: {response['statusCode']}"
+                    )
 
-        response = json.loads(result.content)
-        if response["statusCode"] != 100:
-            raise SwitchbotApiError(
-                f"{response['message']}, status code: {response['statusCode']}"
-            )
-
-        return response["body"]
+                return response["body"]
 
     @staticmethod
     def retrieve_encryption_key(device_mac: str, username: str, password: str):
+        return asyncio.run(SwitchbotLock.async_retrieve_encryption_key(device_mac, username, password))
+
+    @staticmethod
+    async def async_retrieve_encryption_key(device_mac: str, username: str, password: str):
         """Retrieve lock key from internal SwitchBot API."""
         device_mac = device_mac.replace(":", "").replace("-", "").upper()
 
         try:
-            auth_result = SwitchbotLock.api_request(
+            auth_result = await SwitchbotLock.api_request(
                 "account",
                 "account/api/v1/user/login",
                 {
@@ -127,7 +127,7 @@ class SwitchbotLock(SwitchbotDevice):
             raise SwitchbotAuthenticationError(f"Authentication failed: {err}") from err
 
         try:
-            userinfo = SwitchbotLock.api_request(
+            userinfo = await SwitchbotLock.api_request(
                 "account", "account/api/v1/user/userinfo", {}, auth_headers
             )
             if "botRegion" in userinfo and userinfo["botRegion"] != "":
@@ -140,7 +140,7 @@ class SwitchbotLock(SwitchbotDevice):
             ) from err
 
         try:
-            device_info = SwitchbotLock.api_request(
+            device_info = await SwitchbotLock.api_request(
                 f"wonderlabs.{region}",
                 "wonder/keys/v1/communicate",
                 {
