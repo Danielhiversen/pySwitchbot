@@ -10,6 +10,14 @@ DEFAULT_RETRY_TIMEOUT = 1
 DEFAULT_SCAN_TIMEOUT = 5
 
 
+class SwitchbotApiError(RuntimeError):
+    """Raised when API call fails.
+
+    This exception inherits from RuntimeError to avoid breaking existing code
+    but will be changed to Exception in a future release.
+    """
+
+
 class SwitchbotAuthenticationError(RuntimeError):
     """Raised when authentication fails.
 
