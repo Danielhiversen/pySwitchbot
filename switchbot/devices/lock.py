@@ -14,8 +14,8 @@ from ..api_config import SWITCHBOT_APP_API_BASE_URL, SWITCHBOT_APP_CLIENT_ID
 from ..const import (
     LockStatus,
     SwitchbotAccountConnectionError,
-    SwitchbotAuthenticationError,
     SwitchbotApiError,
+    SwitchbotAuthenticationError,
 )
 from .device import SwitchbotDevice, SwitchbotOperationError
 
@@ -93,7 +93,9 @@ class SwitchbotLock(SwitchbotDevice):
         )
 
         if result.status_code > 299:
-            raise SwitchbotApiError(f"Unexpected status code returned by SwitchBot API: {result.status_code}")
+            raise SwitchbotApiError(
+                f"Unexpected status code returned by SwitchBot API: {result.status_code}"
+            )
 
         response = json.loads(result.content)
         if response["statusCode"] != 100:
@@ -109,21 +111,25 @@ class SwitchbotLock(SwitchbotDevice):
         device_mac = device_mac.replace(":", "").replace("-", "").upper()
 
         try:
-            auth_result = SwitchbotLock.api_request("account", "account/api/v1/user/login", {
-                "clientId": SWITCHBOT_APP_CLIENT_ID,
-                "username": username,
-                "password": password,
-                "grantType": "password",
-                "verifyCode": ""
-            })
+            auth_result = SwitchbotLock.api_request(
+                "account",
+                "account/api/v1/user/login",
+                {
+                    "clientId": SWITCHBOT_APP_CLIENT_ID,
+                    "username": username,
+                    "password": password,
+                    "grantType": "password",
+                    "verifyCode": "",
+                },
+            )
             auth_headers = {"authorization": auth_result["access_token"]}
         except Exception as err:
-            raise SwitchbotAuthenticationError(
-                f"Authentication failed: {err}"
-            ) from err
+            raise SwitchbotAuthenticationError(f"Authentication failed: {err}") from err
 
         try:
-            userinfo = SwitchbotLock.api_request("account", "account/api/v1/user/userinfo", {}, auth_headers)
+            userinfo = SwitchbotLock.api_request(
+                "account", "account/api/v1/user/userinfo", {}, auth_headers
+            )
             region = userinfo["botRegion"]
         except Exception as err:
             raise SwitchbotAccountConnectionError(
@@ -131,10 +137,15 @@ class SwitchbotLock(SwitchbotDevice):
             ) from err
 
         try:
-            device_info = SwitchbotLock.api_request(f"wonderlabs.{region}", "wonder/keys/v1/communicate", {
-                "device_mac": device_mac,
-                "keyType": "user",
-            }, auth_headers)
+            device_info = SwitchbotLock.api_request(
+                f"wonderlabs.{region}",
+                "wonder/keys/v1/communicate",
+                {
+                    "device_mac": device_mac,
+                    "keyType": "user",
+                },
+                auth_headers,
+            )
 
             return {
                 "key_id": device_info["communicationKey"]["keyId"],
