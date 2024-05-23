@@ -130,7 +130,10 @@ class SwitchbotLock(SwitchbotDevice):
             userinfo = SwitchbotLock.api_request(
                 "account", "account/api/v1/user/userinfo", {}, auth_headers
             )
-            region = userinfo["botRegion"]
+            if "botRegion" in userinfo and userinfo["botRegion"] != "":
+                region = userinfo["botRegion"]
+            else:
+                region = "us"
         except Exception as err:
             raise SwitchbotAccountConnectionError(
                 f"Failed to retrieve SwitchBot Account user details: {err}"
