@@ -92,7 +92,12 @@ class SwitchbotLock(SwitchbotDevice):
         headers: dict = None,
     ) -> dict:
         url = f"https://{subdomain}.{SWITCHBOT_APP_API_BASE_URL}/{path}"
-        async with session.post(url, json=data, headers=headers) as result:
+        async with session.post(
+            url,
+            json=data,
+            headers=headers,
+            timeout=aiohttp.ClientTimeout(total=10),
+        ) as result:
             if result.status > 299:
                 raise SwitchbotApiError(
                     f"Unexpected status code returned by SwitchBot API: {result.status}"
