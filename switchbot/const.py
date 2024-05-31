@@ -48,6 +48,7 @@ class SwitchbotModel(StrEnum):
     CEILING_LIGHT = "WoCeiling"
     LOCK = "WoLock"
     BLIND_TILT = "WoBlindTilt"
+    HUB2 = "WoHub2"
 
 
 class LockStatus(Enum):

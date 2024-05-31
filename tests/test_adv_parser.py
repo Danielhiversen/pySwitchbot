@@ -964,6 +964,40 @@ def test_wosensor_active_zero_data():
     )
 
 
+def test_wohub2_passive_and_active():
+    """Test parsing wosensor as passive with active data as well."""
+    ble_device = generate_ble_device("aa:bb:cc:dd:ee:ff", "any")
+    adv_data = generate_advertisement_data(
+        manufacturer_data={
+            2409: b"\xaa\xbb\xcc\xdd\xee\xff\x00\xfffT\x1a\xf1\x82\x07\x9a2\x00"
+        },
+        service_data={"0000fd3d-0000-1000-8000-00805f9b34fb": b"v\x00"},
+        tx_power=-127,
+        rssi=-50,
+    )
+    result = parse_advertisement_data(ble_device, adv_data)
+    assert result == SwitchBotAdvertisement(
+        address="aa:bb:cc:dd:ee:ff",
+        data={
+            "data": {
+                "fahrenheit": False,
+                "humidity": 50,
+                "lightLevel": 2,
+                "temp": {"c": 26.7, "f": 80.06},
+                "temperature": 26.7,
+            },
+            "isEncrypted": False,
+            "model": "v",
+            "modelFriendlyName": "Hub 2",
+            "modelName": SwitchbotModel.HUB2,
+            "rawAdvData": b"v\x00",
+        },
+        device=ble_device,
+        rssi=-50,
+        active=True,
+    )
+
+
 def test_woiosensor_passive_and_active():
     """Test parsing woiosensor as passive with active data as well."""
     ble_device = generate_ble_device("aa:bb:cc:dd:ee:ff", "any")
