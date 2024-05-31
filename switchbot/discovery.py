@@ -42,11 +42,11 @@ class GetSwitchbotDevices:
 
         devices = None
         devices = bleak.BleakScanner(
+            detection_callback=self.detection_callback,
             # TODO: Find new UUIDs to filter on. For example, see
             # https://github.com/OpenWonderLabs/SwitchBotAPI-BLE/blob/4ad138bb09f0fbbfa41b152ca327a78c1d0b6ba9/devicetypes/meter.md
             adapter=self._interface,
         )
-        devices.register_detection_callback(self.detection_callback)
 
         async with CONNECT_LOCK:
             await devices.start()
@@ -111,7 +111,8 @@ class GetSwitchbotDevices:
         base_meters = await self._get_devices_by_model("T")
         plus_meters = await self._get_devices_by_model("i")
         io_meters = await self._get_devices_by_model("w")
-        return {**base_meters, **plus_meters, **io_meters}
+        hub2_meters = await self._get_devices_by_model("v")
+        return {**base_meters, **plus_meters, **io_meters, **hub2_meters}
 
     async def get_contactsensors(self) -> dict[str, SwitchBotAdvertisement]:
         """Return all WoContact/Contact sensor devices with services data."""

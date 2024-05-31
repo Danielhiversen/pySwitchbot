@@ -1,4 +1,5 @@
 """Library to handle connection with Switchbot."""
+
 from __future__ import annotations
 
 import logging
@@ -15,6 +16,7 @@ from .adv_parsers.bulb import process_color_bulb
 from .adv_parsers.ceiling_light import process_woceiling
 from .adv_parsers.contact import process_wocontact
 from .adv_parsers.curtain import process_wocurtain
+from .adv_parsers.hub2 import process_wohub2
 from .adv_parsers.humidifier import process_wohumidifier
 from .adv_parsers.light_strip import process_wostrip
 from .adv_parsers.lock import process_wolock
@@ -54,7 +56,6 @@ SUPPORTED_TYPES: dict[str, SwitchbotSupportedType] = {
         "modelName": SwitchbotModel.BOT,
         "modelFriendlyName": "Bot",
         "func": process_wohand,
-        "service_uuids": {"cba20d00-224d-11e6-9fb8-0002a5d5c51b"},
         "manufacturer_id": 89,
     },
     "s": {
@@ -98,6 +99,12 @@ SUPPORTED_TYPES: dict[str, SwitchbotSupportedType] = {
         "modelName": SwitchbotModel.METER,
         "modelFriendlyName": "Meter",
         "func": process_wosensorth,
+        "manufacturer_id": 2409,
+    },
+    "v": {
+        "modelName": SwitchbotModel.HUB2,
+        "modelFriendlyName": "Hub 2",
+        "func": process_wohub2,
         "manufacturer_id": 2409,
     },
     "g": {
