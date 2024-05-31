@@ -10,7 +10,7 @@ setup(
         "cryptography>=39.0.0",
         "pyOpenSSL>=23.0.0",
     ],
-    version="0.46.1",
+    version="0.47.0",
     description="A library to communicate with Switchbot",
     author="Daniel Hjelseth Hoyer",
     url="https://github.com/Danielhiversen/pySwitchbot/",
