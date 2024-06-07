@@ -13,6 +13,7 @@ from cryptography.hazmat.primitives.ciphers import Cipher, algorithms, modes
 
 from ..api_config import SWITCHBOT_APP_API_BASE_URL, SWITCHBOT_APP_CLIENT_ID
 from ..const import (
+    LockModel,
     LockStatus,
     SwitchbotAccountConnectionError,
     SwitchbotApiError,
@@ -22,12 +23,21 @@ from .device import SwitchbotDevice, SwitchbotOperationError
 
 COMMAND_HEADER = "57"
 COMMAND_GET_CK_IV = f"{COMMAND_HEADER}0f2103"
-COMMAND_LOCK_INFO = { "Lock": f"{COMMAND_HEADER}0f4f8101", "LockPro": f"{COMMAND_HEADER}0f4f8102" }
-COMMAND_UNLOCK =  { "Lock": f"{COMMAND_HEADER}0f4e01011080", "LockPro": f"{COMMAND_HEADER}0f4e0101000180" }
 COMMAND_UNLOCK_WITHOUT_UNLATCH = f"{COMMAND_HEADER}0f4e010110a0"
-COMMAND_LOCK =  { "Lock": f"{COMMAND_HEADER}0f4e01011000", "LockPro": f"{COMMAND_HEADER}0f4e0101000100" }
 COMMAND_ENABLE_NOTIFICATIONS = f"{COMMAND_HEADER}0e01001e00008101"
 COMMAND_DISABLE_NOTIFICATIONS = f"{COMMAND_HEADER}0e00"
+
+class COMMAND_LOCK_INFO(StrEnum):
+    LOCK = f"{COMMAND_HEADER}0f4f8101"
+    LOCK_PRO = f"{COMMAND_HEADER}0f4f8102"
+
+class COMMAND_UNLOCK(StrEnum):
+    LOCK = f"{COMMAND_HEADER}0f4e01011080"
+    LOCK_PRO = f"{COMMAND_HEADER}0f4e0101000680"
+
+class COMMAND_LOCK(StrEnum):
+    LOCK = f"{COMMAND_HEADER}0f4e01011000"
+    LOCK_PRO = f"{COMMAND_HEADER}0f4e0101000600"
 
 MOVING_STATUSES = {LockStatus.LOCKING, LockStatus.UNLOCKING}
 BLOCKED_STATUSES = {LockStatus.LOCKING_STOP, LockStatus.UNLOCKING_STOP}
@@ -71,11 +81,11 @@ class SwitchbotLock(SwitchbotDevice):
 
     @staticmethod
     async def verify_encryption_key(
-        device: BLEDevice, key_id: str, encryption_key: str
+            device: BLEDevice, model: LockModel, key_id: str, encryption_key: str
     ) -> bool:
         try:
             lock = SwitchbotLock(
-                device=device, key_id=key_id, encryption_key=encryption_key
+                device, model, key_id=key_id, encryption_key=encryption_key
             )
         except ValueError:
             return False
@@ -186,13 +196,13 @@ class SwitchbotLock(SwitchbotDevice):
     async def lock(self) -> bool:
         """Send lock command."""
         return await self._lock_unlock(
-            COMMAND_LOCK[self._model], {LockStatus.LOCKED, LockStatus.LOCKING}
+            COMMAND_LOCK[self._model.name], {LockStatus.LOCKED, LockStatus.LOCKING}
         )
 
     async def unlock(self) -> bool:
         """Send unlock command. If unlatch feature is enabled in EU firmware, also unlatches door"""
         return await self._lock_unlock(
-            COMMAND_UNLOCK[self._model], {LockStatus.UNLOCKED, LockStatus.UNLOCKING}
+            COMMAND_UNLOCK[self._model.name], {LockStatus.UNLOCKED, LockStatus.UNLOCKING}
         )
 
     async def unlock_without_unlatch(self) -> bool:
@@ -278,7 +288,7 @@ class SwitchbotLock(SwitchbotDevice):
 
     async def _get_lock_info(self) -> bytes | None:
         """Return lock info of device."""
-        _data = await self._send_command(key=COMMAND_LOCK_INFO[self._model], retry=self._retry_count)
+        _data = await self._send_command(key=COMMAND_LOCK_INFO[self._model.name], retry=self._retry_count)
 
         if not self._check_command_result(_data, 0, COMMAND_RESULT_EXPECTED_VALUES):
             _LOGGER.error("Unsuccessful, please try again")
