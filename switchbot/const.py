@@ -47,9 +47,13 @@ class SwitchbotModel(StrEnum):
     COLOR_BULB = "WoBulb"
     CEILING_LIGHT = "WoCeiling"
     LOCK = "WoLock"
+    LOCK_PRO = "WoLockPro"
     BLIND_TILT = "WoBlindTilt"
     HUB2 = "WoHub2"
 
+class LockModel(StrEnum):
+    LOCK = "Lock"
+    LOCK_PRO = "LockPro"
 
 class LockStatus(Enum):
     LOCKED = 0

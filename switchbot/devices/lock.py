@@ -2,6 +2,7 @@
 from __future__ import annotations
 
 import asyncio
+from enum import StrEnum
 import logging
 import time
 from typing import Any
@@ -21,10 +22,10 @@ from .device import SwitchbotDevice, SwitchbotOperationError
 
 COMMAND_HEADER = "57"
 COMMAND_GET_CK_IV = f"{COMMAND_HEADER}0f2103"
-COMMAND_LOCK_INFO = f"{COMMAND_HEADER}0f4f8101"
-COMMAND_UNLOCK = f"{COMMAND_HEADER}0f4e01011080"
+COMMAND_LOCK_INFO = { "Lock": f"{COMMAND_HEADER}0f4f8101", "LockPro": f"{COMMAND_HEADER}0f4f8102" }
+COMMAND_UNLOCK =  { "Lock": f"{COMMAND_HEADER}0f4e01011080", "LockPro": f"{COMMAND_HEADER}0f4e0101000180" }
 COMMAND_UNLOCK_WITHOUT_UNLATCH = f"{COMMAND_HEADER}0f4e010110a0"
-COMMAND_LOCK = f"{COMMAND_HEADER}0f4e01011000"
+COMMAND_LOCK =  { "Lock": f"{COMMAND_HEADER}0f4e01011000", "LockPro": f"{COMMAND_HEADER}0f4e0101000100" }
 COMMAND_ENABLE_NOTIFICATIONS = f"{COMMAND_HEADER}0e01001e00008101"
 COMMAND_DISABLE_NOTIFICATIONS = f"{COMMAND_HEADER}0e00"
 
@@ -46,6 +47,7 @@ class SwitchbotLock(SwitchbotDevice):
     def __init__(
         self,
         device: BLEDevice,
+        model: LockModel,
         key_id: str,
         encryption_key: str,
         interface: int = 0,
@@ -64,6 +66,7 @@ class SwitchbotLock(SwitchbotDevice):
         self._key_id = key_id
         self._encryption_key = bytearray.fromhex(encryption_key)
         self._notifications_enabled: bool = False
+        self._model: LockModel = model
         super().__init__(device, None, interface, **kwargs)
 
     @staticmethod
@@ -183,13 +186,13 @@ class SwitchbotLock(SwitchbotDevice):
     async def lock(self) -> bool:
         """Send lock command."""
         return await self._lock_unlock(
-            COMMAND_LOCK, {LockStatus.LOCKED, LockStatus.LOCKING}
+            COMMAND_LOCK[self._model], {LockStatus.LOCKED, LockStatus.LOCKING}
         )
 
     async def unlock(self) -> bool:
         """Send unlock command. If unlatch feature is enabled in EU firmware, also unlatches door"""
         return await self._lock_unlock(
-            COMMAND_UNLOCK, {LockStatus.UNLOCKED, LockStatus.UNLOCKING}
+            COMMAND_UNLOCK[self._model], {LockStatus.UNLOCKED, LockStatus.UNLOCKING}
         )
 
     async def unlock_without_unlatch(self) -> bool:
@@ -275,7 +278,7 @@ class SwitchbotLock(SwitchbotDevice):
 
     async def _get_lock_info(self) -> bytes | None:
         """Return lock info of device."""
-        _data = await self._send_command(key=COMMAND_LOCK_INFO, retry=self._retry_count)
+        _data = await self._send_command(key=COMMAND_LOCK_INFO[self._model], retry=self._retry_count)
 
         if not self._check_command_result(_data, 0, COMMAND_RESULT_EXPECTED_VALUES):
             _LOGGER.error("Unsuccessful, please try again")
