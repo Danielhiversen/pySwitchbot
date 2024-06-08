@@ -31,7 +31,10 @@ COMMAND_UNLOCK = {
     LockModel.LOCK: f"{COMMAND_HEADER}0f4e01011080",
     LockModel.LOCK_PRO: f"{COMMAND_HEADER}0f4e0101000180",
 }
-COMMAND_UNLOCK_WITHOUT_UNLATCH = f"{COMMAND_HEADER}0f4e010110a0"
+COMMAND_UNLOCK_WITHOUT_UNLATCH = {
+    LockModel.LOCK: f"{COMMAND_HEADER}0f4e010110a0",
+    LockModel.LOCK_PRO: f"{COMMAND_HEADER}0f4e01010000a0",
+}
 COMMAND_LOCK = {
     LockModel.LOCK: f"{COMMAND_HEADER}0f4e01011000",
     LockModel.LOCK_PRO: f"{COMMAND_HEADER}0f4e0101000100",
@@ -208,7 +211,7 @@ class SwitchbotLock(SwitchbotDevice):
     async def unlock_without_unlatch(self) -> bool:
         """Send unlock command. This command will not unlatch the door."""
         return await self._lock_unlock(
-            COMMAND_UNLOCK_WITHOUT_UNLATCH,
+            COMMAND_UNLOCK_WITHOUT_UNLATCH[self._model],
             {LockStatus.UNLOCKED, LockStatus.UNLOCKING, LockStatus.NOT_FULLY_LOCKED},
         )
 
