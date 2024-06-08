@@ -16,7 +16,9 @@ def main():
         password = sys.argv[3]
 
     try:
-        result = SwitchbotLock.retrieve_encryption_key(sys.argv[1], sys.argv[2], password)
+        result = SwitchbotLock.retrieve_encryption_key(
+            sys.argv[1], sys.argv[2], password
+        )
     except RuntimeError as e:
         print(e)
         exit(1)

@@ -1,10 +1,13 @@
 # pySwitchbot [![Build Status](https://travis-ci.org/Danielhiversen/pySwitchbot.svg?branch=master)](https://travis-ci.org/Danielhiversen/pySwitchbot)
+
 Library to control Switchbot IoT devices https://www.switch-bot.com/bot
 
 ## Obtaining locks encryption key
+
 Using the script `scripts/get_encryption_key.py` you can manually obtain locks encryption key.
 
 Usage:
+
 ```shell
 $ python3 get_encryption_key.py MAC USERNAME
 Key ID: xx
@@ -16,7 +19,7 @@ If authentication succeeds then script should output your key id and encryption 
 
 Examples:
 
-* WoLock
+- WoLock
 
 ```python
 import asyncio
