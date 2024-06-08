@@ -2,9 +2,9 @@
 from __future__ import annotations
 
 import asyncio
-from enum import StrEnum
 import logging
 import time
+from enum import StrEnum
 from typing import Any
 
 import aiohttp
@@ -23,10 +23,19 @@ from .device import SwitchbotDevice, SwitchbotOperationError
 
 COMMAND_HEADER = "57"
 COMMAND_GET_CK_IV = f"{COMMAND_HEADER}0f2103"
-COMMAND_LOCK_INFO = { LockModel.LOCK: f"{COMMAND_HEADER}0f4f8101", LockModel.LOCK_PRO: f"{COMMAND_HEADER}0f4f8102" }
-COMMAND_UNLOCK = { LockModel.LOCK: f"{COMMAND_HEADER}0f4e01011080", LockModel.LOCK_PRO: f"{COMMAND_HEADER}0f4e0101000180" }
+COMMAND_LOCK_INFO = {
+    LockModel.LOCK: f"{COMMAND_HEADER}0f4f8101",
+    LockModel.LOCK_PRO: f"{COMMAND_HEADER}0f4f8102",
+}
+COMMAND_UNLOCK = {
+    LockModel.LOCK: f"{COMMAND_HEADER}0f4e01011080",
+    LockModel.LOCK_PRO: f"{COMMAND_HEADER}0f4e0101000180",
+}
 COMMAND_UNLOCK_WITHOUT_UNLATCH = f"{COMMAND_HEADER}0f4e010110a0"
-COMMAND_LOCK = { LockModel.LOCK : f"{COMMAND_HEADER}0f4e01011000", LockModel.LOCK_PRO: f"{COMMAND_HEADER}0f4e0101000100" }
+COMMAND_LOCK = {
+    LockModel.LOCK: f"{COMMAND_HEADER}0f4e01011000",
+    LockModel.LOCK_PRO: f"{COMMAND_HEADER}0f4e0101000100",
+}
 COMMAND_ENABLE_NOTIFICATIONS = f"{COMMAND_HEADER}0e01001e00008101"
 COMMAND_DISABLE_NOTIFICATIONS = f"{COMMAND_HEADER}0e00"
 
@@ -72,7 +81,7 @@ class SwitchbotLock(SwitchbotDevice):
 
     @staticmethod
     async def verify_encryption_key(
-            device: BLEDevice, model: LockModel, key_id: str, encryption_key: str
+        device: BLEDevice, model: LockModel, key_id: str, encryption_key: str
     ) -> bool:
         try:
             lock = SwitchbotLock(
@@ -279,7 +288,9 @@ class SwitchbotLock(SwitchbotDevice):
 
     async def _get_lock_info(self) -> bytes | None:
         """Return lock info of device."""
-        _data = await self._send_command(key=COMMAND_LOCK_INFO[self._model], retry=self._retry_count)
+        _data = await self._send_command(
+            key=COMMAND_LOCK_INFO[self._model], retry=self._retry_count
+        )
 
         if not self._check_command_result(_data, 0, COMMAND_RESULT_EXPECTED_VALUES):
             _LOGGER.error("Unsuccessful, please try again")
