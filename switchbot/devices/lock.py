@@ -83,7 +83,10 @@ class SwitchbotLock(SwitchbotDevice):
 
     @staticmethod
     async def verify_encryption_key(
-            device: BLEDevice, key_id: str, encryption_key: str, **kwargs: Any,
+        device: BLEDevice,
+        key_id: str,
+        encryption_key: str,
+        **kwargs: Any,
     ) -> bool:
         model = kwargs.get("model") or LockModel.LOCK
         try:
