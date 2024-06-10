@@ -63,6 +63,7 @@ class SwitchbotLock(SwitchbotDevice):
         key_id: str,
         encryption_key: str,
         interface: int = 0,
+        model: LockModel = LockModel.LOCK,
         **kwargs: Any,
     ) -> None:
         if len(key_id) == 0:
@@ -78,7 +79,7 @@ class SwitchbotLock(SwitchbotDevice):
         self._key_id = key_id
         self._encryption_key = bytearray.fromhex(encryption_key)
         self._notifications_enabled: bool = False
-        self._model: LockModel = kwargs.get("model") or LockModel.LOCK
+        self._model: LockModel = model
         super().__init__(device, None, interface, **kwargs)
 
     @staticmethod
@@ -86,9 +87,9 @@ class SwitchbotLock(SwitchbotDevice):
         device: BLEDevice,
         key_id: str,
         encryption_key: str,
+        model: LockModel = LockModel.LOCK,
         **kwargs: Any,
     ) -> bool:
-        model = kwargs.get("model") or LockModel.LOCK
         try:
             lock = SwitchbotLock(
                 device, model, key_id=key_id, encryption_key=encryption_key
