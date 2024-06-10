@@ -40,7 +40,6 @@ __all__ = [
     "SwitchbotApiError",
     "SwitchbotAuthenticationError",
     "ColorMode",
-    "LockModel",
     "LockStatus",
     "SwitchbotBaseLight",
     "SwitchbotBulb",
