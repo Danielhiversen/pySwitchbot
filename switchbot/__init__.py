@@ -9,7 +9,6 @@ from bleak_retry_connector import (
 
 from .adv_parser import SwitchbotSupportedType, parse_advertisement_data
 from .const import (
-    LockModel,
     LockStatus,
     SwitchbotAccountConnectionError,
     SwitchbotApiError,

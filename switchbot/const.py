@@ -52,11 +52,6 @@ class SwitchbotModel(StrEnum):
     HUB2 = "WoHub2"
 
 
-class LockModel(StrEnum):
-    LOCK = "Lock"
-    LOCK_PRO = "LockPro"
-
-
 class LockStatus(Enum):
     LOCKED = 0
     UNLOCKED = 1

@@ -4,7 +4,6 @@ from __future__ import annotations
 import asyncio
 import logging
 import time
-from enum import StrEnum
 from typing import Any
 
 import aiohttp
@@ -13,31 +12,31 @@ from cryptography.hazmat.primitives.ciphers import Cipher, algorithms, modes
 
 from ..api_config import SWITCHBOT_APP_API_BASE_URL, SWITCHBOT_APP_CLIENT_ID
 from ..const import (
-    LockModel,
     LockStatus,
     SwitchbotAccountConnectionError,
     SwitchbotApiError,
     SwitchbotAuthenticationError,
+    SwitchbotModel,
 )
 from .device import SwitchbotDevice, SwitchbotOperationError
 
 COMMAND_HEADER = "57"
 COMMAND_GET_CK_IV = f"{COMMAND_HEADER}0f2103"
 COMMAND_LOCK_INFO = {
-    LockModel.LOCK: f"{COMMAND_HEADER}0f4f8101",
-    LockModel.LOCK_PRO: f"{COMMAND_HEADER}0f4f8102",
+    SwitchbotModel.LOCK: f"{COMMAND_HEADER}0f4f8101",
+    SwitchbotModel.LOCK_PRO: f"{COMMAND_HEADER}0f4f8102",
 }
 COMMAND_UNLOCK = {
-    LockModel.LOCK: f"{COMMAND_HEADER}0f4e01011080",
-    LockModel.LOCK_PRO: f"{COMMAND_HEADER}0f4e0101000080",
+    SwitchbotModel.LOCK: f"{COMMAND_HEADER}0f4e01011080",
+    SwitchbotModel.LOCK_PRO: f"{COMMAND_HEADER}0f4e0101000080",
 }
 COMMAND_UNLOCK_WITHOUT_UNLATCH = {
-    LockModel.LOCK: f"{COMMAND_HEADER}0f4e010110a0",
-    LockModel.LOCK_PRO: f"{COMMAND_HEADER}0f4e01010000a0",
+    SwitchbotModel.LOCK: f"{COMMAND_HEADER}0f4e010110a0",
+    SwitchbotModel.LOCK_PRO: f"{COMMAND_HEADER}0f4e01010000a0",
 }
 COMMAND_LOCK = {
-    LockModel.LOCK: f"{COMMAND_HEADER}0f4e01011000",
-    LockModel.LOCK_PRO: f"{COMMAND_HEADER}0f4e0101000000",
+    SwitchbotModel.LOCK: f"{COMMAND_HEADER}0f4e01011000",
+    SwitchbotModel.LOCK_PRO: f"{COMMAND_HEADER}0f4e0101000000",
 }
 COMMAND_ENABLE_NOTIFICATIONS = f"{COMMAND_HEADER}0e01001e00008101"
 COMMAND_DISABLE_NOTIFICATIONS = f"{COMMAND_HEADER}0e00"
@@ -63,7 +62,7 @@ class SwitchbotLock(SwitchbotDevice):
         key_id: str,
         encryption_key: str,
         interface: int = 0,
-        model: LockModel = LockModel.LOCK,
+        model: SwitchbotModel = SwitchbotModel.LOCK,
         **kwargs: Any,
     ) -> None:
         if len(key_id) == 0:
@@ -74,12 +73,14 @@ class SwitchbotLock(SwitchbotDevice):
             raise ValueError("encryption_key is missing")
         elif len(encryption_key) != 32:
             raise ValueError("encryption_key is invalid")
+        if model != SwitchbotModel.LOCK and model != SwitchbotModel.LOCK_PRO:
+            raise ValueError("initializing SwitchbotLock with a non-lock model")
         self._iv = None
         self._cipher = None
         self._key_id = key_id
         self._encryption_key = bytearray.fromhex(encryption_key)
         self._notifications_enabled: bool = False
-        self._model: LockModel = model
+        self._model: SwitchbotModel = model
         super().__init__(device, None, interface, **kwargs)
 
     @staticmethod
@@ -87,12 +88,12 @@ class SwitchbotLock(SwitchbotDevice):
         device: BLEDevice,
         key_id: str,
         encryption_key: str,
-        model: LockModel = LockModel.LOCK,
+        model: SwitchbotModel = SwitchbotModel.LOCK,
         **kwargs: Any,
     ) -> bool:
         try:
             lock = SwitchbotLock(
-                device, model, key_id=key_id, encryption_key=encryption_key
+                device, key_id=key_id, encryption_key=encryption_key, model=model
             )
         except ValueError:
             return False
