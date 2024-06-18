@@ -73,7 +73,7 @@ class SwitchbotLock(SwitchbotDevice):
             raise ValueError("encryption_key is missing")
         elif len(encryption_key) != 32:
             raise ValueError("encryption_key is invalid")
-        if model != SwitchbotModel.LOCK and model != SwitchbotModel.LOCK_PRO:
+        if model not in (SwitchbotModel.LOCK, SwitchbotModel.LOCK_PRO):
             raise ValueError("initializing SwitchbotLock with a non-lock model")
         self._iv = None
         self._cipher = None
