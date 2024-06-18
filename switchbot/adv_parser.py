@@ -150,6 +150,12 @@ SUPPORTED_TYPES: dict[str, SwitchbotSupportedType] = {
         "func": process_wolock,
         "manufacturer_id": 2409,
     },
+    "$": {
+        "modelName": SwitchbotModel.LOCK_PRO,
+        "modelFriendlyName": "Lock Pro",
+        "func": process_wolock,
+        "manufacturer_id": 2409,
+    },
     "x": {
         "modelName": SwitchbotModel.BLIND_TILT,
         "modelFriendlyName": "Blind Tilt",
