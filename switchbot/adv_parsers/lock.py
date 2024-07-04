@@ -29,3 +29,25 @@ def process_wolock(data: bytes | None, mfr_data: bytes | None) -> dict[str, bool
         "auto_lock_paused": bool(mfr_data[8] & 0b00000010),
         "night_latch": bool(mfr_data[9] & 0b00000001) if len(mfr_data) > 9 else False,
     }
+
+def process_wolock_pro(data: bytes | None, mfr_data: bytes | None) -> dict[str, bool | int]:
+    _LOGGER.debug("mfr_data: %s", mfr_data.hex())
+    if data:
+        _LOGGER.debug("data: %s", data.hex())
+
+    res = {
+        "battery": data[2] & 0b01111111 if data else None,
+        "calibration": bool(mfr_data[7] & 0b10000000),
+        "status": LockStatus(int(mfr_data[7] & 0b00111000) / 8),
+        "update_from_secondary_lock": bool(mfr_data[7] & 0b00001000),
+        # For some reason they used 2 bytes here, probably night latch?
+        "door_open": bool(mfr_data[8] & 0b110000),
+        "double_lock_mode": bool(mfr_data[8] & 0b10000000),
+        "unclosed_alarm": bool(mfr_data[8] & 0b00100000),
+        "unlocked_alarm": bool(mfr_data[8] & 0b00010000),
+        "auto_lock_paused": bool(mfr_data[8] & 0b00000010),
+        "night_latch": bool(mfr_data[9] & 0b00000001) if len(mfr_data) > 9 else False,
+        "manual": not bool(mfr_data[7] & 0b00000010),
+    }
+    _LOGGER.debug(res)
+    return res
