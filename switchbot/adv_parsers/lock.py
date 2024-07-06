@@ -30,7 +30,10 @@ def process_wolock(data: bytes | None, mfr_data: bytes | None) -> dict[str, bool
         "night_latch": bool(mfr_data[9] & 0b00000001) if len(mfr_data) > 9 else False,
     }
 
-def process_wolock_pro(data: bytes | None, mfr_data: bytes | None) -> dict[str, bool | int]:
+
+def process_wolock_pro(
+    data: bytes | None, mfr_data: bytes | None
+) -> dict[str, bool | int]:
     _LOGGER.debug("mfr_data: %s", mfr_data.hex())
     if data:
         _LOGGER.debug("data: %s", data.hex())
