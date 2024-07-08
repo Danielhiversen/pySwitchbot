@@ -41,7 +41,7 @@ def process_wolock_pro(
     res = {
         "battery": data[2] & 0b01111111 if data else None,
         "calibration": bool(mfr_data[7] & 0b10000000),
-        "status": LockStatus(int(mfr_data[7] & 0b00111000) / 8),
+        "status": LockStatus((mfr_data[7] & 0b00111000) >> 3),
         "door_open": bool(mfr_data[8] & 0b01100000),
         # Double lock mode is not supported on Lock Pro
         "update_from_secondary_lock": False,
