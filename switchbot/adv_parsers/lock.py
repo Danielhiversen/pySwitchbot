@@ -42,11 +42,10 @@ def process_wolock_pro(
         "battery": data[2] & 0b01111111 if data else None,
         "calibration": bool(mfr_data[7] & 0b10000000),
         "status": LockStatus(int(mfr_data[7] & 0b00111000) / 8),
-        # This field hasn't been tested on Lock Pro
-        "update_from_secondary_lock": bool(mfr_data[7] & 0b00001000),
         "door_open": bool(mfr_data[8] & 0b01100000),
-        # This field hasn't been tested on Lock Pro
-        "double_lock_mode": bool(mfr_data[8] & 0b10000000),
+        # Double lock mode is not supported on Lock Pro
+        "update_from_secondary_lock": False,
+        "double_lock_mode": False,
         "unclosed_alarm": bool(mfr_data[11] & 0b10000000),
         "unlocked_alarm": bool(mfr_data[11] & 0b01000000),
         "auto_lock_paused": bool(mfr_data[8] & 0b100000),
