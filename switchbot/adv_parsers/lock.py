@@ -29,3 +29,27 @@ def process_wolock(data: bytes | None, mfr_data: bytes | None) -> dict[str, bool
         "auto_lock_paused": bool(mfr_data[8] & 0b00000010),
         "night_latch": bool(mfr_data[9] & 0b00000001) if len(mfr_data) > 9 else False,
     }
+
+
+def process_wolock_pro(
+    data: bytes | None, mfr_data: bytes | None
+) -> dict[str, bool | int]:
+    _LOGGER.debug("mfr_data: %s", mfr_data.hex())
+    if data:
+        _LOGGER.debug("data: %s", data.hex())
+
+    res = {
+        "battery": data[2] & 0b01111111 if data else None,
+        "calibration": bool(mfr_data[7] & 0b10000000),
+        "status": LockStatus((mfr_data[7] & 0b00111000) >> 3),
+        "door_open": bool(mfr_data[8] & 0b01100000),
+        # Double lock mode is not supported on Lock Pro
+        "update_from_secondary_lock": False,
+        "double_lock_mode": False,
+        "unclosed_alarm": bool(mfr_data[11] & 0b10000000),
+        "unlocked_alarm": bool(mfr_data[11] & 0b01000000),
+        "auto_lock_paused": bool(mfr_data[8] & 0b100000),
+        "night_latch": bool(mfr_data[9] & 0b00000001),
+    }
+    _LOGGER.debug(res)
+    return res
