@@ -49,7 +49,7 @@ def process_wolock_pro(
         "unclosed_alarm": bool(mfr_data[11] & 0b10000000),
         "unlocked_alarm": bool(mfr_data[11] & 0b01000000),
         "auto_lock_paused": bool(mfr_data[8] & 0b100000),
-        "night_latch": bool(mfr_data[9] & 0b00000001),
+        "night_latch": bool(mfr_data[9] & 0b00010000),
     }
     _LOGGER.debug(res)
     return res
