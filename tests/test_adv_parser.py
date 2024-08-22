@@ -1459,6 +1459,39 @@ def test_parsing_lock_pro_passive():
     )
 
 
+def test_parsing_lock_pro_passive_nightlatch_disabled():
+    ble_device = generate_ble_device("aa:bb:cc:dd:ee:ff", "any")
+    adv_data = generate_advertisement_data(
+        manufacturer_data={2409: bytes.fromhex("aabbccddeeff0a8200630000")}, rssi=-67
+    )
+    result = parse_advertisement_data(ble_device, adv_data, SwitchbotModel.LOCK_PRO)
+    assert result == SwitchBotAdvertisement(
+        address="aa:bb:cc:dd:ee:ff",
+        data={
+            "data": {
+                "battery": None,
+                "calibration": True,
+                "status": LockStatus.LOCKED,
+                "update_from_secondary_lock": False,
+                "door_open": False,
+                "double_lock_mode": False,
+                "unclosed_alarm": False,
+                "unlocked_alarm": False,
+                "auto_lock_paused": False,
+                "night_latch": False,
+            },
+            "model": "$",
+            "isEncrypted": False,
+            "modelFriendlyName": "Lock Pro",
+            "modelName": SwitchbotModel.LOCK_PRO,
+            "rawAdvData": None,
+        },
+        device=ble_device,
+        rssi=-67,
+        active=False,
+    )
+
+
 def test_parsing_lock_active_old_firmware():
     """Test parsing lock with active data. Old firmware."""
     ble_device = generate_ble_device("aa:bb:cc:dd:ee:ff", "any")

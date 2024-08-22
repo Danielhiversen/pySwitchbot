@@ -49,7 +49,8 @@ def process_wolock_pro(
         "unclosed_alarm": bool(mfr_data[11] & 0b10000000),
         "unlocked_alarm": bool(mfr_data[11] & 0b01000000),
         "auto_lock_paused": bool(mfr_data[8] & 0b100000),
-        "night_latch": bool(mfr_data[9] & 0b00000001),
+        # Looks like night latch bit is not anymore in ADV
+        "night_latch": False,
     }
     _LOGGER.debug(res)
     return res
