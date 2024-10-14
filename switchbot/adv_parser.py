@@ -23,6 +23,7 @@ from .adv_parsers.lock import process_wolock, process_wolock_pro
 from .adv_parsers.meter import process_wosensorth, process_wosensorth_c
 from .adv_parsers.motion import process_wopresence
 from .adv_parsers.plug import process_woplugmini
+from .adv_parsers.keypad_touch import process_wokeypad_touch
 from .const import SwitchbotModel
 from .models import SwitchBotAdvertisement
 
@@ -172,6 +173,12 @@ SUPPORTED_TYPES: dict[str, SwitchbotSupportedType] = {
         "modelName": SwitchbotModel.BLIND_TILT,
         "modelFriendlyName": "Blind Tilt",
         "func": process_woblindtilt,
+        "manufacturer_id": 2409,
+    },
+    "y": {
+        "modelName": SwitchbotModel.KEYPAD_TOUCH,
+        "modelFriendlyName": "Keypad Touch",
+        "func": process_wokeypad_touch,
         "manufacturer_id": 2409,
     },
 }
