@@ -18,12 +18,12 @@ from .adv_parsers.contact import process_wocontact
 from .adv_parsers.curtain import process_wocurtain
 from .adv_parsers.hub2 import process_wohub2
 from .adv_parsers.humidifier import process_wohumidifier
+from .adv_parsers.keypad import process_wokeypad
 from .adv_parsers.light_strip import process_wostrip
 from .adv_parsers.lock import process_wolock, process_wolock_pro
 from .adv_parsers.meter import process_wosensorth, process_wosensorth_c
 from .adv_parsers.motion import process_wopresence
 from .adv_parsers.plug import process_woplugmini
-from .adv_parsers.keypad_touch import process_wokeypad_touch
 from .const import SwitchbotModel
 from .models import SwitchBotAdvertisement
 
@@ -176,9 +176,9 @@ SUPPORTED_TYPES: dict[str, SwitchbotSupportedType] = {
         "manufacturer_id": 2409,
     },
     "y": {
-        "modelName": SwitchbotModel.KEYPAD_TOUCH,
-        "modelFriendlyName": "Keypad Touch",
-        "func": process_wokeypad_touch,
+        "modelName": SwitchbotModel.KEYPAD,
+        "modelFriendlyName": "Keypad",
+        "func": process_wokeypad,
         "manufacturer_id": 2409,
     },
 }

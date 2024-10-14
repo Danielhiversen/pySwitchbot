@@ -52,7 +52,7 @@ class SwitchbotModel(StrEnum):
     LOCK_PRO = "WoLockPro"
     BLIND_TILT = "WoBlindTilt"
     HUB2 = "WoHub2"
-    KEYPAD_TOUCH = "WoKeypadTouch"
+    KEYPAD = "WoKeypad"
 
 
 class LockStatus(Enum):
