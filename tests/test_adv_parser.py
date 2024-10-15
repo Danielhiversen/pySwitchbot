@@ -1684,3 +1684,28 @@ def test_meter_pro_c_passive() -> None:
         rssi=-67,
         active=False,
     )
+
+
+def test_parse_advertisement_data_keypad():
+    """Test parse_advertisement_data for the keypad."""
+    ble_device = generate_ble_device("aa:bb:cc:dd:ee:ff", "any")
+    adv_data = generate_advertisement_data(
+        manufacturer_data={2409: b"\xeb\x13\x02\xe6#\x0f\x8fd\x00\x00\x00\x00"},
+        service_data={"0000fd3d-0000-1000-8000-00805f9b34fb": b"y\x00d"},
+        rssi=-67,
+    )
+    result = parse_advertisement_data(ble_device, adv_data, SwitchbotModel.KEYPAD)
+    assert result == SwitchBotAdvertisement(
+        address="aa:bb:cc:dd:ee:ff",
+        data={
+            "data": {"battery": 100, "attemptState": 143},
+            "isEncrypted": False,
+            "model": "y",
+            "modelFriendlyName": "Keypad",
+            "modelName": SwitchbotModel.KEYPAD,
+            "rawAdvData": b"y\x00d",
+        },
+        device=ble_device,
+        rssi=-67,
+        active=True,
+    )
