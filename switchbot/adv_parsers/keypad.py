@@ -9,7 +9,7 @@ _LOGGER = logging.getLogger(__name__)
 
 def process_wokeypad(
     data: bytes | None, mfr_data: bytes | None
-) -> dict[str, bool | int]:
+) -> dict[str, bool | int | None] | {}:
     """Process woKeypad services data."""
     if data is None and mfr_data is None:
         return {}
