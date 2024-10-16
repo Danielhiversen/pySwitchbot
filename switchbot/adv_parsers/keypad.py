@@ -9,12 +9,9 @@ _LOGGER = logging.getLogger(__name__)
 
 def process_wokeypad(
     data: bytes | None, mfr_data: bytes | None
-) -> dict[str, bool | int | None] | {}:
+) -> dict[str, bool | int | None]:
     """Process woKeypad services data."""
-    if data is None and mfr_data is None:
-        return {}
-
-    if data is None:
+    if data is None or mfr_data is None:
         return {"battery": None, "attemptState": None}
 
     _LOGGER.debug("mfr_data: %s", mfr_data.hex())
