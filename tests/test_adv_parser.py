@@ -1560,3 +1560,62 @@ def test_parsing_lock_passive_old_firmware():
         rssi=-67,
         active=False,
     )
+
+
+def test_meter_pro_active() -> None:
+    ble_device = generate_ble_device("aa:bb:cc:dd:ee:ff", "any")
+    adv_data = generate_advertisement_data(
+        manufacturer_data={2409: b"\xb0\xe9\xfeR\xdd\x84\x06d\x08\x97,\x00\x05"},
+        service_data={"0000fd3d-0000-1000-8000-00805f9b34fb": b"4\x00d"},
+        rssi=-67,
+    )
+    result = parse_advertisement_data(ble_device, adv_data)
+    assert result == SwitchBotAdvertisement(
+        address="aa:bb:cc:dd:ee:ff",
+        data={
+            "data": {
+                "battery": 100,
+                "fahrenheit": False,
+                "humidity": 44,
+                "temp": {"c": 23.8, "f": 74.84},
+                "temperature": 23.8,
+            },
+            "isEncrypted": False,
+            "model": "4",
+            "modelFriendlyName": "Meter",
+            "modelName": SwitchbotModel.METER_PRO,
+            "rawAdvData": b"4\x00d",
+        },
+        device=ble_device,
+        rssi=-67,
+        active=True,
+    )
+
+
+def test_meter_pro_passive() -> None:
+    ble_device = generate_ble_device("aa:bb:cc:dd:ee:ff", "any")
+    adv_data = generate_advertisement_data(
+        manufacturer_data={2409: b"\xb0\xe9\xfeR\xdd\x84\x06d\x08\x97,\x00\x05"},
+        rssi=-67,
+    )
+    result = parse_advertisement_data(ble_device, adv_data, SwitchbotModel.METER_PRO)
+    assert result == SwitchBotAdvertisement(
+        address="aa:bb:cc:dd:ee:ff",
+        data={
+            "data": {
+                "battery": None,
+                "fahrenheit": False,
+                "humidity": 44,
+                "temp": {"c": 23.8, "f": 74.84},
+                "temperature": 23.8,
+            },
+            "isEncrypted": False,
+            "model": "4",
+            "modelFriendlyName": "Meter",
+            "modelName": SwitchbotModel.METER_PRO,
+            "rawAdvData": None,
+        },
+        device=ble_device,
+        rssi=-67,
+        active=False,
+    )

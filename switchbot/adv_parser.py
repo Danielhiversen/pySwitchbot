@@ -101,6 +101,12 @@ SUPPORTED_TYPES: dict[str, SwitchbotSupportedType] = {
         "func": process_wosensorth,
         "manufacturer_id": 2409,
     },
+    "4": {
+        "modelName": SwitchbotModel.METER_PRO,
+        "modelFriendlyName": "Meter",
+        "func": process_wosensorth,
+        "manufacturer_id": 2409,
+    },
     "v": {
         "modelName": SwitchbotModel.HUB2,
         "modelFriendlyName": "Hub 2",

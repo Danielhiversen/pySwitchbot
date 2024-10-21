@@ -42,6 +42,7 @@ class SwitchbotModel(StrEnum):
     CONTACT_SENSOR = "WoContact"
     LIGHT_STRIP = "WoStrip"
     METER = "WoSensorTH"
+    METER_PRO = "WoSensorTHP"
     IO_METER = "WoIOSensorTH"
     MOTION_SENSOR = "WoPresence"
     COLOR_BULB = "WoBulb"
