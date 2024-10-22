@@ -20,7 +20,7 @@ from .adv_parsers.hub2 import process_wohub2
 from .adv_parsers.humidifier import process_wohumidifier
 from .adv_parsers.light_strip import process_wostrip
 from .adv_parsers.lock import process_wolock, process_wolock_pro
-from .adv_parsers.meter import process_wosensorth
+from .adv_parsers.meter import process_wosensorth, process_wosensorth_c
 from .adv_parsers.motion import process_wopresence
 from .adv_parsers.plug import process_woplugmini
 from .const import SwitchbotModel
@@ -105,6 +105,12 @@ SUPPORTED_TYPES: dict[str, SwitchbotSupportedType] = {
         "modelName": SwitchbotModel.METER_PRO,
         "modelFriendlyName": "Meter",
         "func": process_wosensorth,
+        "manufacturer_id": 2409,
+    },
+    "5": {
+        "modelName": SwitchbotModel.METER_PRO_C,
+        "modelFriendlyName": "Meter",
+        "func": process_wosensorth_c,
         "manufacturer_id": 2409,
     },
     "v": {
