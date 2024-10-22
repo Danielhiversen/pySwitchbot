@@ -2,7 +2,7 @@
 from __future__ import annotations
 
 import struct
-from typing import Any, Optional
+from typing import Any
 
 CO2_UNPACK = struct.Struct(">H").unpack_from
 
