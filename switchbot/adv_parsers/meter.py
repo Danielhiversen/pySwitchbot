@@ -41,3 +41,42 @@ def process_wosensorth(data: bytes | None, mfr_data: bytes | None) -> dict[str, 
     }
 
     return _wosensorth_data
+
+
+def process_wosensorth_c(data: bytes | None, mfr_data: bytes | None) -> dict[str, Any]:
+    """Process woSensorTH/Temp sensor services data with CO2."""
+    temp_data = None
+    battery = None
+
+    if mfr_data:
+        temp_data = mfr_data[8:11]
+
+    if data:
+        if not temp_data:
+            temp_data = data[3:6]
+        battery = data[2] & 0b01111111
+
+    if not temp_data:
+        return {}
+
+    _temp_sign = 1 if temp_data[1] & 0b10000000 else -1
+    _temp_c = _temp_sign * (
+        (temp_data[1] & 0b01111111) + ((temp_data[0] & 0b00001111) / 10)
+    )
+    _temp_f = (_temp_c * 9 / 5) + 32
+    _temp_f = (_temp_f * 10) / 10
+    humidity = temp_data[2] & 0b01111111
+
+    if _temp_c == 0 and humidity == 0 and battery == 0:
+        return {}
+
+    _wosensorth_data = {
+        # Data should be flat, but we keep the original structure for now
+        "temp": {"c": _temp_c, "f": _temp_f},
+        "temperature": _temp_c,
+        "fahrenheit": bool(temp_data[2] & 0b10000000),
+        "humidity": humidity,
+        "battery": battery,
+    }
+
+    return _wosensorth_data

@@ -1599,6 +1599,9 @@ def test_meter_pro_passive() -> None:
         rssi=-67,
     )
     result = parse_advertisement_data(ble_device, adv_data, SwitchbotModel.METER_PRO)
+    import pprint
+
+    pprint.pprint(result)
     assert result == SwitchBotAdvertisement(
         address="aa:bb:cc:dd:ee:ff",
         data={
@@ -1613,6 +1616,69 @@ def test_meter_pro_passive() -> None:
             "model": "4",
             "modelFriendlyName": "Meter",
             "modelName": SwitchbotModel.METER_PRO,
+            "rawAdvData": None,
+        },
+        device=ble_device,
+        rssi=-67,
+        active=False,
+    )
+
+
+def test_meter_pro_c_active() -> None:
+    ble_device = generate_ble_device("aa:bb:cc:dd:ee:ff", "any")
+    adv_data = generate_advertisement_data(
+        manufacturer_data={
+            2409: b"\xb0\xe9\xfeT2\x15\xb7\xe4\x07\x9b\xa4\x007\x02\xd5\x00"
+        },
+        service_data={"0000fd3d-0000-1000-8000-00805f9b34fb": b"5\x00d"},
+        rssi=-67,
+    )
+    result = parse_advertisement_data(ble_device, adv_data)
+    assert result == SwitchBotAdvertisement(
+        address="aa:bb:cc:dd:ee:ff",
+        data={
+            "data": {
+                "battery": 100,
+                "fahrenheit": True,
+                "humidity": 36,
+                "temp": {"c": 27.7, "f": 81.86},
+                "temperature": 27.7,
+            },
+            "isEncrypted": False,
+            "model": "5",
+            "modelFriendlyName": "Meter",
+            "modelName": SwitchbotModel.METER_PRO_C,
+            "rawAdvData": b"5\x00d",
+        },
+        device=ble_device,
+        rssi=-67,
+        active=True,
+    )
+
+
+def test_meter_pro_c_passive() -> None:
+    ble_device = generate_ble_device("aa:bb:cc:dd:ee:ff", "any")
+    adv_data = generate_advertisement_data(
+        manufacturer_data={
+            2409: b"\xb0\xe9\xfeT2\x15\xb7\xe4\x07\x9b\xa4\x007\x02\xd5\x00"
+        },
+        rssi=-67,
+    )
+    result = parse_advertisement_data(ble_device, adv_data, SwitchbotModel.METER_PRO_C)
+    assert result == SwitchBotAdvertisement(
+        address="aa:bb:cc:dd:ee:ff",
+        data={
+            "data": {
+                "battery": None,
+                "fahrenheit": True,
+                "humidity": 36,
+                "temp": {"c": 27.7, "f": 81.86},
+                "temperature": 27.7,
+            },
+            "isEncrypted": False,
+            "model": "5",
+            "modelFriendlyName": "Meter",
+            "modelName": SwitchbotModel.METER_PRO_C,
             "rawAdvData": None,
         },
         device=ble_device,
