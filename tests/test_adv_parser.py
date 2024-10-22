@@ -1599,9 +1599,6 @@ def test_meter_pro_passive() -> None:
         rssi=-67,
     )
     result = parse_advertisement_data(ble_device, adv_data, SwitchbotModel.METER_PRO)
-    import pprint
-
-    pprint.pprint(result)
     assert result == SwitchBotAdvertisement(
         address="aa:bb:cc:dd:ee:ff",
         data={
