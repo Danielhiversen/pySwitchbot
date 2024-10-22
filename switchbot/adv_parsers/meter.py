@@ -1,13 +1,16 @@
 """Meter parser."""
 from __future__ import annotations
 
-from typing import Any
+import struct
+from typing import Any, Optional
+
+CO2_UNPACK = struct.Struct(">H").unpack_from
 
 
 def process_wosensorth(data: bytes | None, mfr_data: bytes | None) -> dict[str, Any]:
     """Process woSensorTH/Temp sensor services data."""
-    temp_data = None
-    battery = None
+    temp_data: bytes | None = None
+    battery: bytes | None = None
 
     if mfr_data:
         temp_data = mfr_data[8:11]
@@ -45,11 +48,13 @@ def process_wosensorth(data: bytes | None, mfr_data: bytes | None) -> dict[str, 
 
 def process_wosensorth_c(data: bytes | None, mfr_data: bytes | None) -> dict[str, Any]:
     """Process woSensorTH/Temp sensor services data with CO2."""
-    temp_data = None
-    battery = None
+    temp_data: bytes | None = None
+    battery: bytes | None = None
+    co2_data: bytes | None
 
     if mfr_data:
         temp_data = mfr_data[8:11]
+        co2_data = mfr_data[13:15]
 
     if data:
         if not temp_data:
@@ -78,5 +83,8 @@ def process_wosensorth_c(data: bytes | None, mfr_data: bytes | None) -> dict[str
         "humidity": humidity,
         "battery": battery,
     }
+
+    if co2_data:
+        _wosensorth_data["co2"] = CO2_UNPACK(co2_data)[0]
 
     return _wosensorth_data
