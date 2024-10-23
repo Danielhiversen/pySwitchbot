@@ -1698,7 +1698,7 @@ def test_parse_advertisement_data_keypad():
     assert result == SwitchBotAdvertisement(
         address="aa:bb:cc:dd:ee:ff",
         data={
-            "data": {"battery": 100, "success": False},
+            "data": {"attempt_state": 143, "battery": 100},
             "isEncrypted": False,
             "model": "y",
             "modelFriendlyName": "Keypad",
