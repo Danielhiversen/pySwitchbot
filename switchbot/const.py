@@ -1,4 +1,5 @@
 """Library to handle connection with Switchbot."""
+
 from __future__ import annotations
 
 from enum import Enum
@@ -52,6 +53,7 @@ class SwitchbotModel(StrEnum):
     LOCK_PRO = "WoLockPro"
     BLIND_TILT = "WoBlindTilt"
     HUB2 = "WoHub2"
+    KEYPAD = "WoKeypad"
 
 
 class LockStatus(Enum):
