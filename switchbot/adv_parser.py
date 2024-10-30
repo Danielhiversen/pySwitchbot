@@ -18,6 +18,7 @@ from .adv_parsers.contact import process_wocontact
 from .adv_parsers.curtain import process_wocurtain
 from .adv_parsers.hub2 import process_wohub2
 from .adv_parsers.humidifier import process_wohumidifier
+from .adv_parsers.leak import process_leak
 from .adv_parsers.light_strip import process_wostrip
 from .adv_parsers.lock import process_wolock, process_wolock_pro
 from .adv_parsers.meter import process_wosensorth, process_wosensorth_c
@@ -172,6 +173,12 @@ SUPPORTED_TYPES: dict[str, SwitchbotSupportedType] = {
         "modelName": SwitchbotModel.BLIND_TILT,
         "modelFriendlyName": "Blind Tilt",
         "func": process_woblindtilt,
+        "manufacturer_id": 2409,
+    },
+    "3": {
+        "modelName": SwitchbotModel.LEAK,
+        "modelFriendlyName": "Leak Detector",
+        "func": process_leak,
         "manufacturer_id": 2409,
     },
 }

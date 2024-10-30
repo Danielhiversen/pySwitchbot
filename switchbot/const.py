@@ -52,6 +52,7 @@ class SwitchbotModel(StrEnum):
     LOCK_PRO = "WoLockPro"
     BLIND_TILT = "WoBlindTilt"
     HUB2 = "WoHub2"
+    LEAK = "Leak Detector"
 
 
 class LockStatus(Enum):
