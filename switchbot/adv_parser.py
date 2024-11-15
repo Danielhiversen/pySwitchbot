@@ -6,7 +6,6 @@ import logging
 from collections.abc import Callable
 from functools import lru_cache
 from typing import Any, TypedDict
-import binascii
 
 from bleak.backends.device import BLEDevice
 from bleak.backends.scanner import AdvertisementData
@@ -71,6 +70,7 @@ SUPPORTED_TYPES: dict[str, SwitchbotSupportedType] = {
         "modelFriendlyName": "Light Strip",
         "func": process_wostrip,
         "manufacturer_id": 2409,
+        "manufacturer_data_length": 16,
     },
     "{": {
         "modelName": SwitchbotModel.CURTAIN,

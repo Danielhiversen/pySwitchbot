@@ -1,7 +1,5 @@
 import time
-import logging
 from typing import Any
-import binascii
 
 from bleak.backends.device import BLEDevice
 from cryptography.hazmat.primitives.ciphers import Cipher, algorithms, modes
