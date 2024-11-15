@@ -57,7 +57,8 @@ class ColorMode(Enum):
 # need to poll the device to get the
 # battery and a few rarely updating
 # values.
-PASSIVE_POLL_INTERVAL = 60 * 60 * 24
+# PASSIVE_POLL_INTERVAL = 60 * 60 * 24
+PASSIVE_POLL_INTERVAL = 2
 
 
 class CharacteristicMissingError(Exception):
@@ -571,7 +572,9 @@ class SwitchbotBaseDevice:
 
     async def update(self, interface: int | None = None) -> None:
         """Update position, battery percent and light level of device."""
+        # _LOGGER.info("1111111111111111 update")
         if info := await self.get_basic_info():
+            _LOGGER.info(f"1111111111111111 info: {info}")
             self._last_full_update = time.monotonic()
             self._update_parsed_data(info)
             self._fire_callbacks()
@@ -579,6 +582,7 @@ class SwitchbotBaseDevice:
     async def get_basic_info(self) -> dict[str, Any] | None:
         """Get device basic settings."""
         if not (_data := await self._get_basic_info()):
+            # _LOGGER.info("1111111111111111 get_basic_info return none")
             return None
         return {
             "battery": _data[1],
@@ -601,12 +605,15 @@ class SwitchbotBaseDevice:
 
         Returns true if data has changed and False if not.
         """
+        # _LOGGER.info(f"1111111111111111 _update_parsed_data, new_data: {new_data}")
         if not self._sb_adv_data:
             _LOGGER.exception("No advertisement data to update")
             return
         old_data = self._sb_adv_data.data.get("data") or {}
         merged_data = _merge_data(old_data, new_data)
+        # _LOGGER.info(f"1111111111111111 _update_parsed_data, old_data: {new_data}, merged_data: {merged_data}")
         if merged_data == old_data:
+            # _LOGGER.info(f"1111111111111111 _update_parsed_data, merged_data == old_data")
             return False
         self._set_parsed_data(self._sb_adv_data, merged_data)
         return True
@@ -618,6 +625,7 @@ class SwitchbotBaseDevice:
         self._sb_adv_data = replace(
             advertisement, data=self._sb_adv_data.data | {"data": data}
         )
+        # _LOGGER.info(f"1111111111111111 _set_parsed_data, _sb_adv_data: {self._sb_adv_data}")
 
     def _set_advertisement_data(self, advertisement: SwitchBotAdvertisement) -> None:
         """Set advertisement data."""
@@ -639,14 +647,19 @@ class SwitchbotBaseDevice:
 
     def poll_needed(self, seconds_since_last_poll: float | None) -> bool:
         """Return if device needs polling."""
+        if self._device.address == "F0:9E:9E:96:EE:92":
+            _LOGGER.info(f"1111111111111111 poll_needed, seconds_since_last_poll: {seconds_since_last_poll}")
         if (
             seconds_since_last_poll is not None
             and seconds_since_last_poll < PASSIVE_POLL_INTERVAL
         ):
+            # _LOGGER.info(f"1111111111111111 poll_needed, retrun false")
             return False
         time_since_last_full_update = time.monotonic() - self._last_full_update
         if time_since_last_full_update < PASSIVE_POLL_INTERVAL:
+            # _LOGGER.info(f"2222222222222222 poll_needed, retrun false")
             return False
+        # _LOGGER.info(f"1111111111111111 poll_needed, retrun true")
         return True
 
 

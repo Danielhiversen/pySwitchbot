@@ -6,6 +6,7 @@ import logging
 from collections.abc import Callable
 from functools import lru_cache
 from typing import Any, TypedDict
+import binascii
 
 from bleak.backends.device import BLEDevice
 from bleak.backends.scanner import AdvertisementData
@@ -23,6 +24,7 @@ from .adv_parsers.lock import process_wolock, process_wolock_pro
 from .adv_parsers.meter import process_wosensorth, process_wosensorth_c
 from .adv_parsers.motion import process_wopresence
 from .adv_parsers.plug import process_woplugmini
+from .adv_parsers.relay_switch import process_worelay_switch_1pm, process_worelay_switch_1plus
 from .const import SwitchbotModel
 from .models import SwitchBotAdvertisement
 
@@ -69,7 +71,6 @@ SUPPORTED_TYPES: dict[str, SwitchbotSupportedType] = {
         "modelFriendlyName": "Light Strip",
         "func": process_wostrip,
         "manufacturer_id": 2409,
-        "manufacturer_data_length": 16,
     },
     "{": {
         "modelName": SwitchbotModel.CURTAIN,
@@ -172,6 +173,18 @@ SUPPORTED_TYPES: dict[str, SwitchbotSupportedType] = {
         "modelName": SwitchbotModel.BLIND_TILT,
         "modelFriendlyName": "Blind Tilt",
         "func": process_woblindtilt,
+        "manufacturer_id": 2409,
+    },
+    "<": {
+        "modelName": SwitchbotModel.RelaySwitch1PM,
+        "modelFriendlyName": "Relay Switch 1PM",
+        "func": process_worelay_switch_1pm,
+        "manufacturer_id": 2409,
+    },
+    ";": {
+        "modelName": SwitchbotModel.RelaySwitch1Plus,
+        "modelFriendlyName": "Relay Switch 1",
+        "func": process_worelay_switch_1plus,
         "manufacturer_id": 2409,
     },
 }
