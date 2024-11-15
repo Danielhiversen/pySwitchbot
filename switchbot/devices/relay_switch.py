@@ -4,8 +4,8 @@ from typing import Any
 from bleak.backends.device import BLEDevice
 from cryptography.hazmat.primitives.ciphers import Cipher, algorithms, modes
 
-from .device import SwitchbotSequenceDevice
 from ..const import SwitchbotModel
+from .device import SwitchbotSequenceDevice
 
 COMMAND_HEADER = "57"
 COMMAND_GET_CK_IV = f"{COMMAND_HEADER}0f2103"
@@ -26,7 +26,7 @@ class SwitchbotRelaySwitch(SwitchbotSequenceDevice):
         encryption_key: str,
         interface: int = 0,
         model: SwitchbotModel = SwitchbotModel.RelaySwitch1PM,
-        **kwargs: Any
+        **kwargs: Any,
     ) -> None:
         if len(key_id) == 0:
             raise ValueError("key_id is missing")
@@ -55,13 +55,12 @@ class SwitchbotRelaySwitch(SwitchbotSequenceDevice):
         result = await self._send_command(COMMAND_GET_VOLTAGE_AND_CURRENT)
         ok = self._check_command_result(result, 0, {1})
         if ok:
-            voltage, current = (int(result[9]) << 8) + int(result[10]), (int(result[11]) << 8) + int(result[12])
             return {
-                "voltage": voltage,
-                "current": current
+                "voltage": (result[9] << 8) + result[10],
+                "current": (result[11] << 8) + result[12],
             }
         return None
-    
+
     def poll_needed(self, seconds_since_last_poll: float | None) -> bool:
         """Return if device needs polling."""
         if (
@@ -91,7 +90,7 @@ class SwitchbotRelaySwitch(SwitchbotSequenceDevice):
             self._override_state({"isOn": False})
             self._fire_callbacks()
         return ok
-    
+
     async def async_toggle(self, **kwargs) -> bool:
         """Toggle device."""
         result = await self._send_command(COMMAND_TOGGLE)
@@ -101,7 +100,7 @@ class SwitchbotRelaySwitch(SwitchbotSequenceDevice):
     def is_on(self) -> bool | None:
         """Return switch state from cache."""
         return self._get_adv_value("isOn")
-    
+
     async def _send_command(
         self, key: str, retry: int | None = None, encrypt: bool = True
     ) -> bytes | None:
