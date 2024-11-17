@@ -194,6 +194,7 @@ SUPPORTED_TYPES: dict[str, SwitchbotSupportedType] = {
         "modelName": SwitchbotModel.RelaySwitch1Plus,
         "modelFriendlyName": "Relay Switch 1",
         "func": process_worelay_switch_1plus,
+        "manufacturer_id": 2409,
     },
 }
 
