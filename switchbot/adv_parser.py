@@ -69,7 +69,6 @@ SUPPORTED_TYPES: dict[str, SwitchbotSupportedType] = {
         "modelFriendlyName": "Light Strip",
         "func": process_wostrip,
         "manufacturer_id": 2409,
-        "manufacturer_data_length": 16,
     },
     "{": {
         "modelName": SwitchbotModel.CURTAIN,
