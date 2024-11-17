@@ -25,7 +25,7 @@ class SwitchbotRelaySwitch(SwitchbotSequenceDevice):
         key_id: str,
         encryption_key: str,
         interface: int = 0,
-        model: SwitchbotModel = SwitchbotModel.RelaySwitch1PM,
+        model: SwitchbotModel = SwitchbotModel.RELAY_SWITCH_1PM,
         **kwargs: Any,
     ) -> None:
         if len(key_id) == 0:

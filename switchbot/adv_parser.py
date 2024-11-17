@@ -185,13 +185,13 @@ SUPPORTED_TYPES: dict[str, SwitchbotSupportedType] = {
         "manufacturer_id": 2409,
     },
     "<": {
-        "modelName": SwitchbotModel.RelaySwitch1PM,
+        "modelName": SwitchbotModel.RELAY_SWITCH_1PM,
         "modelFriendlyName": "Relay Switch 1PM",
         "func": process_worelay_switch_1pm,
         "manufacturer_id": 2409,
     },
     ";": {
-        "modelName": SwitchbotModel.RelaySwitch1Plus,
+        "modelName": SwitchbotModel.RELAY_SWITCH_1_PLUS,
         "modelFriendlyName": "Relay Switch 1",
         "func": process_worelay_switch_1plus,
         "manufacturer_id": 2409,
