@@ -54,6 +54,8 @@ class SwitchbotModel(StrEnum):
     BLIND_TILT = "WoBlindTilt"
     HUB2 = "WoHub2"
     KEYPAD = "WoKeypad"
+    RelaySwitch1PM = "Relay Switch 1PM"
+    RelaySwitch1Plus = "Relay Switch 1"
 
 
 class LockStatus(Enum):
