@@ -25,7 +25,7 @@ def process_worelay_switch_1plus(
     if mfr_data is None:
         return {}
     return {
-        "switchMode": True, # for compatibility, useless
+        "switchMode": True,  # for compatibility, useless
         "sequence_number": mfr_data[6],
         "isOn": bool(mfr_data[7] & 0b10000000),
     }

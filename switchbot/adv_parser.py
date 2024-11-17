@@ -24,8 +24,8 @@ from .adv_parsers.meter import process_wosensorth, process_wosensorth_c
 from .adv_parsers.motion import process_wopresence
 from .adv_parsers.plug import process_woplugmini
 from .adv_parsers.relay_switch import (
-    process_worelay_switch_1pm,
     process_worelay_switch_1plus,
+    process_worelay_switch_1pm,
 )
 from .const import SwitchbotModel
 from .models import SwitchBotAdvertisement
