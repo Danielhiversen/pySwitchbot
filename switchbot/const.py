@@ -52,6 +52,8 @@ class SwitchbotModel(StrEnum):
     LOCK_PRO = "WoLockPro"
     BLIND_TILT = "WoBlindTilt"
     HUB2 = "WoHub2"
+    RelaySwitch1PM = "Relay Switch 1PM"
+    RelaySwitch1Plus = "Relay Switch 1"
 
 
 class LockStatus(Enum):
