@@ -13,7 +13,7 @@ setup(
     version="0.53.0",
     description="A library to communicate with Switchbot",
     author="Daniel Hjelseth Hoyer",
-    url="https://github.com/Danielhiversen/pySwitchbot/",
+    url="https://github.com/sblibs/pySwitchbot/",
     license="MIT",
     classifiers=[
         "Development Status :: 3 - Alpha",
