@@ -19,11 +19,16 @@ from .adv_parsers.curtain import process_wocurtain
 from .adv_parsers.hub2 import process_wohub2
 from .adv_parsers.humidifier import process_wohumidifier
 from .adv_parsers.leak import process_leak
+from .adv_parsers.keypad import process_wokeypad
 from .adv_parsers.light_strip import process_wostrip
 from .adv_parsers.lock import process_wolock, process_wolock_pro
 from .adv_parsers.meter import process_wosensorth, process_wosensorth_c
 from .adv_parsers.motion import process_wopresence
 from .adv_parsers.plug import process_woplugmini
+from .adv_parsers.relay_switch import (
+    process_worelay_switch_1plus,
+    process_worelay_switch_1pm,
+)
 from .const import SwitchbotModel
 from .models import SwitchBotAdvertisement
 
@@ -70,7 +75,6 @@ SUPPORTED_TYPES: dict[str, SwitchbotSupportedType] = {
         "modelFriendlyName": "Light Strip",
         "func": process_wostrip,
         "manufacturer_id": 2409,
-        "manufacturer_data_length": 16,
     },
     "{": {
         "modelName": SwitchbotModel.CURTAIN,
@@ -179,6 +183,24 @@ SUPPORTED_TYPES: dict[str, SwitchbotSupportedType] = {
         "modelName": SwitchbotModel.LEAK,
         "modelFriendlyName": "Leak Detector",
         "func": process_leak,
+        "manufacturer_id": 2409,      
+    },
+    "y": {
+        "modelName": SwitchbotModel.KEYPAD,
+        "modelFriendlyName": "Keypad",
+        "func": process_wokeypad,
+        "manufacturer_id": 2409,
+    },
+    "<": {
+        "modelName": SwitchbotModel.RELAY_SWITCH_1PM,
+        "modelFriendlyName": "Relay Switch 1PM",
+        "func": process_worelay_switch_1pm,
+        "manufacturer_id": 2409,
+    },
+    ";": {
+        "modelName": SwitchbotModel.RELAY_SWITCH_1_PLUS,
+        "modelFriendlyName": "Relay Switch 1",
+        "func": process_worelay_switch_1plus,
         "manufacturer_id": 2409,
     },
 }

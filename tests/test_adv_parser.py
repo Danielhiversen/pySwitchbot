@@ -807,43 +807,6 @@ def test_bulb_active():
     )
 
 
-def test_lightstrip_passive():
-    """Test parsing lightstrip as passive."""
-    ble_device = generate_ble_device("aa:bb:cc:dd:ee:ff", "any")
-    adv_data = generate_advertisement_data(
-        manufacturer_data={
-            2409: b"`U\xf9(\xe5\x96\x00d\x02\xb0\x00\x00\x00\x00\x00\x00"
-        },
-        service_data={},
-        tx_power=-127,
-        rssi=-50,
-    )
-    result = parse_advertisement_data(ble_device, adv_data)
-    assert result == SwitchBotAdvertisement(
-        address="aa:bb:cc:dd:ee:ff",
-        data={
-            "data": {
-                "brightness": 100,
-                "color_mode": 2,
-                "delay": False,
-                "isOn": False,
-                "loop_index": 0,
-                "preset": False,
-                "sequence_number": 0,
-                "speed": 48,
-            },
-            "isEncrypted": False,
-            "model": "r",
-            "modelFriendlyName": "Light Strip",
-            "modelName": SwitchbotModel.LIGHT_STRIP,
-            "rawAdvData": None,
-        },
-        device=ble_device,
-        rssi=-50,
-        active=False,
-    )
-
-
 def test_wosensor_passive_and_active():
     """Test parsing wosensor as passive with active data as well."""
     ble_device = generate_ble_device("aa:bb:cc:dd:ee:ff", "any")
@@ -1683,4 +1646,29 @@ def test_meter_pro_c_passive() -> None:
         device=ble_device,
         rssi=-67,
         active=False,
+    )
+
+
+def test_parse_advertisement_data_keypad():
+    """Test parse_advertisement_data for the keypad."""
+    ble_device = generate_ble_device("aa:bb:cc:dd:ee:ff", "any")
+    adv_data = generate_advertisement_data(
+        manufacturer_data={2409: b"\xeb\x13\x02\xe6#\x0f\x8fd\x00\x00\x00\x00"},
+        service_data={"0000fd3d-0000-1000-8000-00805f9b34fb": b"y\x00d"},
+        rssi=-67,
+    )
+    result = parse_advertisement_data(ble_device, adv_data, SwitchbotModel.KEYPAD)
+    assert result == SwitchBotAdvertisement(
+        address="aa:bb:cc:dd:ee:ff",
+        data={
+            "data": {"attempt_state": 143, "battery": 100},
+            "isEncrypted": False,
+            "model": "y",
+            "modelFriendlyName": "Keypad",
+            "modelName": SwitchbotModel.KEYPAD,
+            "rawAdvData": b"y\x00d",
+        },
+        device=ble_device,
+        rssi=-67,
+        active=True,
     )

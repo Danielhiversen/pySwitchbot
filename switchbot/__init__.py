@@ -26,6 +26,7 @@ from .devices.humidifier import SwitchbotHumidifier
 from .devices.light_strip import SwitchbotLightStrip
 from .devices.lock import SwitchbotLock
 from .devices.plug import SwitchbotPlugMini
+from .devices.relay_switch import SwitchbotRelaySwitch
 from .discovery import GetSwitchbotDevices
 from .models import SwitchBotAdvertisement
 
@@ -54,4 +55,5 @@ __all__ = [
     "SwitchbotModel",
     "SwitchbotLock",
     "SwitchbotBlindTilt",
+    "SwitchbotRelaySwitch",
 ]
