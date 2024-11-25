@@ -55,7 +55,7 @@ class SwitchbotModel(StrEnum):
     HUB2 = "WoHub2"
     KEYPAD = "WoKeypad"
     RELAY_SWITCH_1PM = "Relay Switch 1PM"
-    RELAY_SWITCH_1_PLUS = "Relay Switch 1"
+    RELAY_SWITCH_1 = "Relay Switch 1"
 
 
 class LockStatus(Enum):
