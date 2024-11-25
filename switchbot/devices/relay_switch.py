@@ -1,3 +1,5 @@
+import asyncio
+import logging
 import time
 from typing import Any
 
@@ -5,7 +7,10 @@ from bleak.backends.device import BLEDevice
 from cryptography.hazmat.primitives.ciphers import Cipher, algorithms, modes
 
 from ..const import SwitchbotModel
-from .device import SwitchbotSequenceDevice
+from ..models import SwitchBotAdvertisement
+from .device import SwitchbotDevice
+
+_LOGGER = logging.getLogger(__name__)
 
 COMMAND_HEADER = "57"
 COMMAND_GET_CK_IV = f"{COMMAND_HEADER}0f2103"
@@ -16,7 +21,7 @@ COMMAND_GET_VOLTAGE_AND_CURRENT = f"{COMMAND_HEADER}0f7106000000"
 PASSIVE_POLL_INTERVAL = 1 * 60
 
 
-class SwitchbotRelaySwitch(SwitchbotSequenceDevice):
+class SwitchbotRelaySwitch(SwitchbotDevice):
     """Representation of a Switchbot relay switch 1pm."""
 
     def __init__(
@@ -43,6 +48,28 @@ class SwitchbotRelaySwitch(SwitchbotSequenceDevice):
         self._model: SwitchbotModel = model
         super().__init__(device, None, interface, **kwargs)
 
+    def update_from_advertisement(self, advertisement: SwitchBotAdvertisement) -> None:
+        """Update device data from advertisement."""
+        # Obtain voltage and current through command.
+        previous_voltage = self._get_adv_value("voltage")
+        previous_current = self._get_adv_value("current")
+        if previous_voltage:
+            advertisement.data["data"]["voltage"] = previous_voltage
+        if previous_current:
+            advertisement.data["data"]["current"] = previous_current
+        current_state = self._get_adv_value("sequence_number")
+        super().update_from_advertisement(advertisement)
+        new_state = self._get_adv_value("sequence_number")
+        _LOGGER.debug(
+            "%s: update advertisement: %s (seq before: %s) (seq after: %s)",
+            self.name,
+            advertisement,
+            current_state,
+            new_state,
+        )
+        if current_state != new_state:
+            asyncio.ensure_future(self.update())
+
     async def update(self, interface: int | None = None) -> None:
         """Update state of device."""
         if info := await self.get_voltage_and_current():
@@ -56,7 +83,7 @@ class SwitchbotRelaySwitch(SwitchbotSequenceDevice):
         ok = self._check_command_result(result, 0, {1})
         if ok:
             return {
-                "voltage": (result[9] << 8) + result[10],
+                "voltage": ((result[9] << 8) + result[10]) / 10,
                 "current": (result[11] << 8) + result[12],
             }
         return None
