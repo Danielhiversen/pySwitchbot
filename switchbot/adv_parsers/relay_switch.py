@@ -1,4 +1,5 @@
 """Relay Switch adv parser."""
+
 from __future__ import annotations
 
 
