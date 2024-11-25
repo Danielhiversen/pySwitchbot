@@ -68,7 +68,7 @@ class SwitchbotRelaySwitch(SwitchbotDevice):
             new_state,
         )
         if current_state != new_state:
-            asyncio.ensure_future(self.update())
+            asyncio.create_task(self.update())
 
     async def update(self, interface: int | None = None) -> None:
         """Update state of device."""
