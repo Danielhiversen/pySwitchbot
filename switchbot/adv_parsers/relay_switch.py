@@ -19,7 +19,7 @@ def process_worelay_switch_1pm(
     }
 
 
-def process_worelay_switch_1plus(
+def process_worelay_switch_1(
     data: bytes | None, mfr_data: bytes | None
 ) -> dict[str, bool | int]:
     """Process WoStrip services data."""
