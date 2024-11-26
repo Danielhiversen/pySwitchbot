@@ -1,4 +1,5 @@
 """Library to handle connection with Switchbot Lock."""
+
 from __future__ import annotations
 
 import asyncio

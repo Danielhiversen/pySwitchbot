@@ -1,4 +1,5 @@
 """Contact sensor parser."""
+
 from __future__ import annotations
 
 
