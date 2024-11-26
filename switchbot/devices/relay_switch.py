@@ -52,12 +52,11 @@ class SwitchbotRelaySwitch(SwitchbotDevice):
     def update_from_advertisement(self, advertisement: SwitchBotAdvertisement) -> None:
         """Update device data from advertisement."""
         # Obtain voltage and current through command.
-        previous_voltage = self._get_adv_value("voltage")
-        previous_current = self._get_adv_value("current")
-        if previous_voltage:
-            advertisement.data["data"]["voltage"] = previous_voltage
-        if previous_current:
-            advertisement.data["data"]["current"] = previous_current
+        adv_data = advertisement.data["data"]
+        if previous_voltage := self._get_adv_value("voltage"):
+            adv_data["voltage"] = previous_voltage
+        if previous_current := self._get_adv_value("current"):
+            adv_data["current"] = previous_current
         current_state = self._get_adv_value("sequence_number")
         super().update_from_advertisement(advertisement)
         new_state = self._get_adv_value("sequence_number")
