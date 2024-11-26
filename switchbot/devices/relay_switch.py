@@ -18,7 +18,7 @@ COMMAND_TURN_OFF = f"{COMMAND_HEADER}0f70010000"
 COMMAND_TURN_ON = f"{COMMAND_HEADER}0f70010100"
 COMMAND_TOGGLE = f"{COMMAND_HEADER}0f70010200"
 COMMAND_GET_VOLTAGE_AND_CURRENT = f"{COMMAND_HEADER}0f7106000000"
-PASSIVE_POLL_INTERVAL = 1 * 60
+PASSIVE_POLL_INTERVAL = 10 * 60
 
 
 class SwitchbotRelaySwitch(SwitchbotDevice):
@@ -46,6 +46,7 @@ class SwitchbotRelaySwitch(SwitchbotDevice):
         self._key_id = key_id
         self._encryption_key = bytearray.fromhex(encryption_key)
         self._model: SwitchbotModel = model
+        self._force_next_update = False
         super().__init__(device, None, interface, **kwargs)
 
     def update_from_advertisement(self, advertisement: SwitchBotAdvertisement) -> None:
@@ -68,7 +69,7 @@ class SwitchbotRelaySwitch(SwitchbotDevice):
             new_state,
         )
         if current_state != new_state:
-            asyncio.create_task(self.update())
+            self._force_next_update = True
 
     async def update(self, interface: int | None = None) -> None:
         """Update state of device."""
@@ -90,6 +91,9 @@ class SwitchbotRelaySwitch(SwitchbotDevice):
 
     def poll_needed(self, seconds_since_last_poll: float | None) -> bool:
         """Return if device needs polling."""
+        if self._force_next_update:
+            self._force_next_update = False
+            return True
         if (
             seconds_since_last_poll is not None
             and seconds_since_last_poll < PASSIVE_POLL_INTERVAL
