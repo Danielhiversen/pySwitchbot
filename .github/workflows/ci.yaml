@@ -10,7 +10,7 @@ jobs:
 
     strategy:
       matrix:
-        python-version: ["3.11", "3.12"]
+        python-version: ["3.11", "3.12", "3.13"]
 
     steps:
       - uses: actions/checkout@v4
@@ -27,4 +27,6 @@ jobs:
       - name: Tests
         run: pytest --cov=switchbot --cov-report=term-missing --cov-report=xml tests
       - name: Upload coverage to Codecov
-        uses: codecov/codecov-action@v3
+        uses: codecov/codecov-action@v5.0.2
+        with:
+          token: ${{ secrets.CODECOV_TOKEN }} # required
