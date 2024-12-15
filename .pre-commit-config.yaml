@@ -1,7 +1,7 @@
 # See https://pre-commit.com for more information
 # See https://pre-commit.com/hooks.html for more hooks
 exclude: "CHANGELOG.md"
-default_stages: [commit]
+default_stages: [pre-commit]
 
 ci:
   autofix_commit_msg: "chore(pre-commit.ci): auto fixes"
@@ -9,12 +9,12 @@ ci:
 
 repos:
   - repo: https://github.com/commitizen-tools/commitizen
-    rev: v3.2.2
+    rev: v4.1.0
     hooks:
       - id: commitizen
         stages: [commit-msg]
   - repo: https://github.com/pre-commit/pre-commit-hooks
-    rev: v4.5.0
+    rev: v5.0.0
     hooks:
       - id: debug-statements
       - id: check-builtin-literals
@@ -29,11 +29,11 @@ repos:
       - id: trailing-whitespace
       - id: debug-statements
   - repo: https://github.com/pre-commit/mirrors-prettier
-    rev: v3.1.0
+    rev: v4.0.0-alpha.8
     hooks:
       - id: prettier
   - repo: https://github.com/asottile/pyupgrade
-    rev: v3.15.0
+    rev: v3.19.0
     hooks:
       - id: pyupgrade
   - repo: https://github.com/PyCQA/isort
@@ -41,10 +41,10 @@ repos:
     hooks:
       - id: isort
   - repo: https://github.com/psf/black-pre-commit-mirror
-    rev: 23.12.1
+    rev: 24.10.0
     hooks:
       - id: black
   - repo: https://github.com/codespell-project/codespell
-    rev: v2.2.6
+    rev: v2.3.0
     hooks:
       - id: codespell

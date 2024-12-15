@@ -26,7 +26,7 @@ from .adv_parsers.meter import process_wosensorth, process_wosensorth_c
 from .adv_parsers.motion import process_wopresence
 from .adv_parsers.plug import process_woplugmini
 from .adv_parsers.relay_switch import (
-    process_worelay_switch_1plus,
+    process_worelay_switch_1,
     process_worelay_switch_1pm,
 )
 from .const import SwitchbotModel
@@ -198,9 +198,9 @@ SUPPORTED_TYPES: dict[str, SwitchbotSupportedType] = {
         "manufacturer_id": 2409,
     },
     ";": {
-        "modelName": SwitchbotModel.RELAY_SWITCH_1_PLUS,
+        "modelName": SwitchbotModel.RELAY_SWITCH_1,
         "modelFriendlyName": "Relay Switch 1",
-        "func": process_worelay_switch_1plus,
+        "func": process_worelay_switch_1,
         "manufacturer_id": 2409,
     },
 }

@@ -1,4 +1,5 @@
 """Humidifier adv parser."""
+
 from __future__ import annotations
 
 import logging

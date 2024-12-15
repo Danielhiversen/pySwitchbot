@@ -1,4 +1,5 @@
 """Bulb parser."""
+
 from __future__ import annotations
 
 

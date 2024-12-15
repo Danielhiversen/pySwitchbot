@@ -1,4 +1,5 @@
 """Library to handle connection with Switchbot."""
+
 from __future__ import annotations
 
 from bleak_retry_connector import (
