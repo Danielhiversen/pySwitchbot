@@ -1737,3 +1737,32 @@ def test_parse_advertisement_data_relay_switch_1():
         rssi=-67,
         active=True,
     )
+
+def test_parse_advertisement_data_leak():
+    """Test parse_advertisement_data for the leak."""
+    ble_device = generate_ble_device("aa:bb:cc:dd:ee:ff", "any")
+    adv_data = generate_advertisement_data(
+        manufacturer_data={2409: b'\xc4407Lz\x18N\x98g^\x94Q<\x05\x00\x00\x00\x00'},
+        service_data={'0000fd3d-0000-1000-8000-00805f9b34fb': b'&\x00N'},
+        rssi=-72,
+    )
+    result = parse_advertisement_data(ble_device, adv_data, SwitchbotModel.LEAK)
+    assert result == SwitchBotAdvertisement(
+        address="aa:bb:cc:dd:ee:ff",
+        data={
+            "data": {
+                "leak": False,
+                "tampered": False,
+                "battery": 78,
+                "low_battery": False,
+            },
+            "isEncrypted": False,
+            "model": "3",
+            "modelFriendlyName": "Leak Detector",
+            "modelName": SwitchbotModel.LEAK,
+            "rawAdvData": b'&\x00N',
+        },
+        device=ble_device,
+        rssi=-72,
+        active=True,
+    )
