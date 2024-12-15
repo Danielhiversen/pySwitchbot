@@ -1,6 +1,12 @@
 def process_leak(data: bytes | None, mfr_data: bytes | None) -> dict[str, bool | int]:
     """Process SwitchBot Water Leak Detector advertisement data."""
-    if data is None and mfr_data is None:
+    if (data is None or len(data) < 3 or 
+        mfr_data is None or len(mfr_data) < 2):
+        return {}
+
+    # Model ID check
+    model_id = data[0]
+    if model_id != 0x26:  # Not a Water Leak Detector
         return {}
 
     water_leak_detected = None
@@ -26,8 +32,8 @@ def process_leak(data: bytes | None, mfr_data: bytes | None) -> dict[str, bool |
     # Manufacturer data can be processed here if needed
 
     return {
-        "water_leak_detected": water_leak_detected,
-        "device_tampered": device_tampered,
-        "battery_level": battery_level,
+        "leak": water_leak_detected,
+        "tampered": device_tampered,
+        "battery": battery_level,
         "low_battery": low_battery,
     }
