@@ -1846,3 +1846,33 @@ def test_leak_leak_detected():
         rssi=-73,
         active=True,
     )
+
+
+def test_leak_low_battery():
+    """Test parse_advertisement_data for the leak detector."""
+    ble_device = generate_ble_device("aa:bb:cc:dd:ee:ff", "Any")
+    adv_data = generate_advertisement_data(
+        manufacturer_data={2409: b'\xc4407Lz\x02\t\x98\x00\x00\x00\x00<\x05\x00\x00\x00\x00'}, # no leak, low battery
+        service_data={"0000fd3d-0000-1000-8000-00805f9b34fb": b'&\x00d'},
+        rssi=-73
+    )
+    result = parse_advertisement_data(ble_device, adv_data, SwitchbotModel.LEAK)
+    assert result == SwitchBotAdvertisement(
+        address="aa:bb:cc:dd:ee:ff",
+        data={
+            "data": {
+                "leak": False,
+                "tampered": False,
+                "battery": 9,
+                "low_battery": False,
+            },
+            "isEncrypted": False,
+            "model": "3",
+            "modelFriendlyName": "Leak Detector",
+            "modelName": SwitchbotModel.LEAK,
+            "rawAdvData": b"&\x00d",
+        },
+        device=ble_device,
+        rssi=-73,
+        active=True,
+    )
