@@ -1768,6 +1768,7 @@ def test_leak_active():
         active=True,
     )
 
+
 def test_leak_passive():
     """Test parse_advertisement_data for the leak detector."""
     ble_device = generate_ble_device("aa:bb:cc:dd:ee:ff", "any")
@@ -1789,13 +1790,16 @@ def test_leak_passive():
         active=False,
     )
 
+
 def test_leak_no_leak_detected():
     """Test parse_advertisement_data for the leak detector."""
     ble_device = generate_ble_device("aa:bb:cc:dd:ee:ff", "Any")
     adv_data = generate_advertisement_data(
-        manufacturer_data={2409: b'\xc4407LzJd\x98ga\xc4\n<\x05\x00\x00\x00\x00'}, # no leak, batt
-        service_data={"0000fd3d-0000-1000-8000-00805f9b34fb": b'&\x00d'},
-        rssi=-73
+        manufacturer_data={
+            2409: b"\xc4407LzJd\x98ga\xc4\n<\x05\x00\x00\x00\x00"
+        },  # no leak, batt
+        service_data={"0000fd3d-0000-1000-8000-00805f9b34fb": b"&\x00d"},
+        rssi=-73,
     )
     result = parse_advertisement_data(ble_device, adv_data, SwitchbotModel.LEAK)
     assert result == SwitchBotAdvertisement(
@@ -1818,13 +1822,16 @@ def test_leak_no_leak_detected():
         active=True,
     )
 
+
 def test_leak_leak_detected():
     """Test parse_advertisement_data for the leak detector."""
     ble_device = generate_ble_device("aa:bb:cc:dd:ee:ff", "Any")
     adv_data = generate_advertisement_data(
-        manufacturer_data={2409: b'\xc4407LzGd\xf9ga\xc4\x08<\x05\x00\x00\x00\x00'}, # leak, batt
-        service_data={"0000fd3d-0000-1000-8000-00805f9b34fb": b'&\x00d'},
-        rssi=-73
+        manufacturer_data={
+            2409: b"\xc4407LzGd\xf9ga\xc4\x08<\x05\x00\x00\x00\x00"
+        },  # leak, batt
+        service_data={"0000fd3d-0000-1000-8000-00805f9b34fb": b"&\x00d"},
+        rssi=-73,
     )
     result = parse_advertisement_data(ble_device, adv_data, SwitchbotModel.LEAK)
     assert result == SwitchBotAdvertisement(

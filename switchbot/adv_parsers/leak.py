@@ -1,5 +1,6 @@
 """Leak detector adv parser."""
 
+
 def process_leak(data: bytes | None, mfr_data: bytes | None) -> dict[str, bool | int]:
     """Process SwitchBot Water Leak Detector advertisement data."""
     if data is None or len(data) < 3 or mfr_data is None or len(mfr_data) < 2:
