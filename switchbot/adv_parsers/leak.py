@@ -10,10 +10,6 @@ def process_leak(data: bytes | None, mfr_data: bytes | None) -> dict[str, bool |
     battery_level = None
     low_battery = None
 
-    # Check model ID (first byte should be 0x26 for Water Leak Detector)
-    if data[0] != 0x26:
-        return {}
-
     # Byte 1: Event Flags
     event_flags = mfr_data[8]
     water_leak_detected = bool(event_flags & 0b00000001)  # Bit 0
