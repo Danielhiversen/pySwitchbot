@@ -3,22 +3,12 @@ def process_leak(data: bytes | None, mfr_data: bytes | None) -> dict[str, bool |
     if data is None or len(data) < 3 or mfr_data is None or len(mfr_data) < 2:
         return {}
 
-    # Model ID check
-    model_id = data[0]
-    if model_id != 0x26:  # Not a Water Leak Detector
-        return {}
-
     water_leak_detected = None
     device_tampered = None
     battery_level = None
     low_battery = None
 
     if data and len(data) >= 3:
-        # Byte 0: Model ID
-        model_id = data[0]
-        if model_id != 0x26:
-            # Not a Water Leak Detector
-            return {}
         # Byte 1: Event Flags
         event_flags = data[1]
         water_leak_detected = bool(event_flags & 0b00000001)  # Bit 0
@@ -27,8 +17,6 @@ def process_leak(data: bytes | None, mfr_data: bytes | None) -> dict[str, bool |
         battery_info = data[2]
         battery_level = battery_info & 0b01111111  # Bits 0-6
         low_battery = bool(battery_info & 0b10000000)  # Bit 7
-
-    # Manufacturer data can be processed here if needed
 
     return {
         "leak": water_leak_detected,
