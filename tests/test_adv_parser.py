@@ -1740,7 +1740,7 @@ def test_parse_advertisement_data_relay_switch_1():
 
 
 def test_parse_advertisement_data_leak():
-    """Test parse_advertisement_data for the leak."""
+    """Test parse_advertisement_data for the leak detector."""
     ble_device = generate_ble_device("aa:bb:cc:dd:ee:ff", "any")
     adv_data = generate_advertisement_data(
         manufacturer_data={2409: b"\xc4407Lz\x18N\x98g^\x94Q<\x05\x00\x00\x00\x00"},
