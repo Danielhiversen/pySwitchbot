@@ -23,7 +23,6 @@ from bleak_retry_connector import (
     ble_device_has_changed,
     establish_connection,
 )
-from cryptography.hazmat.primitives.ciphers import Cipher, algorithms, modes
 
 from ..api_config import SWITCHBOT_APP_API_BASE_URL, SWITCHBOT_APP_CLIENT_ID
 from ..const import (
