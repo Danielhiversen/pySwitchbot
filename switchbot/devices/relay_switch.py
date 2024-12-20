@@ -44,7 +44,7 @@ class SwitchbotRelaySwitch(SwitchbotEncryptedDevice):
         model: SwitchbotModel = SwitchbotModel.RELAY_SWITCH_1PM,
         **kwargs: Any,
     ) -> bool:
-        return super().verify_encryption_key(
+        return await super().verify_encryption_key(
             device, key_id, encryption_key, model, **kwargs
         )
 
