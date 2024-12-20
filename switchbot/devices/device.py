@@ -22,6 +22,7 @@ from bleak_retry_connector import (
     ble_device_has_changed,
     establish_connection,
 )
+from cryptography.hazmat.primitives.ciphers import Cipher, algorithms, modes
 
 from ..api_config import SWITCHBOT_APP_API_BASE_URL, SWITCHBOT_APP_CLIENT_ID
 from ..const import (
@@ -733,9 +734,7 @@ class SwitchbotEncryptedDevice(SwitchbotDevice):
 
     # Old non-async method preserved for backwards compatibility
     @classmethod
-    def retrieve_encryption_key(
-        cls: SwitchbotBaseDevice, device_mac: str, username: str, password: str
-    ):
+    def retrieve_encryption_key(cls, device_mac: str, username: str, password: str):
         async def async_fn():
             async with aiohttp.ClientSession() as session:
                 return await cls.async_retrieve_encryption_key(
@@ -746,7 +745,7 @@ class SwitchbotEncryptedDevice(SwitchbotDevice):
 
     @classmethod
     async def async_retrieve_encryption_key(
-        cls: SwitchbotBaseDevice,
+        cls,
         session: aiohttp.ClientSession,
         device_mac: str,
         username: str,
