@@ -53,6 +53,7 @@ class SwitchbotModel(StrEnum):
     LOCK_PRO = "WoLockPro"
     BLIND_TILT = "WoBlindTilt"
     HUB2 = "WoHub2"
+    LEAK = "Leak Detector"
     KEYPAD = "WoKeypad"
     RELAY_SWITCH_1PM = "Relay Switch 1PM"
     RELAY_SWITCH_1 = "Relay Switch 1"
