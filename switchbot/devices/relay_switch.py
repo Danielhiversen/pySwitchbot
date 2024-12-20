@@ -1,4 +1,3 @@
-import asyncio
 import logging
 import time
 from typing import Any
@@ -8,7 +7,7 @@ from cryptography.hazmat.primitives.ciphers import Cipher, algorithms, modes
 
 from ..const import SwitchbotModel
 from ..models import SwitchBotAdvertisement
-from .device import SwitchbotDevice
+from .device import SwitchbotEncryptedDevice
 
 _LOGGER = logging.getLogger(__name__)
 
@@ -21,7 +20,7 @@ COMMAND_GET_VOLTAGE_AND_CURRENT = f"{COMMAND_HEADER}0f7106000000"
 PASSIVE_POLL_INTERVAL = 10 * 60
 
 
-class SwitchbotRelaySwitch(SwitchbotDevice):
+class SwitchbotRelaySwitch(SwitchbotEncryptedDevice):
     """Representation of a Switchbot relay switch 1pm."""
 
     def __init__(
@@ -33,21 +32,21 @@ class SwitchbotRelaySwitch(SwitchbotDevice):
         model: SwitchbotModel = SwitchbotModel.RELAY_SWITCH_1PM,
         **kwargs: Any,
     ) -> None:
-        if len(key_id) == 0:
-            raise ValueError("key_id is missing")
-        elif len(key_id) != 2:
-            raise ValueError("key_id is invalid")
-        if len(encryption_key) == 0:
-            raise ValueError("encryption_key is missing")
-        elif len(encryption_key) != 32:
-            raise ValueError("encryption_key is invalid")
-        self._iv = None
-        self._cipher = None
-        self._key_id = key_id
-        self._encryption_key = bytearray.fromhex(encryption_key)
-        self._model: SwitchbotModel = model
         self._force_next_update = False
-        super().__init__(device, None, interface, **kwargs)
+        super().__init__(device, key_id, encryption_key, model, interface, **kwargs)
+
+    @classmethod
+    async def verify_encryption_key(
+        cls,
+        device: BLEDevice,
+        key_id: str,
+        encryption_key: str,
+        model: SwitchbotModel = SwitchbotModel.RELAY_SWITCH_1PM,
+        **kwargs: Any,
+    ) -> bool:
+        return super().verify_encryption_key(
+            device, key_id, encryption_key, model, **kwargs
+        )
 
     def update_from_advertisement(self, advertisement: SwitchBotAdvertisement) -> None:
         """Update device data from advertisement."""

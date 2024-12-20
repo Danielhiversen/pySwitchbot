@@ -8,9 +8,11 @@ import logging
 import time
 from dataclasses import replace
 from enum import Enum
-from typing import Any, Callable, TypeVar, cast
+from typing import Any, TypeVar, cast
+from collections.abc import Callable
 from uuid import UUID
 
+import aiohttp
 from bleak.backends.device import BLEDevice
 from bleak.backends.service import BleakGATTCharacteristic, BleakGATTServiceCollection
 from bleak.exc import BleakDBusError
@@ -22,7 +24,15 @@ from bleak_retry_connector import (
     establish_connection,
 )
 
-from ..const import DEFAULT_RETRY_COUNT, DEFAULT_SCAN_TIMEOUT
+from ..api_config import SWITCHBOT_APP_API_BASE_URL, SWITCHBOT_APP_CLIENT_ID
+from ..const import (
+    DEFAULT_RETRY_COUNT,
+    DEFAULT_SCAN_TIMEOUT,
+    SwitchbotAccountConnectionError,
+    SwitchbotApiError,
+    SwitchbotAuthenticationError,
+    SwitchbotModel,
+)
 from ..discovery import GetSwitchbotDevices
 from ..models import SwitchBotAdvertisement
 
@@ -150,6 +160,35 @@ class SwitchbotBaseDevice:
         self._notify_future: asyncio.Future[bytearray] | None = None
         self._last_full_update: float = -PASSIVE_POLL_INTERVAL
         self._timed_disconnect_task: asyncio.Task[None] | None = None
+
+    @classmethod
+    async def api_request(
+        cls,
+        session: aiohttp.ClientSession,
+        subdomain: str,
+        path: str,
+        data: dict = None,
+        headers: dict = None,
+    ) -> dict:
+        url = f"https://{subdomain}.{SWITCHBOT_APP_API_BASE_URL}/{path}"
+        async with session.post(
+            url,
+            json=data,
+            headers=headers,
+            timeout=aiohttp.ClientTimeout(total=10),
+        ) as result:
+            if result.status > 299:
+                raise SwitchbotApiError(
+                    f"Unexpected status code returned by SwitchBot API: {result.status}"
+                )
+
+            response = await result.json()
+            if response["statusCode"] != 100:
+                raise SwitchbotApiError(
+                    f"{response['message']}, status code: {response['statusCode']}"
+                )
+
+            return response["body"]
 
     def advertisement_changed(self, advertisement: SwitchBotAdvertisement) -> bool:
         """Check if the advertisement has changed."""
@@ -470,7 +509,7 @@ class SwitchbotBaseDevice:
         timeout_expired = False
         try:
             notify_msg = await self._notify_future
-        except asyncio.TimeoutError:
+        except TimeoutError:
             timeout_expired = True
             raise
         finally:
@@ -663,6 +702,130 @@ class SwitchbotDevice(SwitchbotBaseDevice):
         """Update device data from advertisement."""
         super().update_from_advertisement(advertisement)
         self._set_advertisement_data(advertisement)
+
+
+class SwitchbotEncryptedDevice(SwitchbotDevice):
+    """A Switchbot device that uses encryption."""
+
+    def __init__(
+        self,
+        device: BLEDevice,
+        key_id: str,
+        encryption_key: str,
+        model: SwitchbotModel,
+        interface: int = 0,
+        **kwargs: Any,
+    ) -> None:
+        """Switchbot base class constructor for encrypted devices."""
+        if len(key_id) == 0:
+            raise ValueError("key_id is missing")
+        elif len(key_id) != 2:
+            raise ValueError("key_id is invalid")
+        if len(encryption_key) == 0:
+            raise ValueError("encryption_key is missing")
+        elif len(encryption_key) != 32:
+            raise ValueError("encryption_key is invalid")
+        self._key_id = key_id
+        self._encryption_key = bytearray.fromhex(encryption_key)
+        self._iv: bytes | None = None
+        self._cipher: bytes | None = None
+        self._model = model
+        super().__init__(device, None, interface, **kwargs)
+
+    # Old non-async method preserved for backwards compatibility
+    @classmethod
+    def retrieve_encryption_key(cls, device_mac: str, username: str, password: str):
+        async def async_fn():
+            async with aiohttp.ClientSession() as session:
+                return await cls.async_retrieve_encryption_key(
+                    session, device_mac, username, password
+                )
+
+        return asyncio.run(async_fn())
+
+    @classmethod
+    async def async_retrieve_encryption_key(
+        cls,
+        session: aiohttp.ClientSession,
+        device_mac: str,
+        username: str,
+        password: str,
+    ) -> dict:
+        """Retrieve lock key from internal SwitchBot API."""
+        device_mac = device_mac.replace(":", "").replace("-", "").upper()
+
+        try:
+            auth_result = await cls.api_request(
+                session,
+                "account",
+                "account/api/v1/user/login",
+                {
+                    "clientId": SWITCHBOT_APP_CLIENT_ID,
+                    "username": username,
+                    "password": password,
+                    "grantType": "password",
+                    "verifyCode": "",
+                },
+            )
+            auth_headers = {"authorization": auth_result["access_token"]}
+        except Exception as err:
+            raise SwitchbotAuthenticationError(f"Authentication failed: {err}") from err
+
+        try:
+            userinfo = await cls.api_request(
+                session, "account", "account/api/v1/user/userinfo", {}, auth_headers
+            )
+            if "botRegion" in userinfo and userinfo["botRegion"] != "":
+                region = userinfo["botRegion"]
+            else:
+                region = "us"
+        except Exception as err:
+            raise SwitchbotAccountConnectionError(
+                f"Failed to retrieve SwitchBot Account user details: {err}"
+            ) from err
+
+        try:
+            device_info = await cls.api_request(
+                session,
+                f"wonderlabs.{region}",
+                "wonder/keys/v1/communicate",
+                {
+                    "device_mac": device_mac,
+                    "keyType": "user",
+                },
+                auth_headers,
+            )
+
+            return {
+                "key_id": device_info["communicationKey"]["keyId"],
+                "encryption_key": device_info["communicationKey"]["key"],
+            }
+        except Exception as err:
+            raise SwitchbotAccountConnectionError(
+                f"Failed to retrieve encryption key from SwitchBot Account: {err}"
+            ) from err
+
+    @classmethod
+    async def verify_encryption_key(
+        cls,
+        device: BLEDevice,
+        key_id: str,
+        encryption_key: str,
+        model: SwitchbotModel,
+        **kwargs: Any,
+    ) -> bool:
+        try:
+            device = cls(
+                device, key_id=key_id, encryption_key=encryption_key, model=model
+            )
+        except ValueError:
+            return False
+        try:
+            info = await device.get_basic_info()
+        except SwitchbotOperationError:
+            return False
+
+        return info is not None
 
 
 class SwitchbotDeviceOverrideStateDuringConnection(SwitchbotBaseDevice):
