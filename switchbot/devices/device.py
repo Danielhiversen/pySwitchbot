@@ -8,7 +8,8 @@ import logging
 import time
 from dataclasses import replace
 from enum import Enum
-from typing import Any, Callable, TypeVar, cast
+from typing import Any, TypeVar, cast
+from collections.abc import Callable
 from uuid import UUID
 
 import aiohttp
@@ -509,7 +510,7 @@ class SwitchbotBaseDevice:
         timeout_expired = False
         try:
             notify_msg = await self._notify_future
-        except asyncio.TimeoutError:
+        except TimeoutError:
             timeout_expired = True
             raise
         finally:

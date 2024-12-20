@@ -22,6 +22,7 @@ setup(
     author="Daniel Hjelseth Hoyer",
     url="https://github.com/sblibs/pySwitchbot/",
     license="MIT",
+    python_requires=">=3.11",
     classifiers=[
         "Development Status :: 3 - Alpha",
         "Environment :: Other Environment",
