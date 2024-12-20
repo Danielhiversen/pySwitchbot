@@ -815,13 +815,13 @@ class SwitchbotEncryptedDevice(SwitchbotDevice):
         **kwargs: Any,
     ) -> bool:
         try:
-            device = cls(
+            switchbot_device = cls(
                 device, key_id=key_id, encryption_key=encryption_key, model=model
             )
         except ValueError:
             return False
         try:
-            info = await device.get_basic_info()
+            info = await switchbot_device.get_basic_info()
         except SwitchbotOperationError:
             return False
 
