@@ -16,6 +16,7 @@ from .const import (
     SwitchbotAuthenticationError,
     SwitchbotModel,
 )
+from .devices.device import SwitchbotEncryptedDevice
 from .devices.base_light import SwitchbotBaseLight
 from .devices.blind_tilt import SwitchbotBlindTilt
 from .devices.bot import Switchbot
@@ -41,6 +42,7 @@ __all__ = [
     "SwitchbotAccountConnectionError",
     "SwitchbotApiError",
     "SwitchbotAuthenticationError",
+    "SwitchbotEncryptedDevice",
     "ColorMode",
     "LockStatus",
     "SwitchbotBaseLight",
