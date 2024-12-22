@@ -1892,9 +1892,9 @@ def test_leak_real_data_from_ha():
     ble_device = generate_ble_device("aa:bb:cc:dd:ee:ff", "Any")
     adv_data = generate_advertisement_data(
         manufacturer_data={
-            2409: b'\\xd6407D1\\x02V\\x90\\x00\\x00\\x00\\x00\\x1e\\x05\\x00\\x00\\x00\\x00'
+            2409: b"\\xd6407D1\\x02V\\x90\\x00\\x00\\x00\\x00\\x1e\\x05\\x00\\x00\\x00\\x00"
         },  # no leak, low battery
-        service_data={"0000fd3d-0000-1000-8000-00805f9b34fb": b'&\\x00V'},
+        service_data={"0000fd3d-0000-1000-8000-00805f9b34fb": b"&\\x00V"},
         rssi=-73,
     )
     result = parse_advertisement_data(ble_device, adv_data, SwitchbotModel.LEAK)
@@ -1917,4 +1917,3 @@ def test_leak_real_data_from_ha():
         rssi=-73,
         active=True,
     )
-

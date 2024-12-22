@@ -117,7 +117,7 @@ class GetSwitchbotDevices:
     async def get_contactsensors(self) -> dict[str, SwitchBotAdvertisement]:
         """Return all WoContact/Contact sensor devices with services data."""
         return await self._get_devices_by_model("d")
-    
+
     async def get_leakdetectors(self) -> dict[str, SwitchBotAdvertisement]:
         """Return all Leak Detectors with services data."""
         return await self._get_devices_by_model("&")
