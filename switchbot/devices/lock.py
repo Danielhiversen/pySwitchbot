@@ -71,7 +71,7 @@ class SwitchbotLock(SwitchbotEncryptedDevice):
         model: SwitchbotModel = SwitchbotModel.LOCK,
         **kwargs: Any,
     ) -> bool:
-        return super().verify_encryption_key(
+        return await super().verify_encryption_key(
             device, key_id, encryption_key, model, **kwargs
         )
 
