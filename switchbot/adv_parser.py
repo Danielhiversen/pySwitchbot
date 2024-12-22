@@ -179,7 +179,7 @@ SUPPORTED_TYPES: dict[str, SwitchbotSupportedType] = {
         "func": process_woblindtilt,
         "manufacturer_id": 2409,
     },
-    "3": {
+    "&": {
         "modelName": SwitchbotModel.LEAK,
         "modelFriendlyName": "Leak Detector",
         "func": process_leak,
