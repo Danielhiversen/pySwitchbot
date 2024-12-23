@@ -53,7 +53,7 @@ async def test_turn_on():
 
 
 @pytest.mark.asyncio
-async def test_trun_off():
+async def test_turn_off():
     relay_switch_device = create_device_for_command_testing()
     relay_switch_device._send_command = AsyncMock(return_value=b"\x01")
     await relay_switch_device.turn_off()
@@ -66,3 +66,9 @@ async def test_get_basic_info():
     relay_switch_device._send_command = AsyncMock(return_value=b"\x01\x01")
     info = await relay_switch_device.get_basic_info()
     assert info["is_on"] is True
+    relay_switch_device._send_command = AsyncMock(return_value=b"\x01\x00")
+    info = await relay_switch_device.get_basic_info()
+    assert info["is_on"] is False
+    relay_switch_device._send_command = AsyncMock(return_value=b"\x00\x00")
+    info = await relay_switch_device.get_basic_info()
+    assert info is None

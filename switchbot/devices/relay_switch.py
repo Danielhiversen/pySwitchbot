@@ -91,8 +91,7 @@ class SwitchbotRelaySwitch(SwitchbotEncryptedDevice):
     async def get_basic_info(self) -> dict[str, Any] | None:
         """Get the current state of the switch."""
         result = await self._send_command(COMMAND_GET_SWITCH_STATE)
-        ok = self._check_command_result(result, 0, {1})
-        if ok:
+        if self._check_command_result(result, 0, {1}):
             return {
                 "is_on": result[1] & 0x01 != 0,
             }
