@@ -17,6 +17,7 @@ COMMAND_TURN_OFF = f"{COMMAND_HEADER}0f70010000"
 COMMAND_TURN_ON = f"{COMMAND_HEADER}0f70010100"
 COMMAND_TOGGLE = f"{COMMAND_HEADER}0f70010200"
 COMMAND_GET_VOLTAGE_AND_CURRENT = f"{COMMAND_HEADER}0f7106000000"
+COMMAND_GET_SWITCH_STATE = f"{COMMAND_HEADER}0f7101000000"
 PASSIVE_POLL_INTERVAL = 10 * 60
 
 
@@ -84,6 +85,16 @@ class SwitchbotRelaySwitch(SwitchbotEncryptedDevice):
             return {
                 "voltage": ((result[9] << 8) + result[10]) / 10,
                 "current": (result[11] << 8) + result[12],
+            }
+        return None
+
+    async def get_basic_info(self) -> dict[str, Any] | None:
+        """Get the current state of the switch."""
+        result = await self._send_command(COMMAND_GET_SWITCH_STATE)
+        ok = self._check_command_result(result, 0, {1})
+        if ok:
+            return {
+                "is_on": result[9] & 0x01 == 0x01,
             }
         return None
 
