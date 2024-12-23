@@ -94,7 +94,7 @@ class SwitchbotRelaySwitch(SwitchbotEncryptedDevice):
         ok = self._check_command_result(result, 0, {1})
         if ok:
             return {
-                "is_on": result[9] & 0x01 == 0x01,
+                "is_on": result[1] & 0x01 != 0,
             }
         return None
 
